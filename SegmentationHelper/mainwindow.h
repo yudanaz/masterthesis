@@ -29,6 +29,8 @@ class MainWindow : public QMainWindow
 {
 	Q_OBJECT
 
+	/*Just a test to see if the git commit and pull/push really works*/
+
 public:
 	explicit MainWindow(QWidget *parent = 0);
 	~MainWindow();
