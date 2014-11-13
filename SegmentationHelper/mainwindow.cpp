@@ -446,3 +446,26 @@ void MainWindow::on_pushButton_stereoAgain_released()
 {
 	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
 }
+
+
+void MainWindow::makeSurfFeatures(QString fileName)
+{
+    Mat img, features;
+    img = imread(fileName.toStdString().c_str());
+
+    SURF surf(5000.);
+
+}
+void MainWindow::on_btn_surf_released()
+{
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr("*.jpg *.png"));
+    if(fileName == "") return;
+    lastDir = QFileInfo(fileName).path();
+    lastSurfFileName = fileName;
+    makeSurfFeatures(fileName);
+}
+
+void MainWindow::on_pushButton_surfAgain_released()
+{
+    makeSurfFeatures(lastSurfFileName);
+}
