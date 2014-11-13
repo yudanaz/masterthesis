@@ -15,6 +15,8 @@
 #include <QTime>
 
 #include <opencv2/opencv.hpp>
+#include <opencv2/nonfree/nonfree.hpp>
+#include <opencv2/nonfree/features2d.hpp>
 //#include "opencv2/calib3d/calib3d.hpp"
 //#include "opencv2/core/core.hpp"
 //#include "opencv2/highgui/highgui.hpp"
@@ -56,16 +58,16 @@ private slots:
 
 	void on_pushButton_stereoAgain_released();
 
-    void on_btn_surf_released();
+	void on_btn_surf_released();
 
-    void on_pushButton_surfAgain_released();
+	void on_pushButton_surfAgain_released();
 
 private:
 	void makeSeedsSuperpixels(QString fileName);
 	void makeSlicSuperpixels(QString fileName);
 	void makeFelsenzwalbSuperpixels(QString fileName);
 	void makeDisparityImage(QString fileNameL, QString fileNameR);
-    void makeSurfFeatures(QString fileName);
+	void makeSurfFeatures(QString fileName);
 
 	Ui::MainWindow *ui;
 	vector< vector<int> > colorMap;
@@ -76,7 +78,7 @@ private:
 	QString lastFelsenzwalbFilename;
 	QString lastStereoFileNameL;
 	QString lastStereoFileNameR;
-    QString lastSurfFileName;
+	QString lastSurfFileName;
 };
 
 #endif // MAINWINDOW_H

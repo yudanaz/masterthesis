@@ -389,17 +389,17 @@ void MainWindow::on_pushButton_felsenzwalbAgain_released()
 
 void MainWindow::on_btn_stereoVision_released()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Select LEFT image"), lastDir, tr("*.jpg *.png"));
+	QString fileName = QFileDialog::getOpenFileName(this, tr("Select LEFT image"), lastDir, tr("*.jpg *.png"));
 	if(fileName == "") return;
 	lastStereoFileNameL = fileName;
-    lastDir = QFileInfo(fileName).path();
+	lastDir = QFileInfo(fileName).path();
 //    fileName = QFileDialog::getOpenFileName(this, tr("Select RIGHT image"), lastDir, tr("*.jpg *.png"));
 //	if(fileName == "") return;
 
-    //right image should end with "R" where left img ended with "L"
-    QStringList sl = fileName.split(".");
-    lastStereoFileNameR = sl.at(sl.length()-2);
-    lastStereoFileNameR = lastStereoFileNameR.remove("L") + "R." + sl.last();
+	//right image should end with "R" where left img ended with "L"
+	QStringList sl = fileName.split(".");
+	lastStereoFileNameR = sl.at(sl.length()-2);
+	lastStereoFileNameR = lastStereoFileNameR.remove("L") + "R." + sl.last();
 	lastDir = QFileInfo(fileName).path();
 
 	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
@@ -411,7 +411,7 @@ void MainWindow::makeDisparityImage(QString fileNameL, QString fileNameR)
 	QStringList info = ui->lineEdit_stereoInfo->text().split(",");
 	if(info.length() == 2)
 	{
-        nrDisp = info.at(0).toInt()*16;
+		nrDisp = info.at(0).toInt()*16;
 		blockSize = info.at(1).toInt();
 	}
 	else
@@ -419,27 +419,27 @@ void MainWindow::makeDisparityImage(QString fileNameL, QString fileNameR)
 		nrDisp = 16; blockSize = 15;
 	}
 	if(blockSize % 2 == 0) { blockSize++; } //make odd if even
-    if(blockSize < 5) { blockSize += 5-blockSize; } //make >= 5
+	if(blockSize < 5) { blockSize += 5-blockSize; } //make >= 5
 
-    //load L and R images as grayscale
-    Mat left, right;
-    left = imread(fileNameL.toStdString().c_str(), CV_LOAD_IMAGE_GRAYSCALE);
-    right = imread(fileNameR.toStdString().c_str(), CV_LOAD_IMAGE_GRAYSCALE);
+	//load L and R images as grayscale
+	Mat left, right;
+	left = imread(fileNameL.toStdString().c_str(), CV_LOAD_IMAGE_GRAYSCALE);
+	right = imread(fileNameR.toStdString().c_str(), CV_LOAD_IMAGE_GRAYSCALE);
 
-    //compute disparities
-    Mat disp(left.rows, left.cols, CV_16SC1);
-    StereoBM sbm(StereoBM::BASIC_PRESET, nrDisp, blockSize);
-    sbm(left, right, disp, CV_16S);
+	//compute disparities
+	Mat disp(left.rows, left.cols, CV_16SC1);
+	StereoBM sbm(StereoBM::BASIC_PRESET, nrDisp, blockSize);
+	sbm(left, right, disp, CV_16S);
 
-    //normalize and display
-    double minVal, maxVal;
-    minMaxLoc(disp, &minVal, &maxVal); //find minimum and maximum intensities
-    Mat disp2;
-    disp.convertTo(disp2,CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
+	//normalize and display
+	double minVal, maxVal;
+	minMaxLoc(disp, &minVal, &maxVal); //find minimum and maximum intensities
+	Mat disp2;
+	disp.convertTo(disp2,CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
 
-    imshow("left", left);
-    imshow("right", right);
-    imshow("image", disp2);
+	imshow("left", left);
+	imshow("right", right);
+	imshow("image", disp2);
 }
 
 void MainWindow::on_pushButton_stereoAgain_released()
@@ -450,22 +450,26 @@ void MainWindow::on_pushButton_stereoAgain_released()
 
 void MainWindow::makeSurfFeatures(QString fileName)
 {
-    Mat img, features;
-    img = imread(fileName.toStdString().c_str());
+	Mat img, features;
+	img = imread(fileName.toStdString().c_str());
+	std::vector<KeyPoint> keypoints;
 
-    SURF surf(5000.);
-
+	double thresh = ui->lineEdit_surfInfo->text().toDouble();
+	SURF surf(thresh);
+	surf.detect(img, keypoints);
+	drawKeypoints(img, keypoints, features, Scalar(255, 255, 255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+	imshow("Features", features);
 }
 void MainWindow::on_btn_surf_released()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr("*.jpg *.png"));
-    if(fileName == "") return;
-    lastDir = QFileInfo(fileName).path();
-    lastSurfFileName = fileName;
-    makeSurfFeatures(fileName);
+	QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr("*.jpg *.png"));
+	if(fileName == "") return;
+	lastDir = QFileInfo(fileName).path();
+	lastSurfFileName = fileName;
+	makeSurfFeatures(fileName);
 }
 
 void MainWindow::on_pushButton_surfAgain_released()
 {
-    makeSurfFeatures(lastSurfFileName);
+	makeSurfFeatures(lastSurfFileName);
 }

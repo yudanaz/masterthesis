@@ -24,29 +24,29 @@ LIBS += -lopencv_calib3d
 #LIBS += -lopencv_contrib
 #LIBS += -lopencv_legacy
 #LIBS += -lopencv_flann
-#LIBS += -lopencv_nonfree
+LIBS += -lopencv_nonfree
 
 SOURCES += main.cpp\
 		mainwindow.cpp \
-    seeds/seeds2.cpp \
-    slic/slic.cpp \
-    segmentfelsenzwalb/segmentation.cpp
+	seeds/seeds2.cpp \
+	slic/slic.cpp \
+	segmentfelsenzwalb/segmentation.cpp
 
 HEADERS  += mainwindow.h \
-    seeds/seeds2.h \
-    seeds/seedsHelper.h \
-    slic/slic.h \
-    segmentfelsenzwalb/convolve.h \
-    segmentfelsenzwalb/disjoint-set.h \
-    segmentfelsenzwalb/filter.h \
-    segmentfelsenzwalb/image.h \
-    segmentfelsenzwalb/imconv.h \
-    segmentfelsenzwalb/imutil.h \
-    segmentfelsenzwalb/misc.h \
-    segmentfelsenzwalb/pnmfile.h \
-    segmentfelsenzwalb/segment-graph.h \
-    segmentfelsenzwalb/segment-image.h \
-    segmentfelsenzwalb/segmentation.h
+	seeds/seeds2.h \
+	seeds/seedsHelper.h \
+	slic/slic.h \
+	segmentfelsenzwalb/convolve.h \
+	segmentfelsenzwalb/disjoint-set.h \
+	segmentfelsenzwalb/filter.h \
+	segmentfelsenzwalb/image.h \
+	segmentfelsenzwalb/imconv.h \
+	segmentfelsenzwalb/imutil.h \
+	segmentfelsenzwalb/misc.h \
+	segmentfelsenzwalb/pnmfile.h \
+	segmentfelsenzwalb/segment-graph.h \
+	segmentfelsenzwalb/segment-image.h \
+	segmentfelsenzwalb/segmentation.h
 
 FORMS    += mainwindow.ui
 
