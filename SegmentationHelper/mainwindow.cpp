@@ -5,6 +5,9 @@
 #include "slic/slic.h"
 #include "segmentfelsenzwalb/segmentation.h"
 
+#define WHITE Scalar(255, 255, 255)
+#define PINK Scalar(255, 51, 153)
+
 MainWindow::MainWindow(QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::MainWindow),
@@ -450,26 +453,64 @@ void MainWindow::on_pushButton_stereoAgain_released()
 
 void MainWindow::makeSurfFeatures(QString fileName)
 {
-	Mat img, features;
+    Mat img, features, descriptors;
 	img = imread(fileName.toStdString().c_str());
 	std::vector<KeyPoint> keypoints;
 
-	double thresh = ui->lineEdit_surfInfo->text().toDouble();
-	SURF surf(thresh);
-	surf.detect(img, keypoints);
-	drawKeypoints(img, keypoints, features, Scalar(255, 255, 255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    //get info
+    QStringList sl = ui->lineEdit_surfInfo->text().split(",");
+    if(sl.length() < 2) { return; }
+    double thresh = sl.first().toDouble();
+
+    QTime timer;
+    timer.start();
+
+    //find keypoints & descriptors
+    if(sl.last().toLower() == "surf")
+    {
+        SURF surf(thresh);
+        surf.detect(img, keypoints);
+        surf.compute(img, keypoints, descriptors);
+    }
+    else if (sl.last().toLower() == "sift")
+    {
+        SIFT sift(0,3,thresh);
+        sift.detect(img, keypoints);
+        sift.compute(img, keypoints, descriptors);
+    }
+
+    //draw keypoints
+    drawKeypoints(img, keypoints, features, PINK, DrawMatchesFlags::DEFAULT);
 	imshow("Features", features);
+
+    //draw decriptors as grayscale matrix
+    Mat descr_transp;
+    transpose(descriptors, descr_transp);
+    imshow("Descriptors", descr_transp);
+//    qDebug() << "keypoint descriptors:";
+//    int y,x;
+//    for(y = 0; y < descriptors.rows; ++y)
+//    {
+//        QString s = "";
+//        for(x = 0; x < descriptors.cols; ++x)
+//            s += QString::number(descriptors.at<uchar>(y,x)) + ", ";
+//        qDebug() << s;
+//    }
+
+    //output some stuff
+    qDebug() << "proc time: " << timer.elapsed() << " ms";
+    qDebug() << "number of features: " << keypoints.size();
 }
 void MainWindow::on_btn_surf_released()
 {
 	QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr("*.jpg *.png"));
 	if(fileName == "") return;
 	lastDir = QFileInfo(fileName).path();
-	lastSurfFileName = fileName;
+    lastFeatureFileName = fileName;
 	makeSurfFeatures(fileName);
 }
 
 void MainWindow::on_pushButton_surfAgain_released()
 {
-	makeSurfFeatures(lastSurfFileName);
+    if(lastFeatureFileName != "") { makeSurfFeatures(lastFeatureFileName); }
 }

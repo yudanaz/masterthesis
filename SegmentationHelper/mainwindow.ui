@@ -218,21 +218,21 @@
        <item>
         <widget class="QPushButton" name="btn_surf">
          <property name="text">
-          <string>SURF</string>
+          <string>Features</string>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QLabel" name="label_5">
          <property name="text">
-          <string>threshhold</string>
+          <string>threshhold,type:</string>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QLineEdit" name="lineEdit_surfInfo">
          <property name="text">
-          <string>500</string>
+          <string>500,surf</string>
          </property>
         </widget>
        </item>
@@ -260,7 +260,7 @@
      <x>0</x>
      <y>0</y>
      <width>425</width>
-     <height>20</height>
+     <height>25</height>
     </rect>
    </property>
   </widget>

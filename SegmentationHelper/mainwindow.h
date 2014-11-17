@@ -78,7 +78,7 @@ private:
 	QString lastFelsenzwalbFilename;
 	QString lastStereoFileNameL;
 	QString lastStereoFileNameR;
-	QString lastSurfFileName;
+    QString lastFeatureFileName;
 };
 
 #endif // MAINWINDOW_H
