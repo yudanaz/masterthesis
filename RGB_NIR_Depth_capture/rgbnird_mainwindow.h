@@ -2,6 +2,9 @@
 #define RGBNIRD_MAINWINDOW_H
 
 #include <QMainWindow>
+#include <VimbaCPP/Include/VimbaCPP.h>
+
+using namespace AVT::VmbAPI;
 
 namespace Ui {
 class RGBNIRD_MainWindow;

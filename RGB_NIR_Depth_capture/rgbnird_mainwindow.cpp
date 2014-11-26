@@ -6,6 +6,9 @@ RGBNIRD_MainWindow::RGBNIRD_MainWindow(QWidget *parent) :
 	ui(new Ui::RGBNIRD_MainWindow)
 {
 	ui->setupUi(this);
+
+
+	//CameraPtrVector cams =
 }
 
 RGBNIRD_MainWindow::~RGBNIRD_MainWindow()
