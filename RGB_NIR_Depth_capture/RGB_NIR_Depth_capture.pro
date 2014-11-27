@@ -17,13 +17,16 @@ LIBS += -lopencv_core -lopencv_imgproc -lopencv_highgui
 ### AVT Vimba
 INCLUDEPATH += /opt/Vimba_1_3/
 LIBS += -L/opt/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit -lVimbaC -lVimbaCPP
-SOURCES += GoldeyeCamera.cpp
-HEADERS += GoldeyeCamera.h
+SOURCES += \
+    vimbacammanager.cpp \
+    rgb_nir_depth_capture.cpp
+HEADERS += \
+    vimbacammanager.h \
+    rgb_nir_depth_capture.h
 DEFINES += AVT_VIMBA
 
-SOURCES += main.cpp\
-		rgbnird_mainwindow.cpp
+SOURCES += main.cpp
 
-HEADERS  += rgbnird_mainwindow.h
+HEADERS  +=
 
 FORMS    += rgbnird_mainwindow.ui
