@@ -18,11 +18,29 @@ LIBS += -lopencv_core -lopencv_imgproc -lopencv_highgui
 INCLUDEPATH += /opt/Vimba_1_3/
 LIBS += -L/opt/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit -lVimbaC -lVimbaCPP
 SOURCES += \
-    vimbacammanager.cpp \
-    rgb_nir_depth_capture.cpp
+	vimbacammanager.cpp \
+	rgb_nir_depth_capture.cpp \
+    skincamlegacy/core/multispectralimage.cpp \
+    skincamlegacy/core/skincamconfig.cpp \
+    skincamlegacy/io/camerainterface.cpp \
+    skincamlegacy/io/camerasystemconfig.cpp \
+    skincamlegacy/io/goldeyeVimba.cpp \
+    skincamlegacy/io/imagesource.cpp \
+    frameobserver.cpp \
+    prosilicavimba.cpp
 HEADERS += \
-    vimbacammanager.h \
-    rgb_nir_depth_capture.h
+	vimbacammanager.h \
+	rgb_nir_depth_capture.h \
+    skincamlegacy/core/multispectralimage.h \
+    skincamlegacy/core/skincamconfig.h \
+    skincamlegacy/core/skincamexception.h \
+    skincamlegacy/io/camerainterface.h \
+    skincamlegacy/io/camerasystemconfig.h \
+    skincamlegacy/io/goldeyeVimba.h \
+    skincamlegacy/io/imagesource.h \
+    frameobserver.h \
+    prosilicavimba.h
+
 DEFINES += AVT_VIMBA
 
 SOURCES += main.cpp

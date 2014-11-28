@@ -1,0 +1,116 @@
+#include "vimbacammanager.h"
+
+
+VimbaCamManager::VimbaCamManager():
+	vimbaSystem(VimbaSystem::GetInstance()),
+	APIrunning(false),
+	camsDetected(false)
+{
+	startVimbaAPI();
+	detectCameras();
+}
+
+VimbaCamManager::~VimbaCamManager()
+{
+	closeCameras();
+	vimbaSystem.Shutdown();
+}
+
+void VimbaCamManager::startVimbaAPI()
+{
+	APIrunning = (VmbErrorSuccess == vimbaSystem.Startup());
+}
+
+QStringList VimbaCamManager::detectCameras(bool repeatDetection)
+{
+	if(camsDetected && !repeatDetection) { return cameraNames; } //detected before, e.g. constructor
+	if(repeatDetection)
+	{
+		cameras.clear();
+		cameraNames.clear();
+		cameraSizes.clear();
+		closeCameras();
+	}
+
+	if(!APIrunning) { startVimbaAPI(); }
+
+	if(VmbErrorSuccess == vimbaSystem.GetCameras(cameras))
+	{
+		camsDetected = true;
+		std::string name;
+		for(CameraPtrVector::iterator it = cameras.begin(); it != cameras.end(); ++it)
+		{
+			//get camera name
+			if(VmbErrorSuccess == (*it)->GetName( name ) )
+			{ cameraNames.append(QString::fromStdString(name)); }
+
+			//open camera and list features
+			if(VmbErrorSuccess == (*it)->Open(VmbAccessModeFull))
+			{
+				qDebug() << "============================\nOpened camera: " << QString::fromStdString(name);
+
+				FeaturePtr pFeature;
+				qint16 h,w;
+				VmbInt64_t width, height;
+				if(VmbErrorSuccess == (*it)->GetFeatureByName("Width", pFeature))
+					if(VmbErrorSuccess == pFeature->GetValue(width))
+						if(VmbErrorSuccess == (*it)->GetFeatureByName("Height", pFeature))
+							if(VmbErrorSuccess == pFeature->GetValue(height))
+							{
+								h = height; w = width;
+								cameraSizes.append(QPair<quint16, quint16>(h,w));
+								qDebug() << "Resolution: " << w << "x" << h;
+							}
+				qDebug() << "============================";
+//				qDebug() << "Features:";
+//				FeaturePtrVector features;
+//				(*it)->GetFeatures(features);
+//				for(FeaturePtrVector::iterator fit = features.begin(); fit != features.end(); ++fit)
+//				{
+//					std::string nm, dnm, tooltip;
+//					(*fit)->GetName(nm);
+//					(*fit)->GetDisplayName(dnm);
+//					(*fit)->GetToolTip(tooltip);
+//					qDebug() << /*QString::fromStdString(nm) << " / " <<*/ QString::fromStdString(dnm)
+//							 << "   Descr.: " << QString::fromStdString(tooltip);
+//				}
+			}
+		}
+		qDebug() << "============================";
+	}
+
+	return cameraNames;
+}
+
+QList<Mat> VimbaCamManager::getCamImages()
+{
+	QList<Mat> camImgs;
+
+	FramePtr pFrame;
+	VmbUchar_t *pBuffer;
+	CameraPtrVector::iterator it;
+	int i;
+	for(it = cameras.begin(), i = 0; it != cameras.end(); ++it, ++i)
+	{
+		if(VmbErrorSuccess == (*it)->AcquireSingleImage(pFrame, 2000))
+		{
+			if(VmbErrorSuccess == pFrame->GetImage(pBuffer))
+			{
+				camImgs.append(Mat(cameraSizes.at(i).first, cameraSizes.at(i).second, CV_16UC1, pBuffer).clone());
+			}
+		}
+	}
+	return camImgs;
+}
+
+void VimbaCamManager::closeCameras()
+{
+	std::string name;
+	for(CameraPtrVector::iterator it = cameras.begin(); it != cameras.end(); ++it)
+	{
+		if(VmbErrorSuccess == (*it)->GetName(name) && VmbErrorSuccess == (*it)->Close())
+		{
+			qDebug() << "Closed camera: " << QString::fromStdString(name);
+		}
+	}
+}

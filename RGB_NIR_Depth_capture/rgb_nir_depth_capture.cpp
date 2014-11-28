@@ -7,18 +7,32 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 {
 	ui->setupUi(this);
 
-	QStringList cams = vimbaCamManager.detectCameras();
-
-	QList<Mat> images = vimbaCamManager.getCamImages();
-	int imgNr = 0;
-	foreach(Mat img, images)
-	{
-		QString windowName = "image " + QString::number(imgNr);
-		imshow(windowName.toStdString(), img);
-	}
+	vimbaCamManager.detectCameras();
 }
 
 RGB_NIR_Depth_Capture::~RGB_NIR_Depth_Capture()
 {
 	delete ui;
 }
+
+void RGB_NIR_Depth_Capture::acquireImages()
+{
+	QList<Mat> images = vimbaCamManager.getCamImages();
+	int imgNr = 0;
+	foreach(Mat img, images)
+	{
+		QString windowName = "image " + QString::number(imgNr);
+		Mat img8bit(img.rows, img.cols, CV_8UC1);
+		img.convertTo(img8bit, CV_8UC1);
+		imshow(windowName.toStdString(), img);
+	}
+}
+
+/***********************************************
+** GUI Methods:
+************************************************/
+void RGB_NIR_Depth_Capture::on_btn_acquireImage_released()
+{
+	acquireImages();
+}
+

@@ -7,10 +7,6 @@
 #include<QDebug>
 #include<VimbaCPP/Include/VimbaCPP.h>
 #include<opencv2/opencv.hpp>
-#include"skincamlegacy/io/goldeyeVimba.h"
-#include"skincamlegacy/io/camerasystemconfig.h"
-#include"prosilicavimba.h"
-
 
 using namespace AVT::VmbAPI;
 using namespace cv;
@@ -27,7 +23,7 @@ public:
 	 * @param repeatDetection should be set to true in order to repeat the detection process.
 	 * @return a list of names of detected VIMBA cameras
 	 */
-	void detectCameras();
+	QStringList detectCameras(bool repeatDetection = false);
 
 	/**
 	 * @brief closes cameras that have been detected and open before.
@@ -41,13 +37,10 @@ private:
 
 	VimbaSystem &vimbaSystem;
 	bool APIrunning;
-//	CameraSystemConfig camConfig;
-	CameraInterface *goldeye;
-	CameraInterface *prosilica;
 
-//	CameraPtrVector cameras;
-//	QStringList cameraNames;
-//	QList< QPair<qint16,qint16> > cameraSizes;
+	CameraPtrVector cameras;
+	QStringList cameraNames;
+	QList< QPair<qint16,qint16> > cameraSizes;
 	bool camsDetected;
 };
 
