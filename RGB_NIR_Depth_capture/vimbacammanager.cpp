@@ -30,7 +30,15 @@ void VimbaCamManager::detectCameras()
 //	goldeye->configure();//camConfig.integrationTime, camConfig.bufferSize);
 
 	prosilica = new ProsilicaVimba();
-	prosilica->connect();
+	try
+	{
+		prosilica->connect();
+		prosilica->configure();
+	}
+	catch(CameraException e)
+	{
+		QMessageBox::information(NULL, "Camera Exception", e.getMessage(), QMessageBox::Ok);
+	}
 
 	camsDetected = true;
 }
@@ -41,7 +49,10 @@ QList<Mat> VimbaCamManager::getCamImages()
 
 	Mat img;
 //	img = goldeye->getCVFrame();
+	img = prosilica->getCVFrame();
 	camImgs.append(img);
+
+
 
 	return camImgs;
 }

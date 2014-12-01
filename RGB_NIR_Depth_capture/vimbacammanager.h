@@ -5,6 +5,7 @@
 #include<QStringList>
 #include<QList>
 #include<QDebug>
+#include<QMessageBox>
 #include<VimbaCPP/Include/VimbaCPP.h>
 #include<opencv2/opencv.hpp>
 #include"skincamlegacy/io/goldeyeVimba.h"

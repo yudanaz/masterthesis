@@ -115,12 +115,6 @@ public:
 	*/
 	virtual void reset ();
 
-	QString convErrToMsg( VmbErrorType eErr );
-	QString convErrToMsg( VmbFrameStatusType eStatus );
-
-
-	QMap<VmbErrorType, QString> errorCodeStrings;
-	QMap<VmbFrameStatusType, QString> frameStatusStrings;
 
 private:
 	VimbaSystem			&system;

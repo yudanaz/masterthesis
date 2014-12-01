@@ -47,61 +47,44 @@ void ProsilicaVimba::connect(QString IPaddress)
 			throw CameraException("No cameras found!");
 
 //		//iterate through list to find the first prosilica camera
-//		bool success = false;
+		bool success = false;
 		for (CameraPtrVector::iterator it = cameras.begin();
 			 it != cameras.end(); ++it)
 		{
 			(*it)->GetModel(model);
 			QString compModell(model.c_str());
-			qDebug() << compModell;
-//			if( compModell.contains("P-032") ) //GT2050C (02-2627A) das ist die Prosilica!!!
-//			{
-//				pGoldeye = (*it);
-//				isPmodel = true;
-//				success = true;
-//				break;
-//			}
-//			else if( compModell.contains("G-032") )
-//			{
-//				pGoldeye = (*it);
-//				isPmodel = false;
-//				success = true;
-//				break;
-//			}
+			//qDebug() << compModell;
+			if( compModell.contains("GT2050C") ) // (02-2627A) das ist die Prosilica!!!
+			{
+				pProsilica = (*it);
+				success = true;
+				break;
+			}
 		}
 
-//		if(!success)
-//			throw CameraException("No Prosilica camera found!");
+		if(!success) { throw CameraException("No Prosilica camera found!"); }
 	}
-//	//otherwise, use the given IP
-//	else
-//	{
-//		if( VmbErrorSuccess == system.GetCameraByID( IPaddress.toStdString().c_str(), pGoldeye) )
-//		{
-//			pGoldeye->GetModel(model);
-//			QString compModell(model.c_str());
-//			if( compModell.contains("P-032") )
-//			{
-//				isPmodel = true;
-//			}
-//			else if (compModell.contains("G-032"))
-//			{
-//				isPmodel = false;
-//			}
-//			else
-//			{
-//				throw CameraException("Wrong camera model found on given IP!");
-//			}
-//		}
-//		else
-//			throw CameraException("Did not find any camera with given IP!");
-//	}
+	//otherwise, use the given IP
+	else
+	{
+		if( VmbErrorSuccess == system.GetCameraByID( IPaddress.toStdString().c_str(), pProsilica) )
+		{
+			pProsilica->GetModel(model);
+			QString compModell(model.c_str());
+			if( !compModell.contains("GT2050C") )
+			{
+				throw CameraException("Wrong camera model found on given IP!");
+			}
+		}
+		else
+			throw CameraException("Did not find any camera with given IP!");
+	}
 
-//	FeaturePtr pCmd;
+	FeaturePtr pCmd;
 
-//	res = pGoldeye->Open(VmbAccessModeFull);
-//	if ( res != VmbErrorSuccess )
-//			throw CameraException(QString("Can not open camera: %1").arg(convErrToMsg(res)));
+	res = pProsilica->Open(VmbAccessModeFull);
+	if ( res != VmbErrorSuccess )
+			throw CameraException(QString("Can not open camera: %1").arg(convErrToMsg(res)));
 
 //	//set large packet size
 //	if(isPmodel)
@@ -140,40 +123,40 @@ void ProsilicaVimba::connect(QString IPaddress)
 //		throw CameraException(QString("Can't adjust PacketSize! Code: %1").arg(convErrToMsg(res)));
 //	}
 
-//	//get image size
-//	VmbInt64_t width, height;
-//	res = pGoldeye->GetFeatureByName("Width", pCmd);
-//	if ( VmbErrorSuccess == res )
-//	{
-//		res = pCmd->GetValue(width);
-//		if ( VmbErrorSuccess == res )
-//		{
-//			res = pGoldeye->GetFeatureByName("Height", pCmd);
-//			if ( VmbErrorSuccess == res )
-//			{
-//				res = pCmd->GetValue(height);
-//			}
-//		}
-//	}
-//	if ( res != VmbErrorSuccess )
-//	{
-//		throw CameraException(QString("Could not get image width or height: %1").arg(convErrToMsg(res)));
-//	}
-//	//check image size for validity
-//	if((width > 0) && (height > 0))
-//	{
-//		myWidth = width;
-//		myHeight = height;
-//	}
-//	else
-//		throw CameraException(QString("Invalid image size given by camera: %1x%2").arg(width).arg(height));
+	//get image size
+	VmbInt64_t width, height;
+	res = pProsilica->GetFeatureByName("Width", pCmd);
+	if ( VmbErrorSuccess == res )
+	{
+		res = pCmd->GetValue(width);
+		if ( VmbErrorSuccess == res )
+		{
+			res = pProsilica->GetFeatureByName("Height", pCmd);
+			if ( VmbErrorSuccess == res )
+			{
+				res = pCmd->GetValue(height);
+			}
+		}
+	}
+	if ( res != VmbErrorSuccess )
+	{
+		throw CameraException(QString("Could not get image width or height: %1").arg(convErrToMsg(res)));
+	}
+	//check image size for validity
+	if((width > 0) && (height > 0))
+	{
+		myWidth = width;
+		myHeight = height;
+	}
+	else
+		throw CameraException(QString("Invalid image size given by camera: %1x%2").arg(width).arg(height));
 
-//	//create frame observer for goldeye:
-//	myFrameObserver.reset( new FrameObserver(pGoldeye) );
+	//create frame observer for goldeye:
+	myFrameObserver.reset( new FrameObserver(pProsilica) );
 
-//	connected = true;
+	connected = true;
 
-//	qDebug() << "Successfully connected to camera " << model.c_str() << endl;
+	qDebug() << "Successfully connected to camera " << model.c_str() << endl;
 }
 
 void ProsilicaVimba::disconnect()
@@ -186,31 +169,67 @@ void ProsilicaVimba::disconnect()
 
 void ProsilicaVimba::configure(double exposureTime, quint8 bufferSize)
 {
-//	VmbErrorType res;
-//	FeaturePtr pCmd;
+	VmbErrorType res;
+	FeaturePtr pFeature;
 
-//	myBufferSize = bufferSize;
+	myBufferSize = bufferSize;
 
-//	if( !connected )
-//		throw CameraException("Can't configure: not connected to camera!");
+	if( !connected )
+		throw CameraException("Can't configure: not connected to camera!");
 
-//	//if already configured and waiting for images, stop first:
-//	if(configured)
-//	{
-//		pGoldeye->StopContinuousImageAcquisition();
-//	}
+	//if already configured and waiting for images, stop first:
+	if(configured)
+	{
+		pProsilica->StopContinuousImageAcquisition();
+	}
 
-//	//configure TriggerMode:
-//	res = pGoldeye->GetFeatureByName("TriggerMode", pCmd);
-//	if( res == VmbErrorSuccess )
-//	{
-//		res = pCmd->SetValue(0);//1);
-//	}
-//	if ( res != VmbErrorSuccess )
-//	{
-//		throw CameraException(QString("Can't set TriggerMode_On! Code: %1")
-//							  .arg(convErrToMsg(res)));
-//	}
+	//configure TriggerMode:
+	res = pProsilica->GetFeatureByName("TriggerMode", pFeature);
+	if( res == VmbErrorSuccess )
+	{
+		res = pFeature->SetValue(0);//1);
+	}
+	if ( res != VmbErrorSuccess )
+	{
+		throw CameraException(QString("Can't set TriggerMode_On! Code: %1")
+							  .arg(convErrToMsg(res)));
+	}
+
+	//set pixel format and image height, width and offset
+	res = pProsilica->GetFeatureByName("PixelFormat", pFeature);
+	if(res == VmbErrorSuccess){ res = pFeature->SetValue("BayerGB8"); } //BayerGB8
+	if(res != VmbErrorSuccess)
+	{
+		throw CameraException(QString("Can't set Pixelformat! Code: %1").arg(convErrToMsg(res)));
+	}
+
+	res = pProsilica->GetFeatureByName("Height", pFeature);
+	if(res == VmbErrorSuccess){ res = pFeature->SetValue(2048); } //max sensor heigth
+	if(res != VmbErrorSuccess)
+	{
+		throw CameraException(QString("Can't set image Height! Code: %1").arg(convErrToMsg(res)));
+	}
+
+	res = pProsilica->GetFeatureByName("Width", pFeature);
+	if(res == VmbErrorSuccess){ res = pFeature->SetValue(2048); } //max sensor width
+	if(res != VmbErrorSuccess)
+	{
+		throw CameraException(QString("Can't set image Width! Code: %1").arg(convErrToMsg(res)));
+	}
+
+	res = pProsilica->GetFeatureByName("OffsetX", pFeature);
+	if(res == VmbErrorSuccess){ res = pFeature->SetValue(0); }
+	if(res != VmbErrorSuccess)
+	{
+		throw CameraException(QString("Can't set x-axis offset to zero! Code: %1").arg(convErrToMsg(res)));
+	}
+
+	res = pProsilica->GetFeatureByName("OffsetY", pFeature);
+	if(res == VmbErrorSuccess){ res = pFeature->SetValue(0); }
+	if(res != VmbErrorSuccess)
+	{
+		throw CameraException(QString("Can't set y-axis offset to zero! Code: %1").arg(convErrToMsg(res)));
+	}
 
 //	//for Goldeye P:
 //	if(isPmodel)
@@ -267,124 +286,108 @@ void ProsilicaVimba::configure(double exposureTime, quint8 bufferSize)
 
 void ProsilicaVimba::setExposureTime(double ms)
 {
-//	VmbErrorType res;
-//	FeaturePtr pCmd;
+	VmbErrorType res;
+	FeaturePtr pCmd;
 
-//	//P-model does gets exposure time via trigger
-//	if(isPmodel)
-//		return;
-
-//	res = pGoldeye->GetFeatureByName("ExposureTime", pCmd);
-//	if( res == VmbErrorSuccess )
-//	{
-//		res = pCmd->SetValue(ms*1000);
-//	}
-//	if ( res != VmbErrorSuccess )
-//	{
-//		throw CameraException(QString("Can't set ExposureTime! Code: %1")
-//							  .arg(convErrToMsg(res)));
-//	}
+	res = pProsilica->GetFeatureByName("ExposureTimeAbs", pCmd);
+	if( res == VmbErrorSuccess )
+	{
+		res = pCmd->SetValue(ms*1000);
+	}
+	if ( res != VmbErrorSuccess )
+	{
+		throw CameraException(QString("Can't set ExposureTime! Code: %1")
+							  .arg(convErrToMsg(res)));
+	}
 }
 
 quint16 ProsilicaVimba::getMaxFPS()
 {
-//	VmbErrorType res;
-//	FeaturePtr pCmd;
+	VmbErrorType res;
+	FeaturePtr pCmd;
 
-//	if(connected)
-//	{
-//		if(isPmodel)
-//		{
-//			return 30;
-//		}
-//		else
-//		{
-//			//query maximum frame rate:
-//			double val;
-//			res = pGoldeye->GetFeatureByName("AcquisitionFrameRateLimit", pCmd);
-//			if( res == VmbErrorSuccess )
-//			{
-//				res = pCmd->GetValue(val);
-//			}
-//			if ( res != VmbErrorSuccess )
-//			{
-//				throw CameraException(QString("Can't get AcquisitionFrameRateLimit! Code: %1")
-//									  .arg(convErrToMsg(res)));
-//			}
-//			else
-//			{
-//				if ((val <= 0) || (val > 1000))
-//				{
-//					throw CameraException("Camera returned invalid maximum frame rate!");
-//				}
-//			}
-//			return (quint16)val;
-//		}
-//	}
-//	else
-//	{
-//		return 100;
-//	}
+	if(connected)
+	{
 
-	return 0;
+		//query maximum frame rate:
+		double val;
+		res = pProsilica->GetFeatureByName("AcquisitionFrameRateLimit", pCmd);
+		if( res == VmbErrorSuccess )
+		{
+			res = pCmd->GetValue(val);
+		}
+		if ( res != VmbErrorSuccess )
+		{
+			throw CameraException(QString("Can't get AcquisitionFrameRateLimit! Code: %1")
+								  .arg(convErrToMsg(res)));
+		}
+		else
+		{
+			if ((val <= 0) || (val > 1000))
+			{
+				throw CameraException("Camera returned invalid maximum frame rate!");
+			}
+		}
+		return (quint16)val;
+	}
+	else
+	{
+		return 100;
+	}
 }
 
 
 Mat ProsilicaVimba::getCVFrame()
 {
-//	FramePtr frame;
-//	VmbErrorType res;
-//	VmbFrameStatusType eReceiveStatus;
+	FramePtr frame;
+	VmbErrorType res;
+	VmbFrameStatusType eReceiveStatus;
 
-//	Mat out(myHeight, myWidth, CV_16UC1);
+	Mat out(myHeight, myWidth, CV_16UC1);
 
-//	quint16 count = 0;
-//	while (!(SP_DYN_CAST(myFrameObserver, FrameObserver)->isFrameAvailable()))
-//	{
-//		usleep(200);
+	quint16 count = 0;
+	while (!(SP_DYN_CAST(myFrameObserver, FrameObserver)->isFrameAvailable()))
+	{
+		usleep(200);
 
-//		if(count++ > 5000) //after 1 second, throw timeout.
-//			throw CameraTimeoutException();
-//	}
+		if(count++ > 5000) //after 1 second, throw timeout.
+			throw CameraTimeoutException();
+	}
 
-//	frame = SP_DYN_CAST(myFrameObserver, FrameObserver)->getFrame();
+	frame = SP_DYN_CAST(myFrameObserver, FrameObserver)->getFrame();
 
-//	// If the frame is completely transmitted, extract it's data:
-//	res = frame->GetReceiveStatus(eReceiveStatus);
-//	if ( (res == VmbErrorSuccess) && (eReceiveStatus == VmbFrameStatusComplete) )
-//	{
-//		VmbUchar_t *pBuffer;
-//		if ( frame->GetImage( pBuffer ) == VmbErrorSuccess)
-//		{
-//			//create new Mat with correct size and use buffer as data:
-//			Mat newMat(myHeight, myWidth, CV_16UC1, pBuffer);
+	// If the frame is completely transmitted, extract it's data:
+	res = frame->GetReceiveStatus(eReceiveStatus);
+	if ( (res == VmbErrorSuccess) && (eReceiveStatus == VmbFrameStatusComplete) )
+	{
+		VmbUchar_t *pBuffer;
+		if ( frame->GetImage( pBuffer ) == VmbErrorSuccess)
+		{
+			//create new Mat with correct size and use buffer as data:
+			Mat newMat(myHeight, myWidth, CV_16UC1, pBuffer);
 
-//			//memcpy( newMat.data, pBuffer, myWidth * myHeight );
+			//memcpy( newMat.data, pBuffer, myWidth * myHeight );
 
-//			//scale the input mat to output
-//			if(isPmodel)
-//				out = newMat * 16; //12 to 16 bit
-//			else
-//				out = newMat * 4; //14 to 16 bit
-//		}
-//		pGoldeye->QueueFrame(frame);
-//	}
-//	else
-//	{
-//		pGoldeye->QueueFrame(frame);
+			//scale the input mat to output
+			out = newMat * 16; //12 to 16 bit, color is 12 bit
+		}
+		pProsilica->QueueFrame(frame);
+	}
+	else
+	{
+		pProsilica->QueueFrame(frame);
 
-//		throw CameraReadException(QString("Corrupt frame: %1").arg(convErrToMsg(eReceiveStatus)));
-//	}
+		throw CameraReadException(QString("Corrupt frame: %1").arg(convErrToMsg(eReceiveStatus)));
+	}
 
-//	return out;
-	return Mat();
+	return out;
 }
 
 void ProsilicaVimba::reset()
 {
-//	pGoldeye->StopContinuousImageAcquisition();
+	pProsilica->StopContinuousImageAcquisition();
 
-//	SP_DYN_CAST(myFrameObserver, FrameObserver)->clearFrameQueue();
+	SP_DYN_CAST(myFrameObserver, FrameObserver)->clearFrameQueue();
 
-//	pGoldeye->StartContinuousImageAcquisition(myBufferSize, myFrameObserver);
+	pProsilica->StartContinuousImageAcquisition(myBufferSize, myFrameObserver);
 }

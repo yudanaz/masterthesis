@@ -2,10 +2,12 @@
 #define CAMERAINTERFACE_H
 
 #include <opencv2/opencv.hpp>
+#include <VimbaCPP/Include/VimbaCPP.h>
 
 #include "../core/skincamconfig.h"
 #include "../io/imagesource.h"
 
+using namespace AVT::VmbAPI;
 using namespace std;
 
 /*!
@@ -45,6 +47,8 @@ public:
 class CameraInterface
 {
 public:
+	CameraInterface();
+
 	virtual ~CameraInterface();
 
 	/*!
@@ -123,6 +127,12 @@ public:
 	 \return quint8 image depth.
 	*/
 	quint8 getImgDepth();
+
+	QString convErrToMsg( VmbErrorType eErr );
+	QString convErrToMsg( VmbFrameStatusType eStatus );
+
+	QMap<VmbErrorType, QString> errorCodeStrings;
+	QMap<VmbFrameStatusType, QString> frameStatusStrings;
 
 protected:
 	quint16 myWidth;	/*!< width of the images captured by the camera. */
