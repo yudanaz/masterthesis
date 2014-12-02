@@ -13,6 +13,7 @@
 #include <QXmlStreamReader>
 #include <QProgressDialog>
 #include <QTime>
+#include <QMessageBox>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/nonfree/nonfree.hpp>
@@ -62,12 +63,19 @@ private slots:
 
 	void on_pushButton_surfAgain_released();
 
+    void on_btn_calibSingle_released();
+
+    void on_btn_undistSingle_released();
+
 private:
+    void makeLabelImages(QStringList fileNames);
 	void makeSeedsSuperpixels(QString fileName);
 	void makeSlicSuperpixels(QString fileName);
 	void makeFelsenzwalbSuperpixels(QString fileName);
 	void makeDisparityImage(QString fileNameL, QString fileNameR);
 	void makeSurfFeatures(QString fileName);
+    void calibrateSingleCamera(QStringList calibImgFiles, int chessboard_width, int chessboard_height);
+    void undistortSingleImage(QString fileName);
 
 	Ui::MainWindow *ui;
 	vector< vector<int> > colorMap;
@@ -79,6 +87,12 @@ private:
 	QString lastStereoFileNameL;
 	QString lastStereoFileNameR;
     QString lastFeatureFileName;
+
+    bool cameraCalibrated;
+    bool stereoCalibrated;
+    Mat camMatrix;
+    Mat distCoeff;
+
 };
 
 #endif // MAINWINDOW_H

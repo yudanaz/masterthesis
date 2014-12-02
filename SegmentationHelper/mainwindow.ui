@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>425</width>
-    <height>471</height>
+    <height>521</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,13 +19,16 @@
      <rect>
       <x>19</x>
       <y>9</y>
-      <width>382</width>
-      <height>344</height>
+      <width>400</width>
+      <height>379</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout">
      <item>
       <widget class="QPushButton" name="btn_makeLabelImgs">
+       <property name="styleSheet">
+        <string notr="true">background-color: rgb(244, 172, 172)</string>
+       </property>
        <property name="text">
         <string>Make Label Images From XML</string>
        </property>
@@ -35,6 +38,9 @@
       <layout class="QHBoxLayout" name="horizontalLayout_3">
        <item>
         <widget class="QPushButton" name="btn_seed">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(148, 230, 205)</string>
+         </property>
          <property name="text">
           <string>SEED Superpixel</string>
          </property>
@@ -47,6 +53,9 @@
            <width>100</width>
            <height>16777215</height>
           </size>
+         </property>
+         <property name="styleSheet">
+          <string>background-color: rgb(148, 230, 205)</string>
          </property>
          <property name="text">
           <string>Go Again</string>
@@ -84,6 +93,9 @@
       <layout class="QHBoxLayout" name="horizontalLayout_4">
        <item>
         <widget class="QPushButton" name="btn_slic">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(148, 230, 205)</string>
+         </property>
          <property name="text">
           <string>SLIC Superpixel</string>
          </property>
@@ -96,6 +108,9 @@
            <width>100</width>
            <height>16777215</height>
           </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(148, 230, 205)</string>
          </property>
          <property name="text">
           <string>Go Again</string>
@@ -126,6 +141,9 @@
       <layout class="QHBoxLayout" name="horizontalLayout_5">
        <item>
         <widget class="QPushButton" name="btn_felsenzwalb">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(148, 230, 205)</string>
+         </property>
          <property name="text">
           <string>Felsenzwalb Superpixel</string>
          </property>
@@ -138,6 +156,9 @@
            <width>100</width>
            <height>16777215</height>
           </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(148, 230, 205)</string>
          </property>
          <property name="text">
           <string>Go Again</string>
@@ -175,6 +196,9 @@
       <layout class="QHBoxLayout" name="horizontalLayout_7">
        <item>
         <widget class="QPushButton" name="btn_stereoVision">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(208, 180, 211)</string>
+         </property>
          <property name="text">
           <string>Stereo Vision Test BLOCK MATCHING</string>
          </property>
@@ -217,6 +241,9 @@
       <layout class="QHBoxLayout" name="horizontalLayout_9">
        <item>
         <widget class="QPushButton" name="btn_surf">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(250, 212, 156)</string>
+         </property>
          <property name="text">
           <string>Features</string>
          </property>
@@ -244,8 +271,49 @@
            <height>16777215</height>
           </size>
          </property>
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(250, 212, 156)</string>
+         </property>
          <property name="text">
           <string>Go Again</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_10">
+       <item>
+        <widget class="QPushButton" name="btn_calibSingle">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(160, 219, 140)</string>
+         </property>
+         <property name="text">
+          <string>calibrate single</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_6">
+         <property name="text">
+          <string>board w,h:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="lineEdit_calibSingleInfo">
+         <property name="text">
+          <string>9,6</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btn_undistSingle">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(160, 219, 140)</string>
+         </property>
+         <property name="text">
+          <string>undistort single</string>
          </property>
         </widget>
        </item>
