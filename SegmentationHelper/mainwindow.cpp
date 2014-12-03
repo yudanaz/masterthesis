@@ -452,6 +452,12 @@ void MainWindow::calibrateSingleCamera(QStringList calibImgFiles, int chessboard
     }
 
     //get chessboard corners for all images
+    QProgressDialog progress("Analyzing chessboard patterns", "Cancel", 0, calibImgFiles.length(), this);
+    progress.setMinimumWidth(450);
+    progress.setMinimumDuration(1000);
+    progress.setWindowModality(Qt::WindowModal);
+    int progressCnt = 0;
+
     int cnt = 0;
     foreach(QString fileName, calibImgFiles)
     {
@@ -468,7 +474,17 @@ void MainWindow::calibrateSingleCamera(QStringList calibImgFiles, int chessboard
             objectPoints.push_back(obj);
             if(cnt++ == 0) { imgSize = img.size(); }
         }
+
+        //show found corners in image
+        drawChessboardCorners(img, chessboard_sz, corners, success);
+        namedWindow("found corners", CV_WINDOW_KEEPRATIO);
+        imshow("found corners", img);
+        cvWaitKey(2);
+
+        progress.setValue(progressCnt++);
+        if(progress.wasCanceled()) { return; }
     }
+    progress.setValue(calibImgFiles.length());
 
     //calibrate the camera and store matrizes
     camMatrix = Mat(3, 3, CV_32FC1);
