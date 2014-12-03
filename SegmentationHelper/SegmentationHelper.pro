@@ -30,7 +30,9 @@ SOURCES += main.cpp\
 		mainwindow.cpp \
 	seeds/seeds2.cpp \
 	slic/slic.cpp \
-	segmentfelsenzwalb/segmentation.cpp
+	segmentfelsenzwalb/segmentation.cpp \
+    cameracalibration.cpp \
+    inout.cpp
 
 HEADERS  += mainwindow.h \
 	seeds/seeds2.h \
@@ -46,7 +48,9 @@ HEADERS  += mainwindow.h \
 	segmentfelsenzwalb/pnmfile.h \
 	segmentfelsenzwalb/segment-graph.h \
 	segmentfelsenzwalb/segment-image.h \
-	segmentfelsenzwalb/segmentation.h
+	segmentfelsenzwalb/segmentation.h \
+    cameracalibration.h \
+    inout.h
 
 FORMS    += mainwindow.ui
 

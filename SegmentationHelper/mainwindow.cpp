@@ -13,9 +13,8 @@ MainWindow::MainWindow(QWidget *parent) :
 	ui(new Ui::MainWindow),
 	lastDir(QDir::homePath()),
 	colorMap(256, vector<int>(3)),
-    objectMap(256),
-    cameraCalibrated(false),
-    stereoCalibrated(false)
+	objectMap(256),
+	camCalib(this)
 {
 	ui->setupUi(this);
 
@@ -56,148 +55,148 @@ MainWindow::~MainWindow()
 
 void MainWindow::makeLabelImages(QStringList fileNames)
 {
-    QDir path = QFileInfo(fileNames.first()).path();
+	QDir path = QFileInfo(fileNames.first()).path();
 
-    QList<Mat> colorImgs;
-    QList<Mat> grayImgs;
+	QList<Mat> colorImgs;
+	QList<Mat> grayImgs;
 
-    QList<QString> ColorFileNames;
-    QList<QString> GrayFileNames;
-    int rows = 0;
-    int cols = 0;
+	QList<QString> ColorFileNames;
+	QList<QString> GrayFileNames;
+	int rows = 0;
+	int cols = 0;
 
-    vector<int> imageSettings;
-    imageSettings.push_back(CV_IMWRITE_PNG_COMPRESSION);
-    imageSettings.push_back(5); //compression value
+	vector<int> imageSettings;
+	imageSettings.push_back(CV_IMWRITE_PNG_COMPRESSION);
+	imageSettings.push_back(5); //compression value
 
-    //make progress bar
-    QProgressDialog progress("Creating Label Images", "Cancel", 0, fileNames.length(), this);
-    progress.setMinimumWidth(450);
-    progress.setMinimumDuration(1000);
-    progress.setWindowModality(Qt::WindowModal);
-    int progressCnt = 0;
+	//make progress bar
+	QProgressDialog progress("Creating Label Images", "Cancel", 0, fileNames.length(), this);
+	progress.setMinimumWidth(450);
+	progress.setMinimumDuration(1000);
+	progress.setWindowModality(Qt::WindowModal);
+	int progressCnt = 0;
 
-    //for each xml, create image and draw objects
-    foreach (QString fnm, fileNames)
-    {
-        QFile fin(fnm);
-        fin.open(QFile::ReadOnly | QFile::Text);
-        QXmlStreamReader xml(&fin);
+	//for each xml, create image and draw objects
+	foreach (QString fnm, fileNames)
+	{
+		QFile fin(fnm);
+		fin.open(QFile::ReadOnly | QFile::Text);
+		QXmlStreamReader xml(&fin);
 
-        Mat colorImg(rows, cols, CV_8UC3);
-        Mat grayImg(rows, cols, CV_8UC1);
-        QString colorFileName = "";
-        QString grayFileName = "";
-        bool collectingPoints = false;
-        QList<Point> polygon;
-        int x = 0;
-        int colorIndex;
+		Mat colorImg(rows, cols, CV_8UC3);
+		Mat grayImg(rows, cols, CV_8UC1);
+		QString colorFileName = "";
+		QString grayFileName = "";
+		bool collectingPoints = false;
+		QList<Point> polygon;
+		int x = 0;
+		int colorIndex;
 
-        while (!xml.atEnd())
-        {
-            //look through tags
-            if (xml.isStartElement())
-            {
-                QString tagName(xml.name().toString());
+		while (!xml.atEnd())
+		{
+			//look through tags
+			if (xml.isStartElement())
+			{
+				QString tagName(xml.name().toString());
 
-                //get width, height and output name and create images
-                if(tagName == "filename")
-                {
-                    QString elemText = xml.readElementText().remove(".jpg");
-                    colorFileName.append(path.absolutePath().append("/").append(elemText + "_labels_color.png"));
-                    grayFileName.append(path.absolutePath().append("/").append(elemText + "_labels.png"));
-                }
-                else if(tagName == "nrows"){ rows = xml.readElementText().toInt(); }
-                else if(tagName == "ncols")
-                {
-                    cols = xml.readElementText().toInt();
+				//get width, height and output name and create images
+				if(tagName == "filename")
+				{
+					QString elemText = xml.readElementText().remove(".jpg");
+					colorFileName.append(path.absolutePath().append("/").append(elemText + "_labels_color.png"));
+					grayFileName.append(path.absolutePath().append("/").append(elemText + "_labels.png"));
+				}
+				else if(tagName == "nrows"){ rows = xml.readElementText().toInt(); }
+				else if(tagName == "ncols")
+				{
+					cols = xml.readElementText().toInt();
 
-                    //create new mat obj if rows, cols and type are different from original (that should happen only the first time)
-                    colorImg.create(rows, cols, CV_8UC3); //color label image
-                    grayImg.create(rows, cols, CV_8UC1); //greyscale label image
+					//create new mat obj if rows, cols and type are different from original (that should happen only the first time)
+					colorImg.create(rows, cols, CV_8UC3); //color label image
+					grayImg.create(rows, cols, CV_8UC1); //greyscale label image
 
-                    //paint background color (black)
-                    colorImg = Scalar(0, 0, 0);
-                    grayImg = Scalar(0);
-                }
+					//paint background color (black)
+					colorImg = Scalar(0, 0, 0);
+					grayImg = Scalar(0);
+				}
 
-                if (tagName == "object")
-                {
-                    collectingPoints = true;
-                    polygon.clear();
-                }
-                if(tagName == "name")
-                {
-                    QString objType = xml.readElementText();
+				if (tagName == "object")
+				{
+					collectingPoints = true;
+					polygon.clear();
+				}
+				if(tagName == "name")
+				{
+					QString objType = xml.readElementText();
 
-                    //set color according to label
-                    colorIndex = 999; //in case no matching label name is found
-                    for (int i = 0; i < 256; ++i)
-                    {
-                        if(objectMap[i] == objType)
-                        {
-                            colorIndex = i;
-                            break;
-                        }
-                    }
-                }
+					//set color according to label
+					colorIndex = 999; //in case no matching label name is found
+					for (int i = 0; i < 256; ++i)
+					{
+						if(objectMap[i] == objType)
+						{
+							colorIndex = i;
+							break;
+						}
+					}
+				}
 
-                //collect all points of the polygon
-                if(collectingPoints)
-                {
-                    if(tagName == "x")
-                    {
-                        x = xml.readElementText().toInt();
-                    }
-                    if(tagName == "y")
-                    {
-                        int y = xml.readElementText().toInt();
-                        Point p(x, y);
-                        polygon.append(p);
-                    }
-                }
+				//collect all points of the polygon
+				if(collectingPoints)
+				{
+					if(tagName == "x")
+					{
+						x = xml.readElementText().toInt();
+					}
+					if(tagName == "y")
+					{
+						int y = xml.readElementText().toInt();
+						Point p(x, y);
+						polygon.append(p);
+					}
+				}
 
-            }
-            else if (xml.isEndElement())
-            {
-                //when object tag is closed, draw the polygon in color according to object type
-                if(xml.name().toString() == "object")
-                {
-                    collectingPoints = false;
+			}
+			else if (xml.isEndElement())
+			{
+				//when object tag is closed, draw the polygon in color according to object type
+				if(xml.name().toString() == "object")
+				{
+					collectingPoints = false;
 
-                    Point points[1][polygon.count()];
+					Point points[1][polygon.count()];
 
-                    for(int i = 0; i < polygon.count(); ++i)
-                    {
-                        points[0][i] = polygon[i];
-                    }
+					for(int i = 0; i < polygon.count(); ++i)
+					{
+						points[0][i] = polygon[i];
+					}
 
-                    const Point* ppt[1] = { points[0] };
-                    int npt[] = { polygon.length() };
+					const Point* ppt[1] = { points[0] };
+					int npt[] = { polygon.length() };
 
-                    //paint labels in color and grayscale images
-                    if(colorIndex != 999) //if matching label has been found
-                    {
-                        Scalar color(colorMap[colorIndex][0], colorMap[colorIndex][1], colorMap[colorIndex][2]);
-                        Scalar gray(1 + colorIndex);
-                        fillPoly( colorImg, ppt, npt, 1, color, 8 );
-                        fillPoly( grayImg, ppt, npt, 1, gray, 8 );
-                    }
-                }
-            }
+					//paint labels in color and grayscale images
+					if(colorIndex != 999) //if matching label has been found
+					{
+						Scalar color(colorMap[colorIndex][0], colorMap[colorIndex][1], colorMap[colorIndex][2]);
+						Scalar gray(1 + colorIndex);
+						fillPoly( colorImg, ppt, npt, 1, color, 8 );
+						fillPoly( grayImg, ppt, npt, 1, gray, 8 );
+					}
+				}
+			}
 
-            xml.readNext();
-        }
+			xml.readNext();
+		}
 
-        //save images to disk
-        imwrite( colorFileName.toStdString().c_str(), colorImg, imageSettings);
-        imwrite( grayFileName.toStdString().c_str(), grayImg, imageSettings);
+		//save images to disk
+		imwrite( colorFileName.toStdString().c_str(), colorImg, imageSettings);
+		imwrite( grayFileName.toStdString().c_str(), grayImg, imageSettings);
 
-        //show progress in progress bar
-        progress.setValue(++progressCnt);
-        if(progress.wasCanceled()) { return; }
-    }
-    progress.setValue(fileNames.length());
+		//show progress in progress bar
+		progress.setValue(++progressCnt);
+		if(progress.wasCanceled()) { return; }
+	}
+	progress.setValue(fileNames.length());
 }
 
 void MainWindow::makeSeedsSuperpixels(QString fileName)
@@ -343,77 +342,77 @@ void MainWindow::makeFelsenzwalbSuperpixels(QString fileName)
 
 void MainWindow::makeDisparityImage(QString fileNameL, QString fileNameR)
 {
-    int nrDisp, blockSize;
-    QStringList info = ui->lineEdit_stereoInfo->text().split(",");
-    if(info.length() == 2)
-    {
-        nrDisp = info.at(0).toInt()*16;
-        blockSize = info.at(1).toInt();
-    }
-    else
-    {
-        nrDisp = 16; blockSize = 15;
-    }
-    if(blockSize % 2 == 0) { blockSize++; } //make odd if even
-    if(blockSize < 5) { blockSize += 5-blockSize; } //make >= 5
+	int nrDisp, blockSize;
+	QStringList info = ui->lineEdit_stereoInfo->text().split(",");
+	if(info.length() == 2)
+	{
+		nrDisp = info.at(0).toInt()*16;
+		blockSize = info.at(1).toInt();
+	}
+	else
+	{
+		nrDisp = 16; blockSize = 15;
+	}
+	if(blockSize % 2 == 0) { blockSize++; } //make odd if even
+	if(blockSize < 5) { blockSize += 5-blockSize; } //make >= 5
 
-    //load L and R images as grayscale
-    Mat left, right;
-    left = imread(fileNameL.toStdString().c_str(), CV_LOAD_IMAGE_GRAYSCALE);
-    right = imread(fileNameR.toStdString().c_str(), CV_LOAD_IMAGE_GRAYSCALE);
+	//load L and R images as grayscale
+	Mat left, right;
+	left = imread(fileNameL.toStdString().c_str(), CV_LOAD_IMAGE_GRAYSCALE);
+	right = imread(fileNameR.toStdString().c_str(), CV_LOAD_IMAGE_GRAYSCALE);
 
-    //compute disparities
-    Mat disp(left.rows, left.cols, CV_16SC1);
-    StereoBM sbm(StereoBM::BASIC_PRESET, nrDisp, blockSize);
-    sbm(left, right, disp, CV_16S);
+	//compute disparities
+	Mat disp(left.rows, left.cols, CV_16SC1);
+	StereoBM sbm(StereoBM::BASIC_PRESET, nrDisp, blockSize);
+	sbm(left, right, disp, CV_16S);
 
-    //normalize and display
-    double minVal, maxVal;
-    minMaxLoc(disp, &minVal, &maxVal); //find minimum and maximum intensities
-    Mat disp2;
-    disp.convertTo(disp2,CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
+	//normalize and display
+	double minVal, maxVal;
+	minMaxLoc(disp, &minVal, &maxVal); //find minimum and maximum intensities
+	Mat disp2;
+	disp.convertTo(disp2,CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
 
-    imshow("left", left);
-    imshow("right", right);
-    imshow("image", disp2);
+	imshow("left", left);
+	imshow("right", right);
+	imshow("image", disp2);
 }
 
 void MainWindow::makeSurfFeatures(QString fileName)
 {
-    Mat img, features, descriptors;
-    img = imread(fileName.toStdString().c_str());
-    std::vector<KeyPoint> keypoints;
+	Mat img, features, descriptors;
+	img = imread(fileName.toStdString().c_str());
+	std::vector<KeyPoint> keypoints;
 
-    //get info
-    QStringList sl = ui->lineEdit_surfInfo->text().split(",");
-    if(sl.length() < 2) { return; }
-    double thresh = sl.first().toDouble();
+	//get info
+	QStringList sl = ui->lineEdit_surfInfo->text().split(",");
+	if(sl.length() < 2) { return; }
+	double thresh = sl.first().toDouble();
 
-    QTime timer;
-    timer.start();
+	QTime timer;
+	timer.start();
 
-    //find keypoints & descriptors
-    if(sl.last().toLower() == "surf")
-    {
-        SURF surf(thresh);
-        surf.detect(img, keypoints);
-        surf.compute(img, keypoints, descriptors);
-    }
-    else if (sl.last().toLower() == "sift")
-    {
-        SIFT sift(0,3,thresh);
-        sift.detect(img, keypoints);
-        sift.compute(img, keypoints, descriptors);
-    }
+	//find keypoints & descriptors
+	if(sl.last().toLower() == "surf")
+	{
+		SURF surf(thresh);
+		surf.detect(img, keypoints);
+		surf.compute(img, keypoints, descriptors);
+	}
+	else if (sl.last().toLower() == "sift")
+	{
+		SIFT sift(0,3,thresh);
+		sift.detect(img, keypoints);
+		sift.compute(img, keypoints, descriptors);
+	}
 
-    //draw keypoints
-    drawKeypoints(img, keypoints, features, PINK, DrawMatchesFlags::DEFAULT);
-    imshow("Features", features);
+	//draw keypoints
+	drawKeypoints(img, keypoints, features, PINK, DrawMatchesFlags::DEFAULT);
+	imshow("Features", features);
 
-    //draw decriptors as grayscale matrix
-    Mat descr_transp;
-    transpose(descriptors, descr_transp);
-    imshow("Descriptors", descr_transp);
+	//draw decriptors as grayscale matrix
+	Mat descr_transp;
+	transpose(descriptors, descr_transp);
+	imshow("Descriptors", descr_transp);
 //    qDebug() << "keypoint descriptors:";
 //    int y,x;
 //    for(y = 0; y < descriptors.rows; ++y)
@@ -424,93 +423,10 @@ void MainWindow::makeSurfFeatures(QString fileName)
 //        qDebug() << s;
 //    }
 
-    //output some stuff
-    qDebug() << "proc time: " << timer.elapsed() << " ms";
-    qDebug() << "number of features: " << keypoints.size();
+	//output some stuff
+	qDebug() << "proc time: " << timer.elapsed() << " ms";
+	qDebug() << "number of features: " << keypoints.size();
 }
-
-void MainWindow::calibrateSingleCamera(QStringList calibImgFiles, int chessboard_width, int chessboard_height)
-{
-    bool success = false;
-    int nrOfChessboards;
-    int width = chessboard_width; //nr of inner corners in row
-    int height = chessboard_height; //nr of inner corner in column
-
-    Size chessboard_sz = Size(width, height);
-    Size imgSize;
-    int nrOfCorners = width*height;  //total number of inner corners
-
-    vector<vector<Point3f> > objectPoints;
-    vector<vector<Point2f> > imagePoints;
-
-    //objectPoints should contain physical location of each corners but
-    //since we don’t know that so we assign constant positions to all the corners
-    vector<Point3f> obj;
-    for (int j = 0; j < nrOfCorners; j++)
-    {
-        obj.push_back(Point3f(j / width, j % width, 0.0f));
-    }
-
-    //get chessboard corners for all images
-    QProgressDialog progress("Analyzing chessboard patterns", "Cancel", 0, calibImgFiles.length(), this);
-    progress.setMinimumWidth(450);
-    progress.setMinimumDuration(1000);
-    progress.setWindowModality(Qt::WindowModal);
-    int progressCnt = 0;
-
-    int cnt = 0;
-    foreach(QString fileName, calibImgFiles)
-    {
-        vector<Point2f> corners;
-        Mat img, imgGray;
-        img = imread(fileName.toStdString().c_str());
-        cvtColor(img, imgGray, CV_BGR2GRAY);
-        success = findChessboardCorners(imgGray, chessboard_sz, corners,
-                                        CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
-
-        if(success)
-        {
-            imagePoints.push_back(corners);
-            objectPoints.push_back(obj);
-            if(cnt++ == 0) { imgSize = img.size(); }
-        }
-
-        //show found corners in image
-        drawChessboardCorners(img, chessboard_sz, corners, success);
-        namedWindow("found corners", CV_WINDOW_KEEPRATIO);
-        imshow("found corners", img);
-        cvWaitKey(2);
-
-        progress.setValue(progressCnt++);
-        if(progress.wasCanceled()) { return; }
-    }
-    progress.setValue(calibImgFiles.length());
-
-    //calibrate the camera and store matrizes
-    camMatrix = Mat(3, 3, CV_32FC1);
-    camMatrix.at<float>(0, 0) = 1;
-    camMatrix.at<float>(1, 1) = 1;
-    vector<Mat> rvecs, tvecs;
-
-    calibrateCamera(objectPoints, imagePoints, imgSize, camMatrix, distCoeff, rvecs, tvecs);
-
-    QMessageBox::information(NULL, "Calibration successful", "Camera has been calibrated", QMessageBox::Ok);
-}
-
-void MainWindow::undistortSingleImage(QString fileName)
-{
-    Mat img, imgUndist;
-    img = imread(fileName.toStdString().c_str());
-    undistort(img, imgUndist, camMatrix, distCoeff);
-
-    namedWindow("original", CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO);
-    namedWindow("undistorted", CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO);
-    imshow("original", img);
-    imshow("undistorted", imgUndist);
-}
-
-
-
 
 
 
@@ -523,38 +439,38 @@ void MainWindow::undistortSingleImage(QString fileName)
 *******************************************************/
 void MainWindow::on_btn_makeLabelImgs_released()
 {
-    QStringList fileNames = QFileDialog::getOpenFileNames(this, tr("Select XML files"), lastDir, tr("*.xml"));
-    if(fileNames.length() == 0) return;
-    lastDir = QFileInfo(fileNames.first()).absolutePath();
-    makeLabelImages(fileNames);
+	QStringList fileNames = QFileDialog::getOpenFileNames(this, tr("Select XML files"), lastDir, tr("*.xml"));
+	if(fileNames.length() == 0) return;
+	lastDir = QFileInfo(fileNames.first()).absolutePath();
+	makeLabelImages(fileNames);
 }
 
 void MainWindow::on_btn_seed_released()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr("*.jpg *.png"));
-    if(fileName == "") return;
-    lastDir = QFileInfo(fileName).path();
-    lastSeedsFilename = fileName;
-    makeSeedsSuperpixels(fileName);
+	QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr("*.jpg *.png"));
+	if(fileName == "") return;
+	lastDir = QFileInfo(fileName).path();
+	lastSeedsFilename = fileName;
+	makeSeedsSuperpixels(fileName);
 }
 
 void MainWindow::on_pushButton_seedAgain_released()
 {
-    if(lastSeedsFilename != "") { makeSeedsSuperpixels(lastSeedsFilename); }
+	if(lastSeedsFilename != "") { makeSeedsSuperpixels(lastSeedsFilename); }
 }
 
 void MainWindow::on_pushButton_slicAgain_released()
 {
-    if(lastSlicFilename != "") { makeSlicSuperpixels(lastSlicFilename); }
+	if(lastSlicFilename != "") { makeSlicSuperpixels(lastSlicFilename); }
 }
 
 void MainWindow::on_btn_felsenzwalb_released()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr("*.jpg *.png"));
-    if(fileName == "") return;
-    lastDir = QFileInfo(fileName).path();
-    lastFelsenzwalbFilename = fileName;
-    makeFelsenzwalbSuperpixels(fileName);
+	QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr("*.jpg *.png"));
+	if(fileName == "") return;
+	lastDir = QFileInfo(fileName).path();
+	lastFelsenzwalbFilename = fileName;
+	makeFelsenzwalbSuperpixels(fileName);
 }
 
 void MainWindow::on_pushButton_felsenzwalbAgain_released()
@@ -590,35 +506,59 @@ void MainWindow::on_btn_surf_released()
 	QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr("*.jpg *.png"));
 	if(fileName == "") return;
 	lastDir = QFileInfo(fileName).path();
-    lastFeatureFileName = fileName;
+	lastFeatureFileName = fileName;
 	makeSurfFeatures(fileName);
 }
 
 void MainWindow::on_pushButton_surfAgain_released()
 {
-    if(lastFeatureFileName != "") { makeSurfFeatures(lastFeatureFileName); }
+	if(lastFeatureFileName != "") { makeSurfFeatures(lastFeatureFileName); }
 }
 
 void MainWindow::on_btn_calibSingle_released()
 {
-    QStringList fileNames = QFileDialog::getOpenFileNames(this, tr("Select calibration chessboard images"), lastDir, tr("*.jpg *.png"));
-    if(fileNames.count() == 0) return;
-    lastDir = QFileInfo(fileNames.first()).path();
+	QStringList fileNames = QFileDialog::getOpenFileNames(this, tr("Select calibration chessboard images"), lastDir, tr("*.jpg *.png"));
+	if(fileNames.count() == 0) return;
+	lastDir = QFileInfo(fileNames.first()).path();
 
-    QStringList params = ui->lineEdit_calibSingleInfo->text().split(",");
-    calibrateSingleCamera(fileNames, params.first().toInt(), params.last().toInt());
-    cameraCalibrated = true;
+	QStringList params = ui->lineEdit_calibSingleInfo->text().split(",");
+	camCalib.calibrateSingleCamera(fileNames, params.first().toInt(), params.last().toInt());
+}
+
+void MainWindow::on_btn_calibGoldeye_released()
+{
+	QStringList fileNames = QFileDialog::getOpenFileNames(this, tr("Select tar-files containing chessboard images"), lastDir, tr("*.tar"));
+	if(fileNames.count() == 0) return;
+	lastDir = QFileInfo(fileNames.first()).path();
+
+	QStringList params = ui->lineEdit_calibSingleInfo->text().split(",");
+	camCalib.calibrateGoldeyeMultiChannel(fileNames, params.first().toInt(), params.last().toInt());
 }
 
 void MainWindow::on_btn_undistSingle_released()
 {
-    if(!cameraCalibrated)
-    {
-        QMessageBox::information(NULL, "Error", "Camera has not been calibrated", QMessageBox::Ok);
-        return;
-    }
+	if(!camCalib.isCalibrated())
+	{
+		QMessageBox::information(NULL, "Error", "Camera has not been calibrated", QMessageBox::Ok);
+		return;
+	}
 
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file to undistort"), lastDir, tr("*.jpg *.png"));
-    lastDir =QFileInfo(fileName).path();
-    undistortSingleImage(fileName);
+	QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file to undistort"), lastDir, tr("*.jpg *.png"));
+	lastDir =QFileInfo(fileName).path();
+	camCalib.undistortSingleImage(fileName);
+}
+
+
+
+void MainWindow::on_btn_undistGoldeye_released()
+{
+	if(!camCalib.isCalibrated())
+	{
+		QMessageBox::information(NULL, "Error", "Goldeye has not been calibrated", QMessageBox::Ok);
+		return;
+	}
+
+	QString fileName = QFileDialog::getOpenFileName(this, tr("Select multichannel image to undistort"), lastDir, tr("*.tar"));
+	lastDir =QFileInfo(fileName).path();
+	camCalib.undistortGoldeyeMultiChImg(fileName);
 }

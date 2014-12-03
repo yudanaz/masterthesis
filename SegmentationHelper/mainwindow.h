@@ -14,6 +14,7 @@
 #include <QProgressDialog>
 #include <QTime>
 #include <QMessageBox>
+#include <QInputDialog>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/nonfree/nonfree.hpp>
@@ -22,6 +23,8 @@
 //#include "opencv2/core/core.hpp"
 //#include "opencv2/highgui/highgui.hpp"
 //#include "opencv2/features2d/features2d.hpp"
+
+#include "cameracalibration.h"
 
 using namespace cv;
 
@@ -63,19 +66,22 @@ private slots:
 
 	void on_pushButton_surfAgain_released();
 
-    void on_btn_calibSingle_released();
+	void on_btn_calibSingle_released();
 
-    void on_btn_undistSingle_released();
+	void on_btn_undistSingle_released();
+
+	void on_btn_calibGoldeye_released();
+
+	void on_btn_undistGoldeye_released();
 
 private:
-    void makeLabelImages(QStringList fileNames);
+	void makeLabelImages(QStringList fileNames);
 	void makeSeedsSuperpixels(QString fileName);
 	void makeSlicSuperpixels(QString fileName);
 	void makeFelsenzwalbSuperpixels(QString fileName);
 	void makeDisparityImage(QString fileNameL, QString fileNameR);
 	void makeSurfFeatures(QString fileName);
-    void calibrateSingleCamera(QStringList calibImgFiles, int chessboard_width, int chessboard_height);
-    void undistortSingleImage(QString fileName);
+
 
 	Ui::MainWindow *ui;
 	vector< vector<int> > colorMap;
@@ -86,13 +92,9 @@ private:
 	QString lastFelsenzwalbFilename;
 	QString lastStereoFileNameL;
 	QString lastStereoFileNameR;
-    QString lastFeatureFileName;
+	QString lastFeatureFileName;
 
-    bool cameraCalibrated;
-    bool stereoCalibrated;
-    Mat camMatrix;
-    Mat distCoeff;
-
+	CameraCalibration camCalib;
 };
 
 #endif // MAINWINDOW_H

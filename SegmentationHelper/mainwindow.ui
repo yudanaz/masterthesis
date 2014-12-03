@@ -289,7 +289,27 @@
           <string notr="true">background-color: rgb(160, 219, 140)</string>
          </property>
          <property name="text">
-          <string>calibrate single</string>
+          <string>calib. single</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btn_calibGoldeye">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(160, 219, 140)</string>
+         </property>
+         <property name="text">
+          <string>goldeye</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btn_calibStereo">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(160, 219, 140)</string>
+         </property>
+         <property name="text">
+          <string>stereo</string>
          </property>
         </widget>
        </item>
@@ -307,6 +327,10 @@
          </property>
         </widget>
        </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_11">
        <item>
         <widget class="QPushButton" name="btn_undistSingle">
          <property name="styleSheet">
@@ -314,6 +338,16 @@
          </property>
          <property name="text">
           <string>undistort single</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btn_undistGoldeye">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(160, 219, 140)</string>
+         </property>
+         <property name="text">
+          <string>undistort goldeye</string>
          </property>
         </widget>
        </item>
@@ -328,7 +362,7 @@
      <x>0</x>
      <y>0</y>
      <width>425</width>
-     <height>25</height>
+     <height>20</height>
     </rect>
    </property>
   </widget>
