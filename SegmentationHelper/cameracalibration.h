@@ -31,7 +31,7 @@ public:
 	bool liveCalibrateSingleCamera(int nrOfChessboards, int chessboard_width, int chessboard_height);
 
 	void undistortSingleImage(QString fileName);
-	void undistortGoldeyeMultiChImg(QString tarFileName);
+	void undistortGoldeyeMultiChImg(QStringList tarFileNames);
 
 	bool isCalibrated(){ return cameraCalibrated; }
 

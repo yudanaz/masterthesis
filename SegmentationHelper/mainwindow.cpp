@@ -558,7 +558,7 @@ void MainWindow::on_btn_undistGoldeye_released()
 		return;
 	}
 
-	QString fileName = QFileDialog::getOpenFileName(this, tr("Select multichannel image to undistort"), lastDir, tr("*.tar"));
-	lastDir =QFileInfo(fileName).path();
-	camCalib.undistortGoldeyeMultiChImg(fileName);
+	QStringList fileNames = QFileDialog::getOpenFileNames(this, tr("Select multichannel image to undistort"), lastDir, tr("*.tar"));
+	lastDir =QFileInfo(fileNames.first()).path();
+	camCalib.undistortGoldeyeMultiChImg(fileNames);
 }

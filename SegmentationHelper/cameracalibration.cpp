@@ -137,27 +137,31 @@ void CameraCalibration::undistortSingleImage(QString fileName)
 	imshow("undistorted", imgUndist);
 }
 
-void CameraCalibration::undistortGoldeyeMultiChImg(QString tarFileName)
+void CameraCalibration::undistortGoldeyeMultiChImg(QStringList tarFileNames)
 {
-	QString basicFileName = QFileDialog::getSaveFileName(parentWidget, "Select file to store original and undistorted channel images",
-														 QDir::homePath(), "*.png");
-	basicFileName.remove(".png");
+//	QString basicFileName = QFileDialog::getSaveFileName(parentWidget, "Select file to store original and undistorted channel images",
+//														 QDir::homePath(), "*.png");
+//	basicFileName.remove(".png");
 
 	QStringList wavebands;
 	wavebands << "935" << "1060" << "1300" << "1550";
 
 	//undistort all channels of multichannel image
-	QList<Mat> imgs = InOut::getImagesFromTarFile(tarFileName);
-	for(int i = 0; i< imgs.length(); ++i)
+	foreach(QString tarFileName, tarFileNames)
 	{
-		Mat imgU;
-		undistort(imgs.at(i), imgU, camMatrix, distCoeff);
+		QList<Mat> imgs = InOut::getImagesFromTarFile(tarFileName);
+		QString newName = tarFileName.remove(".tar");
+		for(int i = 0; i< imgs.length(); ++i)
+		{
+			Mat imgU;
+			undistort(imgs.at(i), imgU, camMatrix, distCoeff);
 
-		//save orig and undistorted for all channels
-		QString imgNm = basicFileName + "_" + wavebands.at(i) + "_orig.png";
-		QString imgUndistNm = basicFileName + "_" + wavebands.at(i) + "_undist.png";
-		imwrite(imgNm.toStdString().c_str(), imgs.at(i));
-		imwrite(imgUndistNm.toStdString().c_str(), imgU);
+			//save orig and undistorted for all channels
+			QString imgNm = newName + "_" + wavebands.at(i) + "_orig.png";
+			QString imgUndistNm = newName + "_" + wavebands.at(i) + "_undist.png";
+			imwrite(imgNm.toStdString().c_str(), imgs.at(i));
+			imwrite(imgUndistNm.toStdString().c_str(), imgU);
+		}
 	}
 
 	QMessageBox::information(parentWidget, "Save successful", "Original and undistored waveband images have been saved", QMessageBox::Ok);
