@@ -372,8 +372,8 @@ void MainWindow::makeDisparityImage(QString fileNameL, QString fileNameR)
 	Mat disp2;
 	disp.convertTo(disp2,CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
 
-	imshow("left", left);
-	imshow("right", right);
+//	imshow("left", left);
+//	imshow("right", right);
 	imshow("image", disp2);
 }
 
@@ -535,30 +535,73 @@ void MainWindow::on_btn_calibGoldeye_released()
 	camCalib.calibrateGoldeyeMultiChannel(fileNames, params.first().toInt(), params.last().toInt());
 }
 
+void MainWindow::on_btn_calibStereo_released()
+{
+    QStringList fileNames_L = QFileDialog::getOpenFileNames(this, tr("Select LEFT camera files containing chessboard image"), lastDir);
+    if(fileNames_L.count() == 0) return;
+    lastDir =QFileInfo(fileNames_L.first()).path();
+    QStringList fileNames_R = QFileDialog::getOpenFileNames(this, tr("Select RIGHT camera files containing chessboard image"), lastDir);
+    if(fileNames_R.count() == 0) return;
+    lastDir =QFileInfo(fileNames_R.first()).path();
+
+    QStringList params = ui->lineEdit_calibSingleInfo->text().split(",");
+    camCalib.calibrateStereoCameras(fileNames_L, fileNames_R, params.first().toInt(), params.last().toInt());
+}
+
 void MainWindow::on_btn_undistSingle_released()
 {
-	if(!camCalib.isCalibrated())
+	if(!camCalib.isCalibrated_cam())
 	{
-		QMessageBox::information(NULL, "Error", "Camera has not been calibrated", QMessageBox::Ok);
+        QMessageBox::information(this, "Error", "Camera has not been calibrated", QMessageBox::Ok);
 		return;
 	}
 
 	QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file to undistort"), lastDir, tr("*.jpg *.png"));
 	lastDir =QFileInfo(fileName).path();
-	camCalib.undistortSingleImage(fileName);
+    if(fileName != ""){ camCalib.undistortSingleImage(fileName); }
 }
-
 
 
 void MainWindow::on_btn_undistGoldeye_released()
 {
-	if(!camCalib.isCalibrated())
+    if(!camCalib.isCalibrated_goldeye())
 	{
-		QMessageBox::information(NULL, "Error", "Goldeye has not been calibrated", QMessageBox::Ok);
+        QMessageBox::information(this, "Error", "Goldeye has not been calibrated", QMessageBox::Ok);
 		return;
 	}
 
 	QStringList fileNames = QFileDialog::getOpenFileNames(this, tr("Select multichannel image to undistort"), lastDir, tr("*.tar"));
 	lastDir =QFileInfo(fileNames.first()).path();
-	camCalib.undistortGoldeyeMultiChImg(fileNames);
+    if(fileNames.length() > 0){ camCalib.undistortGoldeyeMultiChImg(fileNames); }
 }
+
+
+void MainWindow::on_btn_undistStereo_released()
+{
+    if(!camCalib.isCalibrated_stereo())
+    {
+        QMessageBox::information(this, "Error", "Stereo Cam Pair has not been calibrated", QMessageBox::Ok);
+        return;
+    }
+
+    QString fileName_L = QFileDialog::getOpenFileName(this, tr("Select LEFT image file"), lastDir, tr("*.jpg *.png"));
+    lastDir = QFileInfo(fileName_L).path();
+    QString fileName_R = QFileDialog::getOpenFileName(this, tr("Select RIGHT image file"), lastDir, tr("*.jpg *.png"));
+    lastDir = QFileInfo(fileName_R).path();
+    if(fileName_L != "" && fileName_R != ""){ camCalib.undistortAndRemapStereoImages(fileName_L, fileName_R); }
+}
+
+void MainWindow::on_btn_undistLOAD_released()
+{
+    QStringList fileNames = QFileDialog::getOpenFileNames(this, tr("Select calibration file(s)"), lastDir);
+    lastDir =QFileInfo(fileNames.first()).path();
+    if(fileNames.length() > 0){ camCalib.loadCalibrationFile(fileNames); }
+
+    QString msg = "Camera calibration file has been loaded for ";
+    if(camCalib.isCalibrated_cam()){ msg +=  "Single Camera."; }
+    else if(camCalib.isCalibrated_stereo()){ msg +=  "Stereo Cam Pair."; }
+    else if(camCalib.isCalibrated_goldeye()){ msg +=  "Goldeye."; }
+    QMessageBox::information(this, "Calibration Data", msg, QMessageBox::Ok);
+}
+
+

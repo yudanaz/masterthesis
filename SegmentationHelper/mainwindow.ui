@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>425</width>
+    <width>493</width>
     <height>521</height>
    </rect>
   </property>
@@ -19,11 +19,14 @@
      <rect>
       <x>19</x>
       <y>9</y>
-      <width>400</width>
-      <height>379</height>
+      <width>451</width>
+      <height>414</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout">
+     <property name="sizeConstraint">
+      <enum>QLayout::SetMaximumSize</enum>
+     </property>
      <item>
       <widget class="QPushButton" name="btn_makeLabelImgs">
        <property name="styleSheet">
@@ -284,12 +287,22 @@
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_10">
        <item>
+        <widget class="QLabel" name="label_7">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(160, 219, 140)</string>
+         </property>
+         <property name="text">
+          <string>Calibrate:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="btn_calibSingle">
          <property name="styleSheet">
           <string notr="true">background-color: rgb(160, 219, 140)</string>
          </property>
          <property name="text">
-          <string>calib. single</string>
+          <string>single</string>
          </property>
         </widget>
        </item>
@@ -332,12 +345,32 @@
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_11">
        <item>
+        <widget class="QLabel" name="label_8">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(160, 219, 140)</string>
+         </property>
+         <property name="text">
+          <string>Undistort: </string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btn_undistLOAD">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(160, 219, 140)</string>
+         </property>
+         <property name="text">
+          <string>LOAD</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="btn_undistSingle">
          <property name="styleSheet">
           <string notr="true">background-color: rgb(160, 219, 140)</string>
          </property>
          <property name="text">
-          <string>undistort single</string>
+          <string>single</string>
          </property>
         </widget>
        </item>
@@ -347,7 +380,17 @@
           <string notr="true">background-color: rgb(160, 219, 140)</string>
          </property>
          <property name="text">
-          <string>undistort goldeye</string>
+          <string>goldeye</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btn_undistStereo">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(160, 219, 140)</string>
+         </property>
+         <property name="text">
+          <string>stereo</string>
          </property>
         </widget>
        </item>
@@ -361,8 +404,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>425</width>
-     <height>20</height>
+     <width>493</width>
+     <height>25</height>
     </rect>
    </property>
   </widget>

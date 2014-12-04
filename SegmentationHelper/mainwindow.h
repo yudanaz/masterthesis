@@ -74,6 +74,12 @@ private slots:
 
 	void on_btn_undistGoldeye_released();
 
+    void on_btn_undistLOAD_released();
+
+    void on_btn_calibStereo_released();
+
+    void on_btn_undistStereo_released();
+
 private:
 	void makeLabelImages(QStringList fileNames);
 	void makeSeedsSuperpixels(QString fileName);
