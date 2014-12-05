@@ -85,7 +85,7 @@ private:
 	void makeSeedsSuperpixels(QString fileName);
 	void makeSlicSuperpixels(QString fileName);
 	void makeFelsenzwalbSuperpixels(QString fileName);
-	void makeDisparityImage(QString fileNameL, QString fileNameR);
+    void makeDisparityImage(QString fileNameL, QString fileNameR);
 	void makeSurfFeatures(QString fileName);
 
 

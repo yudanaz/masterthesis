@@ -28,15 +28,15 @@ class CameraCalibration
 public:
 	CameraCalibration(QWidget *parent);
 	void calibrateSingleCamera(QStringList calibImgFiles, int chessboard_width, int chessboard_height);
-	void calibrateGoldeyeMultiChannel(QStringList calibImgTarFiles, int chessboard_width, int chessboard_height);
-	bool liveCalibrateSingleCamera(int nrOfChessboards, int chessboard_width, int chessboard_height);
+    void calibrateGoldeyeMultiChannel(QStringList calibImgTarFiles, int chessboard_width, int chessboard_height);
     void calibrateStereoCameras(QStringList calibImgsLeft, QStringList calibImgsRight,
                                 int chessboard_width, int chessboard_height);
 
     void loadCalibrationFile(QStringList calibFiles);
     void undistortSingleImage(QString fileName);
 	void undistortGoldeyeMultiChImg(QStringList tarFileNames);
-    void undistortAndRemapStereoImages(QString fileNameLeft, QString fileNameRight);
+    void undistortAndRemapStereoImages(Mat leftImage, Mat rightImage, Mat &leftImgOut, Mat &rightImgOut);
+    Mat makeDisparityImage(Mat leftGrayImg, Mat rightGrayImg, int nrOfDisparities, int blockSize);
 
     bool isCalibrated_cam(){ return cameraCalibrated; }
     bool isCalibrated_goldeye(){ return goldeyeCalibrated; }

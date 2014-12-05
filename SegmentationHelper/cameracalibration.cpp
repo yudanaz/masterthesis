@@ -256,115 +256,42 @@ void CameraCalibration::undistortGoldeyeMultiChImg(QStringList tarFileNames)
 	QMessageBox::information(parentWidget, "Save successful", "Original and undistored waveband images have been saved", QMessageBox::Ok);
 }
 
-void CameraCalibration::undistortAndRemapStereoImages(QString fileNameLeft, QString fileNameRight)
+void CameraCalibration::undistortAndRemapStereoImages(Mat leftImage, Mat rightImage, Mat& leftImgOut, Mat& rightImgOut)
 {
     Mat mapLx, mapLy, mapRx, mapRy;
-    Mat imgL, imgR, imgUL, imgUR;
-
-    //load images and to remapping
-    imgL = imread(fileNameLeft.toStdString().c_str());
-    imgR = imread(fileNameRight.toStdString().c_str());
+//    Mat imgUL, imgUR;
 
     initUndistortRectifyMap(cameraMatrices[0], distCoefficients[0], rectificTransf_L, projectionMat_L,
-            imgL.size(), CV_32FC1, mapLx, mapLy);
+            leftImage.size(), CV_32FC1, mapLx, mapLy);
     initUndistortRectifyMap(cameraMatrices[1], distCoefficients[1], rectificTransf_R, projectionMat_R,
-            imgR.size(), CV_32FC1, mapRx, mapRy);
+            rightImage.size(), CV_32FC1, mapRx, mapRy);
 
-    remap(imgL, imgUL, mapLx, mapLy, INTER_LINEAR, BORDER_CONSTANT, Scalar());
-    remap(imgR, imgUR, mapRx, mapRy, INTER_LINEAR, BORDER_CONSTANT, Scalar());
-
-    //save images
-    QString nmLeft = (fileNameLeft.remove(".png").remove(".jpg")).append("_remap.png");
-    QString nmRight = (fileNameRight.remove(".png").remove(".jpg")).append("_remap.png");
-    imwrite(nmLeft.toStdString().c_str(), imgUL);
-    imwrite(nmRight.toStdString().c_str(), imgUR);
-    QMessageBox::information(parentWidget, "Save successful", "Remapped images have been saved", QMessageBox::Ok);
+    remap(leftImage, leftImgOut, mapLx, mapLy, INTER_LINEAR, BORDER_CONSTANT, Scalar());
+    remap(rightImage, rightImgOut, mapRx, mapRy, INTER_LINEAR, BORDER_CONSTANT, Scalar());
 }
 
-bool CameraCalibration::liveCalibrateSingleCamera(int nrOfChessboards, int chessboard_width, int chessboard_height)
+Mat CameraCalibration::makeDisparityImage(Mat leftGrayImg, Mat rightGrayImg,
+                                           int nrOfDisparities, int blockSize)
 {
-//	bool found = false;
-//	int successes = 0;
-//	int width = chessboard_width; //nr of inner corners in row
-//	int height = chessboard_height; //nr of inner corner in column
+    //assure that parameters meet requirements
+    //(disparaties must be multiple of 16, blocksize must be odd!)
+    int dispTemp = nrOfDisparities % 16;
+    if(dispTemp != 0) { nrOfDisparities -= dispTemp; } //subtract so it's multiple of 16
+    if(blockSize % 2 == 0) { blockSize++; } //make odd if even
+    if(blockSize < 5) { blockSize += 5-blockSize; } //make >= 5
 
-//	Size chessboard_sz = Size(width, height);
-//	Size imgSize;
-//	int nrOfCorners = width*height;  //total number of inner corners
+    //compute disparities
+    Mat disp(leftGrayImg.rows, leftGrayImg.cols, CV_16SC1);
+    StereoBM sbm(StereoBM::BASIC_PRESET, nrOfDisparities, blockSize);
+    sbm(leftGrayImg, rightGrayImg, disp, CV_16S);
 
-//	vector<vector<Point3f> > objectPoints;
-//	vector<vector<Point2f> > imagePoints;
-
-//	Mat img, imgGray;
-//	VideoCapture capture = VideoCapture(0);
-//	if( !capture.isOpened() )
-//	{
-//		QMessageBox::information(NULL, "Error", "Capture couldn't be iniciated (no camera?)", QMessageBox::Ok);
-//		return false;
-//	}
-//	QMessageBox::information(NULL, "Start Capture", "Press SPACE to save detected corners and ESC to cancel", QMessageBox::Ok);
-
-//	//objectPoints should contain physical location of each corners but
-//	//since we don’t know that so we assign constant positions to all the corners
-//	vector<Point3f> obj;
-//	for (int j = 0; j < nrOfCorners; j++)
-//	{
-//		obj.push_back(Point3f(j / width, j % width, 0.0f));
-//	}
-
-//	//get chessboard corners until enough boards have been succesfully analyzed
-//	int cnt = 0;
-//	capture >> img;
-//	while(successes < nrOfChessboards)
-//	{
-//		vector<Point2f> corners;
-//		cvtColor(img, imgGray, CV_BGR2GRAY);
-//		found = findChessboardCorners(imgGray, chessboard_sz, corners,
-//										CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
-
-//		if(found)
-//		{
-//			cornerSubPix(imgGray, corners, Size(11, 11), Size(-1, -1),
-//						 TermCriteria(CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 30, 0.1)); //increase corner accuracy to sub-pixel level
-//			drawChessboardCorners(img, chessboard_sz, corners, found);
-//			if(cnt++ == 0) { imgSize = img.size(); }
-//		}
-
-//		//show image with corners and wait for user input
-//		namedWindow("Image with detected Corners", CV_WINDOW_AUTOSIZE);
-//		imshow("Image with detected Corners", img);
-//		capture >> img;
-//		int key = waitKey(1);
-
-//		//quit for ESC and save corners for SPACE key
-//		if(key==27) { return false; }
-
-//		if(key==' ' && found!=0)
-//		{
-//			imagePoints.push_back(corners);
-//			objectPoints.push_back(obj);
-
-//			qDebug() << "Chessboard corners have been stored for image " << successes << "!";
-
-//			successes++;
-//			if(successes>=nrOfChessboards)
-//				break;
-//		}
-//	}
-
-//	//calibrate the camera and store matrizes
-//	camMatrix = Mat(3, 3, CV_32FC1);
-//	camMatrix.at<float>(0, 0) = 1;
-//	camMatrix.at<float>(1, 1) = 1;
-//	vector<Mat> rvecs, tvecs;
-
-//	calibrateCamera(objectPoints, imagePoints, imgSize, camMatrix, distCoeff, rvecs, tvecs);
-
-//	QMessageBox::information(NULL, "Calibration successful", "Camera has been calibrated", QMessageBox::Ok);
-
-	return true;
+    //normalize and return
+    double minVal, maxVal;
+    minMaxLoc(disp, &minVal, &maxVal); //find minimum and maximum intensities
+    Mat disp2;
+    disp.convertTo(disp2,CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
+    return disp2;
 }
-
 
 void CameraCalibration::saveCalibrationFile(QString calibFileName, int channelIndex)
 {
@@ -382,7 +309,7 @@ void CameraCalibration::saveStereoCalibrationFile(QString calibFileName)
 {
     if(calibFileName != "")
     {
-        calibFileName += ".sterecal";
+        calibFileName += ".stereocal";
         FileStorage fs(calibFileName.toStdString().c_str(), FileStorage::WRITE);
         fs << "CM_L" << cameraMatrices[0];
         fs << "CM_R" << cameraMatrices[1];

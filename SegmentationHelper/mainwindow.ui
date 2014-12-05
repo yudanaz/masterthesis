@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>493</width>
+    <width>528</width>
     <height>521</height>
    </rect>
   </property>
@@ -19,7 +19,7 @@
      <rect>
       <x>19</x>
       <y>9</y>
-      <width>451</width>
+      <width>486</width>
       <height>414</height>
      </rect>
     </property>
@@ -196,51 +196,6 @@
       </layout>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_7">
-       <item>
-        <widget class="QPushButton" name="btn_stereoVision">
-         <property name="styleSheet">
-          <string notr="true">background-color: rgb(208, 180, 211)</string>
-         </property>
-         <property name="text">
-          <string>Stereo Vision Test BLOCK MATCHING</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="pushButton_stereoAgain">
-         <property name="maximumSize">
-          <size>
-           <width>100</width>
-           <height>16777215</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>Go Again</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_8">
-       <item>
-        <widget class="QLabel" name="label_4">
-         <property name="text">
-          <string>disparity range / 16, blocksize (odd!)</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="lineEdit_stereoInfo">
-         <property name="text">
-          <string>16, 15</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-     <item>
       <layout class="QHBoxLayout" name="horizontalLayout_9">
        <item>
         <widget class="QPushButton" name="btn_surf">
@@ -396,6 +351,54 @@
        </item>
       </layout>
      </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_7">
+       <item>
+        <widget class="QPushButton" name="btn_stereoVision">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(170, 200, 135)</string>
+         </property>
+         <property name="text">
+          <string>Stereo Vision Test BLOCK MATCHING</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pushButton_stereoAgain">
+         <property name="maximumSize">
+          <size>
+           <width>100</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(170, 200, 135)</string>
+         </property>
+         <property name="text">
+          <string>Go Again</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_8">
+       <item>
+        <widget class="QLabel" name="label_4">
+         <property name="text">
+          <string>disparity range (multiple of 16!), blocksize (odd!)</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="lineEdit_stereoInfo">
+         <property name="text">
+          <string>64,9</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
     </layout>
    </widget>
   </widget>
@@ -404,7 +407,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>493</width>
+     <width>528</width>
      <height>25</height>
     </rect>
    </property>
