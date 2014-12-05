@@ -293,6 +293,52 @@ Mat CameraCalibration::makeDisparityImage(Mat leftGrayImg, Mat rightGrayImg,
     return disp2;
 }
 
+Mat CameraCalibration::alignImageByFeatures(Mat imageL, Mat imageRtoBeAligned)
+{
+    //find features
+    vector<KeyPoint> keypointsL, keypointsR;
+    Mat descriptorsL, descriptorsR;
+    SURF surf(1500);
+
+    surf.detect(imageL, keypointsL);
+    surf.detect(imageRtoBeAligned, keypointsR);
+    surf.compute(imageL, keypointsL, descriptorsL);
+    surf.compute(imageRtoBeAligned, keypointsR, descriptorsR);
+
+    vector< DMatch > matches;
+    Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce");
+    matcher->match(descriptorsL, descriptorsR, matches);
+
+    //keep only best matches (lowest distance)
+    int numBest = 50;
+    if(matches.size() > numBest)
+    {
+        std::nth_element(matches.begin(), matches.begin()+numBest, matches.end()); //sort to 10th position
+        matches.erase(matches.begin()+numBest, matches.end());//remove rest
+    }
+
+    Mat matchImg;
+    drawMatches(imageL, keypointsL, imageRtoBeAligned, keypointsR, matches, matchImg);
+    imshow("Matches", matchImg);
+
+    //filter the matched descriptors
+    vector<Point2f> matchedDescriptorsL, matchedDescriptorsR;
+    Point2f leftMatch, rightMatch;
+    foreach(DMatch match, matches)
+    {
+        leftMatch = keypointsL[match.queryIdx].pt;
+        rightMatch = keypointsR[match.trainIdx].pt;
+        matchedDescriptorsL.push_back(leftMatch);
+        matchedDescriptorsR.push_back(rightMatch);
+    }
+
+    //warp perspective of right image with homography matrix from descriptors
+    Mat homography = findHomography(matchedDescriptorsR, matchedDescriptorsL, CV_RANSAC);
+    Mat warpedImg;
+    warpPerspective(imageRtoBeAligned, warpedImg, homography, imageRtoBeAligned.size());
+    return warpedImg;
+}
+
 void CameraCalibration::saveCalibrationFile(QString calibFileName, int channelIndex)
 {
     if(calibFileName != "" && channelIndex < nrOfNIRChannels)

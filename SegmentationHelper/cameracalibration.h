@@ -18,6 +18,8 @@
 #include <QVector>
 
 #include <opencv2/opencv.hpp>
+#include <opencv2/nonfree/nonfree.hpp>
+#include <opencv2/nonfree/features2d.hpp>
 
 #include"inout.h"
 
@@ -37,6 +39,8 @@ public:
 	void undistortGoldeyeMultiChImg(QStringList tarFileNames);
     void undistortAndRemapStereoImages(Mat leftImage, Mat rightImage, Mat &leftImgOut, Mat &rightImgOut);
     Mat makeDisparityImage(Mat leftGrayImg, Mat rightGrayImg, int nrOfDisparities, int blockSize);
+
+    Mat alignImageByFeatures(Mat imageL, Mat imageRtoBeAligned);
 
     bool isCalibrated_cam(){ return cameraCalibrated; }
     bool isCalibrated_goldeye(){ return goldeyeCalibrated; }

@@ -7,6 +7,7 @@
 
 #define WHITE Scalar(255, 255, 255)
 #define PINK Scalar(255, 51, 153)
+#define IMGTYPES "*.jpg *.png *.ppm"
 
 MainWindow::MainWindow(QWidget *parent) :
 	QMainWindow(parent),
@@ -434,7 +435,7 @@ void MainWindow::on_btn_makeLabelImgs_released()
 
 void MainWindow::on_btn_seed_released()
 {
-	QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr("*.jpg *.png"));
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr(IMGTYPES));
 	if(fileName == "") return;
 	lastDir = QFileInfo(fileName).path();
 	lastSeedsFilename = fileName;
@@ -453,7 +454,7 @@ void MainWindow::on_pushButton_slicAgain_released()
 
 void MainWindow::on_btn_felsenzwalb_released()
 {
-	QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr("*.jpg *.png"));
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr(IMGTYPES));
 	if(fileName == "") return;
 	lastDir = QFileInfo(fileName).path();
 	lastFelsenzwalbFilename = fileName;
@@ -467,12 +468,12 @@ void MainWindow::on_pushButton_felsenzwalbAgain_released()
 
 void MainWindow::on_btn_stereoVision_released()
 {
-	QString fileName = QFileDialog::getOpenFileName(this, tr("Select LEFT image"), lastDir, tr("*.jpg *.png"));
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Select LEFT image"), lastDir, tr(IMGTYPES));
 	if(fileName == "") return;
 	lastStereoFileNameL = fileName;
 	lastDir = QFileInfo(fileName).path();
 
-    fileName = QFileDialog::getOpenFileName(this, tr("Select RIGHT image"), lastDir, tr("*.jpg *.png"));
+    fileName = QFileDialog::getOpenFileName(this, tr("Select RIGHT image"), lastDir, tr(IMGTYPES));
     if(fileName == "") return;
     lastStereoFileNameR = fileName;
 	lastDir = QFileInfo(fileName).path();
@@ -482,12 +483,13 @@ void MainWindow::on_btn_stereoVision_released()
 
 void MainWindow::on_pushButton_stereoAgain_released()
 {
+    if(lastStereoFileNameL == "" || lastStereoFileNameR == ""){ return; }
     makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
 }
 
 void MainWindow::on_btn_surf_released()
 {
-	QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr("*.jpg *.png"));
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr(IMGTYPES));
 	if(fileName == "") return;
 	lastDir = QFileInfo(fileName).path();
 	lastFeatureFileName = fileName;
@@ -501,7 +503,7 @@ void MainWindow::on_pushButton_surfAgain_released()
 
 void MainWindow::on_btn_calibSingle_released()
 {
-	QStringList fileNames = QFileDialog::getOpenFileNames(this, tr("Select calibration chessboard images"), lastDir, tr("*.jpg *.png"));
+    QStringList fileNames = QFileDialog::getOpenFileNames(this, tr("Select calibration chessboard images"), lastDir, tr(IMGTYPES));
 	if(fileNames.count() == 0) return;
 	lastDir = QFileInfo(fileNames.first()).path();
 
@@ -540,7 +542,7 @@ void MainWindow::on_btn_undistSingle_released()
 		return;
 	}
 
-	QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file to undistort"), lastDir, tr("*.jpg *.png"));
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file to undistort"), lastDir, tr(IMGTYPES));
 	lastDir =QFileInfo(fileName).path();
     if(fileName != ""){ camCalib.undistortSingleImage(fileName); }
 }
@@ -569,10 +571,10 @@ void MainWindow::on_btn_undistStereo_released()
     }
 
     //get files
-    QString fileName_L = QFileDialog::getOpenFileName(this, tr("Select LEFT image file"), lastDir, tr("*.jpg *.png"));
+    QString fileName_L = QFileDialog::getOpenFileName(this, tr("Select LEFT image file"), lastDir, tr(IMGTYPES));
     if(fileName_L == ""){ return; }
     lastDir = QFileInfo(fileName_L).path();
-    QString fileName_R = QFileDialog::getOpenFileName(this, tr("Select RIGHT image file"), lastDir, tr("*.jpg *.png"));
+    QString fileName_R = QFileDialog::getOpenFileName(this, tr("Select RIGHT image file"), lastDir, tr(IMGTYPES));
     if(fileName_R == ""){ return; }
     lastDir = QFileInfo(fileName_R).path();
 
@@ -631,3 +633,28 @@ void MainWindow::on_btn_undistLOAD_released()
 }
 
 
+
+void MainWindow::on_btn_alignImgs_released()
+{
+    //get files
+    QString fileName_L = QFileDialog::getOpenFileName(this, tr("Select LEFT image file"), lastDir, tr(IMGTYPES));
+    if(fileName_L == ""){ return; }
+    lastDir = QFileInfo(fileName_L).path();
+    QString fileName_R = QFileDialog::getOpenFileName(this, tr("Select RIGHT image file"), lastDir, tr(IMGTYPES));
+    if(fileName_R == ""){ return; }
+    lastDir = QFileInfo(fileName_R).path();
+
+    if(fileName_L == "" || fileName_R == ""){ return; }
+
+    //get images from files
+    Mat leftImage = imread(fileName_L.toStdString().c_str());
+    Mat rightImage = imread(fileName_R.toStdString().c_str());
+
+    //make transformation matrix from translation and rotation and warp perspetive
+    Mat alignedRight = camCalib.alignImageByFeatures(leftImage, rightImage);
+
+    //save algined image
+    QString saveName = fileName_R.remove(".png").remove(".jpg").append("_aligned.png");
+    imwrite(saveName.toStdString().c_str(), alignedRight);
+    QMessageBox::information(this, "Success", "The aligned right image has been saved!", QMessageBox::Ok);
+}

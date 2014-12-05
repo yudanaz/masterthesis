@@ -80,6 +80,8 @@ private slots:
 
     void on_btn_undistStereo_released();
 
+    void on_btn_alignImgs_released();
+
 private:
 	void makeLabelImages(QStringList fileNames);
 	void makeSeedsSuperpixels(QString fileName);

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>528</width>
-    <height>521</height>
+    <height>614</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,7 +20,7 @@
       <x>19</x>
       <y>9</y>
       <width>486</width>
-      <height>414</height>
+      <height>449</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout">
@@ -394,6 +394,20 @@
         <widget class="QLineEdit" name="lineEdit_stereoInfo">
          <property name="text">
           <string>64,9</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_12">
+       <item>
+        <widget class="QPushButton" name="btn_alignImgs">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(146, 203, 125);</string>
+         </property>
+         <property name="text">
+          <string>Align Imgs via features</string>
          </property>
         </widget>
        </item>
