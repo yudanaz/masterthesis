@@ -128,6 +128,20 @@ public:
 	*/
 	quint8 getImgDepth();
 
+	//Methods from Maurice
+	/*!
+	 * \brief returns true if the camera has been successfully connected.
+	 * \return a boolean connection state.
+	 */
+	bool isConnected();
+
+	/*!
+	 * \brief returns true if the camera has been successfully configured.
+	 * \return a boolean configure state.
+	 */
+	bool isConfigured();
+	//endof Methods from Maurice
+
 	QString convErrToMsg( VmbErrorType eErr );
 	QString convErrToMsg( VmbFrameStatusType eStatus );
 

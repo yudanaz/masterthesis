@@ -47,6 +47,16 @@ quint8 CameraInterface::getImgDepth()
 	return myDepth;
 }
 
+bool CameraInterface::isConnected()
+{
+	return connected;
+}
+
+bool CameraInterface::isConfigured()
+{
+	return configured;
+}
+
 QString CameraInterface::convErrToMsg( VmbErrorType eErr )
 {
 	if ( !errorCodeStrings.contains(eErr) )

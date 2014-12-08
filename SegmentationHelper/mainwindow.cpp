@@ -343,26 +343,27 @@ void MainWindow::makeFelsenzwalbSuperpixels(QString fileName)
 
 void MainWindow::makeDisparityImage(QString fileNameL, QString fileNameR)
 {
-    //get parameters
-    int nrOfDisparities, blockSize;
-    QStringList info = ui->lineEdit_stereoInfo->text().split(",");
-    if(info.length() == 2)
-    {
-        nrOfDisparities = info.at(0).toInt();
-        blockSize = info.at(1).toInt();
-    }
-    else
-    {
-        nrOfDisparities = 64; blockSize = 9;
-    }
+	//get parameters
+	int nrOfDisparities, blockSize, smoothKernel;
+	QStringList info = ui->lineEdit_stereoInfo->text().split(",");
+	if(info.length() == 3)
+	{
+		nrOfDisparities = info.at(0).toInt();
+		blockSize = info.at(1).toInt();
+		smoothKernel = info.at(2).toInt();
+	}
+	else
+	{
+		nrOfDisparities = 64; blockSize = 9; smoothKernel = 5;
+	}
 
-    //load L and R images as grayscale, process and display
-    Mat leftImg, rightImg, disp;
-    leftImg = imread(fileNameL.toStdString().c_str(), CV_LOAD_IMAGE_GRAYSCALE);
-    rightImg = imread(fileNameR.toStdString().c_str(), CV_LOAD_IMAGE_GRAYSCALE);
+	//load L and R images as grayscale, process and display
+	Mat leftImg, rightImg, disp;
+	leftImg = imread(fileNameL.toStdString().c_str(), CV_LOAD_IMAGE_GRAYSCALE);
+	rightImg = imread(fileNameR.toStdString().c_str(), CV_LOAD_IMAGE_GRAYSCALE);
 
-    disp = camCalib.makeDisparityImage(leftImg, rightImg, nrOfDisparities, blockSize);
-    imshow("image", disp);
+	disp = camCalib.makeDisparityImage(leftImg, rightImg, nrOfDisparities, blockSize, smoothKernel);
+	imshow("image", disp);
 }
 
 void MainWindow::makeSurfFeatures(QString fileName)
@@ -435,7 +436,7 @@ void MainWindow::on_btn_makeLabelImgs_released()
 
 void MainWindow::on_btn_seed_released()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr(IMGTYPES));
+	QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr(IMGTYPES));
 	if(fileName == "") return;
 	lastDir = QFileInfo(fileName).path();
 	lastSeedsFilename = fileName;
@@ -454,7 +455,7 @@ void MainWindow::on_pushButton_slicAgain_released()
 
 void MainWindow::on_btn_felsenzwalb_released()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr(IMGTYPES));
+	QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr(IMGTYPES));
 	if(fileName == "") return;
 	lastDir = QFileInfo(fileName).path();
 	lastFelsenzwalbFilename = fileName;
@@ -468,28 +469,28 @@ void MainWindow::on_pushButton_felsenzwalbAgain_released()
 
 void MainWindow::on_btn_stereoVision_released()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Select LEFT image"), lastDir, tr(IMGTYPES));
+	QString fileName = QFileDialog::getOpenFileName(this, tr("Select LEFT image"), lastDir, tr(IMGTYPES));
 	if(fileName == "") return;
 	lastStereoFileNameL = fileName;
 	lastDir = QFileInfo(fileName).path();
 
-    fileName = QFileDialog::getOpenFileName(this, tr("Select RIGHT image"), lastDir, tr(IMGTYPES));
-    if(fileName == "") return;
-    lastStereoFileNameR = fileName;
+	fileName = QFileDialog::getOpenFileName(this, tr("Select RIGHT image"), lastDir, tr(IMGTYPES));
+	if(fileName == "") return;
+	lastStereoFileNameR = fileName;
 	lastDir = QFileInfo(fileName).path();
 
-    makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
+	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
 }
 
 void MainWindow::on_pushButton_stereoAgain_released()
 {
-    if(lastStereoFileNameL == "" || lastStereoFileNameR == ""){ return; }
-    makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
+	if(lastStereoFileNameL == "" || lastStereoFileNameR == ""){ return; }
+	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
 }
 
 void MainWindow::on_btn_surf_released()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr(IMGTYPES));
+	QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr(IMGTYPES));
 	if(fileName == "") return;
 	lastDir = QFileInfo(fileName).path();
 	lastFeatureFileName = fileName;
@@ -503,7 +504,7 @@ void MainWindow::on_pushButton_surfAgain_released()
 
 void MainWindow::on_btn_calibSingle_released()
 {
-    QStringList fileNames = QFileDialog::getOpenFileNames(this, tr("Select calibration chessboard images"), lastDir, tr(IMGTYPES));
+	QStringList fileNames = QFileDialog::getOpenFileNames(this, tr("Select calibration chessboard images"), lastDir, tr(IMGTYPES));
 	if(fileNames.count() == 0) return;
 	lastDir = QFileInfo(fileNames.first()).path();
 
@@ -523,138 +524,139 @@ void MainWindow::on_btn_calibGoldeye_released()
 
 void MainWindow::on_btn_calibStereo_released()
 {
-    QStringList fileNames_L = QFileDialog::getOpenFileNames(this, tr("Select LEFT camera files containing chessboard image"), lastDir);
-    if(fileNames_L.count() == 0) return;
-    lastDir =QFileInfo(fileNames_L.first()).path();
-    QStringList fileNames_R = QFileDialog::getOpenFileNames(this, tr("Select RIGHT camera files containing chessboard image"), lastDir);
-    if(fileNames_R.count() == 0) return;
-    lastDir =QFileInfo(fileNames_R.first()).path();
+	QStringList fileNames_L = QFileDialog::getOpenFileNames(this, tr("Select LEFT camera files containing chessboard image"), lastDir);
+	if(fileNames_L.count() == 0) return;
+	lastDir =QFileInfo(fileNames_L.first()).path();
+	QStringList fileNames_R = QFileDialog::getOpenFileNames(this, tr("Select RIGHT camera files containing chessboard image"), lastDir);
+	if(fileNames_R.count() == 0) return;
+	lastDir =QFileInfo(fileNames_R.first()).path();
 
-    QStringList params = ui->lineEdit_calibSingleInfo->text().split(",");
-    camCalib.calibrateStereoCameras(fileNames_L, fileNames_R, params.first().toInt(), params.last().toInt());
+	QStringList params = ui->lineEdit_calibSingleInfo->text().split(",");
+	camCalib.calibrateStereoCameras(fileNames_L, fileNames_R, params.first().toInt(), params.last().toInt());
 }
 
 void MainWindow::on_btn_undistSingle_released()
 {
 	if(!camCalib.isCalibrated_cam())
 	{
-        QMessageBox::information(this, "Error", "Camera has not been calibrated", QMessageBox::Ok);
+		QMessageBox::information(this, "Error", "Camera has not been calibrated", QMessageBox::Ok);
 		return;
 	}
 
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file to undistort"), lastDir, tr(IMGTYPES));
+	QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file to undistort"), lastDir, tr(IMGTYPES));
 	lastDir =QFileInfo(fileName).path();
-    if(fileName != ""){ camCalib.undistortSingleImage(fileName); }
+	if(fileName != ""){ camCalib.undistortSingleImage(fileName); }
 }
 
 
 void MainWindow::on_btn_undistGoldeye_released()
 {
-    if(!camCalib.isCalibrated_goldeye())
+	if(!camCalib.isCalibrated_goldeye())
 	{
-        QMessageBox::information(this, "Error", "Goldeye has not been calibrated", QMessageBox::Ok);
+		QMessageBox::information(this, "Error", "Goldeye has not been calibrated", QMessageBox::Ok);
 		return;
 	}
 
 	QStringList fileNames = QFileDialog::getOpenFileNames(this, tr("Select multichannel image to undistort"), lastDir, tr("*.tar"));
 	lastDir =QFileInfo(fileNames.first()).path();
-    if(fileNames.length() > 0){ camCalib.undistortGoldeyeMultiChImg(fileNames); }
+	if(fileNames.length() > 0){ camCalib.undistortGoldeyeMultiChImg(fileNames); }
 }
 
 
 void MainWindow::on_btn_undistStereo_released()
 {
-    if(!camCalib.isCalibrated_stereo())
-    {
-        QMessageBox::information(this, "Error", "Stereo Cam Pair has not been calibrated", QMessageBox::Ok);
-        return;
-    }
+	if(!camCalib.isCalibrated_stereo())
+	{
+		QMessageBox::information(this, "Error", "Stereo Cam Pair has not been calibrated", QMessageBox::Ok);
+		return;
+	}
 
-    //get files
-    QString fileName_L = QFileDialog::getOpenFileName(this, tr("Select LEFT image file"), lastDir, tr(IMGTYPES));
-    if(fileName_L == ""){ return; }
-    lastDir = QFileInfo(fileName_L).path();
-    QString fileName_R = QFileDialog::getOpenFileName(this, tr("Select RIGHT image file"), lastDir, tr(IMGTYPES));
-    if(fileName_R == ""){ return; }
-    lastDir = QFileInfo(fileName_R).path();
+	//get files
+	QString fileName_L = QFileDialog::getOpenFileName(this, tr("Select LEFT image file"), lastDir, tr(IMGTYPES));
+	if(fileName_L == ""){ return; }
+	lastDir = QFileInfo(fileName_L).path();
+	QString fileName_R = QFileDialog::getOpenFileName(this, tr("Select RIGHT image file"), lastDir, tr(IMGTYPES));
+	if(fileName_R == ""){ return; }
+	lastDir = QFileInfo(fileName_R).path();
 
-    //get parameters
-    int nrOfDisparities, blockSize;
-    QStringList info = ui->lineEdit_stereoInfo->text().split(",");
-    if(info.length() == 2)
-    {
-        nrOfDisparities = info.at(0).toInt();
-        blockSize = info.at(1).toInt();
-    }
-    else
-    {
-        nrOfDisparities = 64; blockSize = 9;
-    }
+	//get parameters
+	int nrOfDisparities, blockSize, smoothKernel;
+	QStringList info = ui->lineEdit_stereoInfo->text().split(",");
+	if(info.length() == 3)
+	{
+		nrOfDisparities = info.at(0).toInt();
+		blockSize = info.at(1).toInt();
+		smoothKernel = info.at(2).toInt();
+	}
+	else
+	{
+		nrOfDisparities = 64; blockSize = 9; smoothKernel = 5;
+	}
 
-    //get images from files, do remapping, get disparity image and show it
-    Mat leftImage = imread(fileName_L.toStdString().c_str());
-    Mat rightImage = imread(fileName_R.toStdString().c_str());
-    if(fileName_L != "" && fileName_R != "")
-    {
-        Mat imgUL, imgUR;
-        camCalib.undistortAndRemapStereoImages(leftImage, rightImage, imgUL, imgUR);
+	//get images from files, do remapping, get disparity image and show it
+	Mat leftImage = imread(fileName_L.toStdString().c_str());
+	Mat rightImage = imread(fileName_R.toStdString().c_str());
+	if(fileName_L != "" && fileName_R != "")
+	{
+		Mat imgUL, imgUR;
+		camCalib.undistortAndRemapStereoImages(leftImage, rightImage, imgUL, imgUR);
 
-        //save images
-        QString fileNameLeft = fileName_L;
-        QString fileNameRight = fileName_R;
-        QString nmLeft = (fileNameLeft.remove(".png").remove(".jpg")).append("_remap.png");
-        QString nmRight = (fileNameRight.remove(".png").remove(".jpg")).append("_remap.png");
-        imwrite(nmLeft.toStdString().c_str(), imgUL);
-        imwrite(nmRight.toStdString().c_str(), imgUR);
-        QMessageBox::information(this, "Save successful", "Remapped images have been saved", QMessageBox::Ok);
+		//save images
+		QString fileNameLeft = fileName_L;
+		QString fileNameRight = fileName_R;
+		QString nmLeft = (fileNameLeft.remove(".png").remove(".jpg")).append("_remap.png");
+		QString nmRight = (fileNameRight.remove(".png").remove(".jpg")).append("_remap.png");
+		imwrite(nmLeft.toStdString().c_str(), imgUL);
+		imwrite(nmRight.toStdString().c_str(), imgUR);
+		QMessageBox::information(this, "Save successful", "Remapped images have been saved", QMessageBox::Ok);
 
-        Mat imgULgray, imgURgray;
-        cvtColor(imgUL, imgULgray, CV_BGR2GRAY);
-        cvtColor(imgUR, imgURgray, CV_BGR2GRAY);
+		Mat imgULgray, imgURgray;
+		cvtColor(imgUL, imgULgray, CV_BGR2GRAY);
+		cvtColor(imgUR, imgURgray, CV_BGR2GRAY);
 
-        Mat disp = camCalib.makeDisparityImage(imgULgray, imgURgray, nrOfDisparities, blockSize);
-        imshow("Disparaty Image", disp);
-    }
+		Mat disp = camCalib.makeDisparityImage(imgULgray, imgURgray, nrOfDisparities, blockSize, smoothKernel);
+		imshow("Disparaty Image", disp);
+	}
 }
 
 void MainWindow::on_btn_undistLOAD_released()
 {
-    QStringList fileNames = QFileDialog::getOpenFileNames(this, tr("Select calibration file(s)"), lastDir, tr("*.stereocal *.singlecal"));
-    if(fileNames.length() == 0){ return; }
-    lastDir =QFileInfo(fileNames.first()).path();
+	QStringList fileNames = QFileDialog::getOpenFileNames(this, tr("Select calibration file(s)"), lastDir, tr("*.stereocal *.singlecal"));
+	if(fileNames.length() == 0){ return; }
+	lastDir =QFileInfo(fileNames.first()).path();
 
-    camCalib.loadCalibrationFile(fileNames);
+	camCalib.loadCalibrationFile(fileNames);
 
-    QString msg = "Camera calibration file has been loaded for ";
-    if(camCalib.isCalibrated_cam()){ msg +=  "Single Camera."; }
-    else if(camCalib.isCalibrated_stereo()){ msg +=  "Stereo Cam Pair."; }
-    else if(camCalib.isCalibrated_goldeye()){ msg +=  "Goldeye."; }
-    QMessageBox::information(this, "Calibration Data", msg, QMessageBox::Ok);
+	QString msg = "Camera calibration file has been loaded for ";
+	if(camCalib.isCalibrated_cam()){ msg +=  "Single Camera."; }
+	else if(camCalib.isCalibrated_stereo()){ msg +=  "Stereo Cam Pair."; }
+	else if(camCalib.isCalibrated_goldeye()){ msg +=  "Goldeye."; }
+	QMessageBox::information(this, "Calibration Data", msg, QMessageBox::Ok);
 }
 
 
 
 void MainWindow::on_btn_alignImgs_released()
 {
-    //get files
-    QString fileName_L = QFileDialog::getOpenFileName(this, tr("Select LEFT image file"), lastDir, tr(IMGTYPES));
-    if(fileName_L == ""){ return; }
-    lastDir = QFileInfo(fileName_L).path();
-    QString fileName_R = QFileDialog::getOpenFileName(this, tr("Select RIGHT image file"), lastDir, tr(IMGTYPES));
-    if(fileName_R == ""){ return; }
-    lastDir = QFileInfo(fileName_R).path();
+	//get files
+	QString fileName_L = QFileDialog::getOpenFileName(this, tr("Select LEFT image file"), lastDir, tr(IMGTYPES));
+	if(fileName_L == ""){ return; }
+	lastDir = QFileInfo(fileName_L).path();
+	QString fileName_R = QFileDialog::getOpenFileName(this, tr("Select RIGHT image file"), lastDir, tr(IMGTYPES));
+	if(fileName_R == ""){ return; }
+	lastDir = QFileInfo(fileName_R).path();
 
-    if(fileName_L == "" || fileName_R == ""){ return; }
+	if(fileName_L == "" || fileName_R == ""){ return; }
 
-    //get images from files
-    Mat leftImage = imread(fileName_L.toStdString().c_str());
-    Mat rightImage = imread(fileName_R.toStdString().c_str());
+	//get images from files
+	Mat leftImage = imread(fileName_L.toStdString().c_str());
+	Mat rightImage = imread(fileName_R.toStdString().c_str());
 
-    //make transformation matrix from translation and rotation and warp perspetive
-    Mat alignedRight = camCalib.alignImageByFeatures(leftImage, rightImage);
+	//make transformation matrix from translation and rotation and warp perspetive
+	Mat alignedRight = camCalib.alignImageByFeatures(leftImage, rightImage);
 
-    //save algined image
-    QString saveName = fileName_R.remove(".png").remove(".jpg").append("_aligned.png");
-    imwrite(saveName.toStdString().c_str(), alignedRight);
-    QMessageBox::information(this, "Success", "The aligned right image has been saved!", QMessageBox::Ok);
+	//save algined image
+	QString saveName = fileName_R.remove(".png").remove(".jpg").append("_aligned.png");
+	imwrite(saveName.toStdString().c_str(), alignedRight);
+	QMessageBox::information(this, "Success", "The aligned right image has been saved!", QMessageBox::Ok);
 }

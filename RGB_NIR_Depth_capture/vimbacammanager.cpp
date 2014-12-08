@@ -4,7 +4,7 @@
 VimbaCamManager::VimbaCamManager():
 	vimbaSystem(VimbaSystem::GetInstance()),
 	APIrunning(false),
-	camsDetected(false)
+	detected_prosilica(false)
 {
 	startVimbaAPI();
 	detectCameras();
@@ -23,41 +23,57 @@ void VimbaCamManager::startVimbaAPI()
 
 void VimbaCamManager::detectCameras()
 {
-	if(camsDetected){ return; }
+	if(detected_prosilica){ return; }
 
-//	goldeye = new GoldeyeVimba();
-//	goldeye->connect();
-//	goldeye->configure();//camConfig.integrationTime, camConfig.bufferSize);
-
-	prosilica = new ProsilicaVimba();
+	goldeye = new GoldeyeVimba();
 	try
 	{
-		prosilica->connect();
-		prosilica->configure();
+		goldeye->connect();
+		goldeye->configure();//camConfig.integrationTime, camConfig.bufferSize);
+		detected_goldeye = goldeye->isConnected() && goldeye->isConfigured();
 	}
 	catch(CameraException e)
 	{
-		QMessageBox::information(NULL, "Camera Exception", e.getMessage(), QMessageBox::Ok);
+		QMessageBox::information(NULL, "Goldeye: Camera Exception", e.getMessage(), QMessageBox::Ok);
 	}
 
-	camsDetected = true;
+	prosilica = new ProsilicaVimba();
+//	try
+//	{
+//		prosilica->connect();
+//		prosilica->configure();
+//		detected_prosilica = prosilica->isConnected() && prosilica->isConfigured();
+//	}
+//	catch(CameraException e)
+//	{
+//		QMessageBox::information(NULL, "Prosilica: Camera Exception", e.getMessage(), QMessageBox::Ok);
+//	}
+
 }
 
 QList<Mat> VimbaCamManager::getCamImages()
 {
 	QList<Mat> camImgs;
 
+	bool atLeastOneCam = false;
 	Mat img;
-//	img = goldeye->getCVFrame();
-	img = prosilica->getCVFrame();
-	camImgs.append(img);
+	if(detected_goldeye)
+	{
+		img = goldeye->getCVFrame();
+		atLeastOneCam = true;
+	}
+	if(detected_prosilica)
+	{
+		img = prosilica->getCVFrame();
+		atLeastOneCam = true;
+	}
 
-
-
+	if(atLeastOneCam){ camImgs.append(img); }
 	return camImgs;
 }
 
 void VimbaCamManager::closeCameras()
 {
-//	goldeye->disconnect();
+	if(goldeye->isConnected()){ goldeye->disconnect(); }
+	if(prosilica->isConnected()){ prosilica->disconnect(); }
 }

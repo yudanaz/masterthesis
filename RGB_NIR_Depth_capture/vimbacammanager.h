@@ -49,7 +49,8 @@ private:
 //	CameraPtrVector cameras;
 //	QStringList cameraNames;
 //	QList< QPair<qint16,qint16> > cameraSizes;
-	bool camsDetected;
+	bool detected_prosilica;
+	bool detected_goldeye;
 };
 
 #endif // VIMBACAMMANAGER_H
