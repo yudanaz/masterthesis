@@ -82,13 +82,32 @@ private slots:
 
     void on_btn_alignImgs_released();
 
+    void on_slider_prefilterSize_sliderMoved(int position);
+
+    void on_slider_prefilterCAP_sliderMoved(int position);
+
+    void on_slider_SADwindow_sliderMoved(int position);
+
+    void on_slider_minDisp_sliderMoved(int position);
+
+    void on_slider_dispRange_sliderMoved(int position);
+
+    void on_slider_textureThresh_sliderMoved(int position);
+
+    void on_slider_speckleWindow_sliderMoved(int position);
+
+    void on_slider_speckleRange_sliderMoved(int position);
+
+    void on_slider_uniqueness_sliderMoved(int position);
+
 private:
 	void makeLabelImages(QStringList fileNames);
 	void makeSeedsSuperpixels(QString fileName);
 	void makeSlicSuperpixels(QString fileName);
-	void makeFelsenzwalbSuperpixels(QString fileName);
+    void makeFelsenzwalbSuperpixels(QString fileName);
     void makeDisparityImage(QString fileNameL, QString fileNameR);
 	void makeSurfFeatures(QString fileName);
+
 
 
 	Ui::MainWindow *ui;

@@ -341,29 +341,30 @@ void MainWindow::makeFelsenzwalbSuperpixels(QString fileName)
 	ui->label_nrOfSuperpixelsFelsenzwalb->setText("= " + QString::number(num_ccs) + " superpixels");
 }
 
+
+
 void MainWindow::makeDisparityImage(QString fileNameL, QString fileNameR)
 {
-	//get parameters
-	int nrOfDisparities, blockSize, smoothKernel;
-	QStringList info = ui->lineEdit_stereoInfo->text().split(",");
-	if(info.length() == 3)
-	{
-		nrOfDisparities = info.at(0).toInt();
-		blockSize = info.at(1).toInt();
-		smoothKernel = info.at(2).toInt();
-	}
-	else
-	{
-		nrOfDisparities = 64; blockSize = 9; smoothKernel = 5;
-	}
-
-	//load L and R images as grayscale, process and display
+    //load L and R images as grayscale
 	Mat leftImg, rightImg, disp;
 	leftImg = imread(fileNameL.toStdString().c_str(), CV_LOAD_IMAGE_GRAYSCALE);
 	rightImg = imread(fileNameR.toStdString().c_str(), CV_LOAD_IMAGE_GRAYSCALE);
 
-	disp = camCalib.makeDisparityImage(leftImg, rightImg, nrOfDisparities, blockSize, smoothKernel);
-	imshow("image", disp);
+    //set parameters
+    camCalib.setDisparityParameters(ui->slider_minDisp->value(),
+                                    ui->slider_dispRange->value(),
+                                    ui->slider_SADwindow->value(),
+                                    ui->slider_prefilterSize->value(),
+                                    ui->slider_prefilterCAP->value(),
+                                    ui->slider_textureThresh->value(),
+                                    ui->slider_uniqueness->value(),
+                                    ui->slider_speckleWindow->value(),
+                                    ui->slider_speckleRange->value());
+
+    //process and display
+    disp = camCalib.makeDisparityImage(leftImg, rightImg);
+    imshow("left image", leftImg);
+    imshow("image", disp);
 }
 
 void MainWindow::makeSurfFeatures(QString fileName)
@@ -579,20 +580,6 @@ void MainWindow::on_btn_undistStereo_released()
 	if(fileName_R == ""){ return; }
 	lastDir = QFileInfo(fileName_R).path();
 
-	//get parameters
-	int nrOfDisparities, blockSize, smoothKernel;
-	QStringList info = ui->lineEdit_stereoInfo->text().split(",");
-	if(info.length() == 3)
-	{
-		nrOfDisparities = info.at(0).toInt();
-		blockSize = info.at(1).toInt();
-		smoothKernel = info.at(2).toInt();
-	}
-	else
-	{
-		nrOfDisparities = 64; blockSize = 9; smoothKernel = 5;
-	}
-
 	//get images from files, do remapping, get disparity image and show it
 	Mat leftImage = imread(fileName_L.toStdString().c_str());
 	Mat rightImage = imread(fileName_R.toStdString().c_str());
@@ -610,12 +597,7 @@ void MainWindow::on_btn_undistStereo_released()
 		imwrite(nmRight.toStdString().c_str(), imgUR);
 		QMessageBox::information(this, "Save successful", "Remapped images have been saved", QMessageBox::Ok);
 
-		Mat imgULgray, imgURgray;
-		cvtColor(imgUL, imgULgray, CV_BGR2GRAY);
-		cvtColor(imgUR, imgURgray, CV_BGR2GRAY);
-
-		Mat disp = camCalib.makeDisparityImage(imgULgray, imgURgray, nrOfDisparities, blockSize, smoothKernel);
-		imshow("Disparaty Image", disp);
+        makeDisparityImage(nmLeft, nmRight);
 	}
 }
 
@@ -659,4 +641,76 @@ void MainWindow::on_btn_alignImgs_released()
 	QString saveName = fileName_R.remove(".png").remove(".jpg").append("_aligned.png");
 	imwrite(saveName.toStdString().c_str(), alignedRight);
 	QMessageBox::information(this, "Success", "The aligned right image has been saved!", QMessageBox::Ok);
+}
+
+
+//BLOCK-MATCHING SLIDER:
+void MainWindow::on_slider_prefilterSize_sliderMoved(int position)
+{
+    //make odd
+    if(position % 2 == 0)
+    {
+        position++;
+        ui->slider_prefilterSize->setValue(position);
+    }
+    ui->label_prefilterSize->setText( QString::number(position) );
+}
+
+void MainWindow::on_slider_prefilterCAP_sliderMoved(int position)
+{
+    ui->label_prefilterCAP->setText( QString::number(position) );
+}
+
+void MainWindow::on_slider_SADwindow_sliderMoved(int position)
+{
+    //make odd
+    if(position % 2 == 0)
+    {
+        position++;
+        ui->slider_SADwindow->setValue(position);
+    }
+    ui->label_SADwindow->setText( QString::number(position) );
+}
+
+void MainWindow::on_slider_minDisp_sliderMoved(int position)
+{
+    ui->label_minDisp->setText( QString::number(position) );
+}
+
+void MainWindow::on_slider_dispRange_sliderMoved(int position)
+{
+    //make multiple of 16
+    int dispTemp = position % 16;
+    if(dispTemp != 0)
+    {
+        position -= dispTemp;
+        ui->slider_dispRange->setValue(position);
+    }
+    ui->label_dispRange->setText( QString::number(position) );
+}
+
+void MainWindow::on_slider_textureThresh_sliderMoved(int position)
+{
+    ui->label_textureThresh->setText( QString::number(position) );
+}
+
+void MainWindow::on_slider_speckleWindow_sliderMoved(int position)
+{
+    //make odd
+    if(position % 2 == 0)
+    {
+        position++;
+        ui->slider_speckleWindow->setValue(position);
+    }
+    ui->label_speckleWindow->setText( QString::number(position) );
+}
+
+void MainWindow::on_slider_speckleRange_sliderMoved(int position)
+{
+    ui->label_speckleRange->setText( QString::number(position) );
+}
+
+void MainWindow::on_slider_uniqueness_sliderMoved(int position)
+{
+    ui->label_uniqueness->setText( QString::number(position) );
 }

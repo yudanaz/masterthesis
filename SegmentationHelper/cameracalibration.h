@@ -37,10 +37,30 @@ public:
 	void loadCalibrationFile(QStringList calibFiles);
 	void undistortSingleImage(QString fileName);
 	void undistortGoldeyeMultiChImg(QStringList tarFileNames);
-	void undistortAndRemapStereoImages(Mat leftImage, Mat rightImage, Mat &leftImgOut, Mat &rightImgOut);
-	Mat makeDisparityImage(Mat leftGrayImg, Mat rightGrayImg, int nrOfDisparities, int blockSize, int smoothKernelSize);
+    void undistortAndRemapStereoImages(Mat leftImage, Mat rightImage, Mat &leftImgOut, Mat &rightImgOut);
 
-	Mat alignImageByFeatures(Mat imageL, Mat imageRtoBeAligned);
+    /*!
+     * \brief Sets the parameters for the opencv blockmatching algorithm.
+     * \param minDisparity: Minimal disparity in pixels
+     * \param nrOfDisparities: Disparity range in pixels
+     * \param SADWindowSize: Size of Sum-of-Absolute-Differences window
+     * \param prefilterSize: Size of normalization pre-filter kernel (reduce lighting differences)
+     * \param prefilterCap: Positive limit I_cap for nomralization by min(max(I-I_avg, -I_cap) , I_cap)
+     * \param textureThresh: below is considered noise
+     * \param uniquenessRatio: Filter out if [match_val - min_match < uniqueRatio * min_match]
+     * \param specklewindowSize: handle speckels at object border
+     * \param speckleRange: if min and max inside speckle window are inside this range, match is allowed
+     */
+    void setDisparityParameters(int minDisparity, int nrOfDisparities, int SADWindowSize,
+                                int prefilterSize, int prefilterCap,
+                                int textureThresh, float uniquenessRatio,
+                                int specklewindowSize, int speckleRange);
+
+    /*!
+     * \brief Computes a disparity image using the Block Matching algorithm by [Konolige97]
+     */
+    Mat makeDisparityImage(Mat leftGrayImg, Mat rightGrayImg);
+    Mat alignImageByFeatures(Mat imageL, Mat imageRtoBeAligned);
 
 	bool isCalibrated_cam(){ return cameraCalibrated; }
 	bool isCalibrated_goldeye(){ return goldeyeCalibrated; }
@@ -56,6 +76,7 @@ private:
 	void saveStereoCalibrationFile(QString calibFileName);
 
 	QWidget *parentWidget;
+    StereoBM sbm;
 	bool cameraCalibrated;
 	bool goldeyeCalibrated;
 	bool stereoCalibrated;

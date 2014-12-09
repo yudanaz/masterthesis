@@ -270,29 +270,49 @@ void CameraCalibration::undistortAndRemapStereoImages(Mat leftImage, Mat rightIm
 	remap(rightImage, rightImgOut, mapRx, mapRy, INTER_LINEAR, BORDER_CONSTANT, Scalar());
 }
 
-Mat CameraCalibration::makeDisparityImage(Mat leftGrayImg, Mat rightGrayImg,
-										   int nrOfDisparities, int blockSize, int smoothKernelSize)
+void CameraCalibration::setDisparityParameters(int minDisparity, int nrOfDisparities, int SADWindowSize,
+                                               int prefilterSize, int prefilterCap,
+                                               int textureThresh, float uniquenessRatio,
+                                               int specklewindowSize, int speckleRange)
 {
-	//assure that parameters meet requirements
-	//(disparaties must be multiple of 16, blocksize must be odd!)
-	int dispTemp = nrOfDisparities % 16;
-	if(dispTemp != 0) { nrOfDisparities -= dispTemp; } //subtract so it's multiple of 16
-	if(blockSize % 2 == 0) { blockSize++; } //make odd if even
-	if(blockSize < 5) { blockSize += 5-blockSize; } //make >= 5
-	if(smoothKernelSize % 2 == 0) { smoothKernelSize++; } //make odd if even
+    //assure that parameters meet requirements
+    //(disparaties must be multiple of 16, blocksize must be odd!)
+//    int dispTemp = nrOfDisparities % 16;
+//    if(dispTemp != 0) { nrOfDisparities -= dispTemp; } //subtract so it's multiple of 16
+//    if(SADWindowSize % 2 == 0) { SADWindowSize++; } //make odd if even
+//    if(SADWindowSize < 5) { SADWindowSize += 5-SADWindowSize; } //make >= 5
+//	if(smoothKernelSize % 2 == 0) { smoothKernelSize++; } //make odd if even
 
-	//smooth images
-	Mat leftSmooth, rightSmooth;
-	GaussianBlur(leftGrayImg, leftSmooth, Size(smoothKernelSize, smoothKernelSize), 0);
-	GaussianBlur(rightGrayImg, rightSmooth, Size(smoothKernelSize, smoothKernelSize), 0);
+    //pre filter (normalization)
+    sbm.state->preFilterType = StereoBM::PREFILTER_NORMALIZED_RESPONSE;
+    sbm.state->preFilterSize = prefilterSize;
+    sbm.state->preFilterCap = prefilterCap;
 
-	//compute disparities
-	Mat disp(leftGrayImg.rows, leftGrayImg.cols, CV_16SC1);
-	StereoBM sbm(StereoBM::BASIC_PRESET, nrOfDisparities, blockSize);
-//    sbm(leftGrayImg, rightGrayImg, disp, CV_16S);
-	sbm(leftSmooth, rightSmooth, disp, CV_16S);
+    //correspondence vai SAD
+    sbm.state->minDisparity = minDisparity;
+    sbm.state->numberOfDisparities = nrOfDisparities;
+    sbm.state->SADWindowSize = SADWindowSize;
 
-	//normalize and return
+    //post filters -> remove bad matches
+    sbm.state->textureThreshold = textureThresh;
+    sbm.state->uniquenessRatio = uniquenessRatio;
+    sbm.state->speckleWindowSize = specklewindowSize;
+    sbm.state->speckleRange = speckleRange;
+}
+
+Mat CameraCalibration::makeDisparityImage(Mat leftGrayImg, Mat rightGrayImg)
+{
+    //set parameters
+
+    //smooth images
+//	GaussianBlur(leftGrayImg, leftGrayImg, Size(smoothKernelSize, smoothKernelSize), 0);
+//	GaussianBlur(rightGrayImg, rightGrayImg, Size(smoothKernelSize, smoothKernelSize), 0);
+
+	//compute disparities    
+    Mat disp(leftGrayImg.rows, leftGrayImg.cols, CV_16SC1);
+    sbm(leftGrayImg, rightGrayImg, disp, CV_16S);
+
+    //normalize (from 16 to 8 bit) and return
 	double minVal, maxVal;
 	minMaxLoc(disp, &minVal, &maxVal); //find minimum and maximum intensities
 	Mat disp2;
