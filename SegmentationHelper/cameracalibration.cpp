@@ -11,68 +11,53 @@ CameraCalibration::CameraCalibration(QWidget *parent):
 	parentWidget = parent;
 }
 
-void CameraCalibration::calibrateSingleCamera(QStringList calibImgFiles, int chessboard_width, int chessboard_height)
+void CameraCalibration::calibrateSingleCamera(QList<Mat> calibImgs, int chessboard_width, int chessboard_height, QString calibFileName)
 {
-	//get images by name and use them for calibration
-	QList<Mat> calibImgs;
-	foreach(QString s, calibImgFiles)
-	{
-		calibImgs.append( imread(s.toStdString().c_str()) );
-	}
 	calibrateCamFromImages(calibImgs, 0, chessboard_width, chessboard_height);
 	QMessageBox::information(parentWidget, "Calibration successful", "Camera has been calibrated", QMessageBox::Ok);
 	cameraCalibrated = true;
 	goldeyeCalibrated = false;
 	stereoCalibrated = false;
 
-	//ask user where to store the calibration matrices
-	QString calibFileName = QFileDialog::getSaveFileName(parentWidget, "Select file to store calibration matrices",
-														 QDir::homePath());
-	saveCalibrationFile(calibFileName, 0);
+	if(calibFileName != ""){ saveCalibrationFile(calibFileName, 0); }
 }
 
-void CameraCalibration::calibrateGoldeyeMultiChannel(QStringList calibImgTarFiles, int chessboard_width, int chessboard_height)
+void CameraCalibration::calibrateGoldeyeMultiChannel(QList<QList<Mat> > calibImgPacks, int chessboard_width, int chessboard_height, QString calibFileName)
 {
-	//ask user where to store the calibration matrices
-	QString calibFileName = QFileDialog::getSaveFileName(parentWidget, "Select file to store calibration matrices",
-														 QDir::homePath());
-
 	//open each tar file and get band images
 	QList<Mat> b935, b1060, b1300, b1550;
 
-	foreach(QString tarFile, calibImgTarFiles)
+	foreach(QList<Mat> imgs, calibImgPacks)
 	{
-		QList<Mat> imgs = InOut::getImagesFromTarFile(tarFile);
-		if(imgs.length() < 4){ return; }
 		b935.append(imgs.at(0));
 		b1060.append(imgs.at(1));
 		b1300.append(imgs.at(2));
 		b1550.append(imgs.at(3));
 	}
 
-	//make calibration and save calibration matrix for each waveband
+	//make calibration for each waveband
 	calibrateCamFromImages(b935, 0, chessboard_width, chessboard_height, true);
-	saveCalibrationFile(calibFileName + "_935", 0);
 	calibrateCamFromImages(b1060, 1, chessboard_width, chessboard_height, true);
-	saveCalibrationFile(calibFileName + "_1060", 1);
 	calibrateCamFromImages(b1300, 2, chessboard_width, chessboard_height, true);
-	saveCalibrationFile(calibFileName + "_1300", 2);
 	calibrateCamFromImages(b1550, 3, chessboard_width, chessboard_height, true);
-	saveCalibrationFile(calibFileName + "_1550", 3);
 
-	QMessageBox::information(parentWidget, "Calibration successful", "Goldeye has been calibrated", QMessageBox::Ok);
+	//save calibration matrix
+	if(calibFileName != "")
+	{
+		saveCalibrationFile(calibFileName + "_935", 0);
+		saveCalibrationFile(calibFileName + "_1060", 1);
+		saveCalibrationFile(calibFileName + "_1300", 2);
+		saveCalibrationFile(calibFileName + "_1550", 3);
+	}
+
 	goldeyeCalibrated = true;
 	cameraCalibrated = false;
 	stereoCalibrated = false;
 }
 
-void CameraCalibration::calibrateStereoCameras(QStringList calibFilesLeft, QStringList calibFilesRight,
-											   int chessboard_width, int chessboard_height)
+void CameraCalibration::calibrateStereoCameras(QList<Mat> calibImgsLeft, QList<Mat> calibImgsRight,
+											   int chessboard_width, int chessboard_height, QString calibFileName)
 {
-	//get calib images for left and right camera
-	QList<Mat> calibImgsLeft, calibImgsRight;
-	foreach(QString file, calibFilesLeft){ calibImgsLeft.append(imread(file.toStdString().c_str())); }
-	foreach(QString file, calibFilesRight){ calibImgsRight.append(imread(file.toStdString().c_str())); }
 	Size imgSize = calibImgsLeft.first().size();
 
 	//get object and image points
@@ -127,10 +112,8 @@ void CameraCalibration::calibrateStereoCameras(QStringList calibFilesLeft, QStri
 	projectionMat_R = P2.clone();
 	disparity2DepthMat = Q.clone();
 
-	//ask user where to store the calibration data and save
-	QString calibFileName = QFileDialog::getSaveFileName(parentWidget, "Select file to store stereo calibration file",
-														 QDir::homePath());
-	saveStereoCalibrationFile(calibFileName);
+	//save the calibration file
+	if(calibFileName != ""){ saveStereoCalibrationFile(calibFileName); }
 
 	QMessageBox::information(parentWidget, "Calibration successful", "Stereo Camera Pair has been calibrated", QMessageBox::Ok);
 	goldeyeCalibrated = false;

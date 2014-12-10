@@ -490,8 +490,19 @@ void MainWindow::on_btn_calibSingle_released()
 	if(fileNames.count() == 0) return;
 	lastDir = QFileInfo(fileNames.first()).path();
 
+	//get images by name and use them for calibration
+	QList<Mat> calibImgs;
+	foreach(QString s, fileNames)
+	{
+		calibImgs.append( imread(s.toStdString().c_str()) );
+	}
+
+	//ask user where to store the calibration matrices
+	QString calibFileName = QFileDialog::getSaveFileName(this, "Select file to store calibration matrices",
+														 QDir::homePath());
+
 	QStringList params = ui->lineEdit_calibSingleInfo->text().split(",");
-	camCalib.calibrateSingleCamera(fileNames, params.first().toInt(), params.last().toInt());
+	camCalib.calibrateSingleCamera(calibImgs, params.first().toInt(), params.last().toInt(), calibFileName);
 }
 
 void MainWindow::on_btn_calibGoldeye_released()
@@ -500,8 +511,22 @@ void MainWindow::on_btn_calibGoldeye_released()
 	if(fileNames.count() == 0) return;
 	lastDir = QFileInfo(fileNames.first()).path();
 
+	//get calibration image packs from tar files
+	QList< QList<Mat> > calibImgs;
+	foreach(QString tarFile, fileNames)
+	{
+		QList<Mat> imgs = InOut::getImagesFromTarFile(tarFile);
+		if(imgs.length() < 4){ return; }
+		calibImgs.append(imgs);
+	}
+
+	//ask user where to store the calibration matrices
+	QString calibFileName = QFileDialog::getSaveFileName(this, "Select file to store calibration matrices",
+														 QDir::homePath());
+
 	QStringList params = ui->lineEdit_calibSingleInfo->text().split(",");
-	camCalib.calibrateGoldeyeMultiChannel(fileNames, params.first().toInt(), params.last().toInt());
+	camCalib.calibrateGoldeyeMultiChannel(calibImgs, params.first().toInt(), params.last().toInt(), calibFileName);
+	QMessageBox::information(this, "Calibration successful", "Goldeye has been calibrated", QMessageBox::Ok);
 }
 
 void MainWindow::on_btn_calibStereo_released()
@@ -513,8 +538,17 @@ void MainWindow::on_btn_calibStereo_released()
 	if(fileNames_R.count() == 0) return;
 	lastDir =QFileInfo(fileNames_R.first()).path();
 
+	//get calib images for left and right camera
+	QList<Mat> calibImgsLeft, calibImgsRight;
+	foreach(QString file, fileNames_L){ calibImgsLeft.append(imread(file.toStdString().c_str())); }
+	foreach(QString file, fileNames_R){ calibImgsRight.append(imread(file.toStdString().c_str())); }
+
+	//ask user where to store the calibration data and save
+	QString calibFileName = QFileDialog::getSaveFileName(this, "Select file to store stereo calibration file",
+														 QDir::homePath());
+
 	QStringList params = ui->lineEdit_calibSingleInfo->text().split(",");
-	camCalib.calibrateStereoCameras(fileNames_L, fileNames_R, params.first().toInt(), params.last().toInt());
+	camCalib.calibrateStereoCameras(calibImgsLeft, calibImgsRight, params.first().toInt(), params.last().toInt(), calibFileName);
 }
 
 void MainWindow::on_btn_undistSingle_released()

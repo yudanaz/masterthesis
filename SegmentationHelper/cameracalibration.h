@@ -29,10 +29,36 @@ class CameraCalibration
 {
 public:
 	CameraCalibration(QWidget *parent);
-	void calibrateSingleCamera(QStringList calibImgFiles, int chessboard_width, int chessboard_height);
-	void calibrateGoldeyeMultiChannel(QStringList calibImgTarFiles, int chessboard_width, int chessboard_height);
-	void calibrateStereoCameras(QStringList calibImgsLeft, QStringList calibImgsRight,
-								int chessboard_width, int chessboard_height);
+
+	/*!
+	 * \brief Calibrates a single camera with a list of chessboard pattern images.
+	 * \param calibImgs: A list of images with chessboard patterns from varied angles
+	 * \param chessboard_width: Inner corners on the rows of the board.
+	 * \param chessboard_height: Inner corners on the columns of the board.
+	 * \param calibFileName: The path to the file in which the calibration matrices should be stored. If empty, calibration is not saved to disk
+	 */
+	void calibrateSingleCamera(QList<Mat> calibImgs, int chessboard_width, int chessboard_height, QString calibFileName = "");
+
+	/*!
+	 * \brief Calibrates a Goldeye custom multi-spectral camera (ISF-custom-made),
+	 * i.e. calibrates the 4 wavebands independently
+	 * \param calibImgPacks: A list of lists of images. Each inner list is one multi-spectral image made of 4 wavebands.
+	 * \param chessboard_width: Inner corners on the rows of the board.
+	 * \param chessboard_height: Inner corners on the columns of the board.
+	 * \param calibFileName: The path to the file in which the calibration matrices should be stored. If empty, calibration is not saved to disk
+	 */
+	void calibrateGoldeyeMultiChannel(QList< QList<Mat> > calibImgPacks, int chessboard_width, int chessboard_height, QString calibFileName = "");
+
+	/*!
+	 * \brief Calibrates a pair of stereo cameras with a list of chessboard pattern images.
+	 * \param calibImgsLeft: A list of images with chessboard patterns from varied angles for the left camera.
+	 * \param calibImgsRight: A list of images with chessboard patterns from varied angles for the right camera.
+	 * \param chessboard_width: Inner corners on the rows of the board.
+	 * \param chessboard_height: Inner corners on the columns of the board.
+	 * \param calibFileName: The path to the file in which the calibration matrices should be stored. If empty, calibration is not saved to disk
+	 */
+	void calibrateStereoCameras(QList<Mat> calibImgsLeft, QList<Mat> calibImgsRight,
+								int chessboard_width, int chessboard_height, QString calibFileName = "");
 
 	/*!
 	 * \brief Loads and distignuishes between calibration files for the three camera types:
