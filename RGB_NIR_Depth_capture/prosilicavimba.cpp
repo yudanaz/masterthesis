@@ -86,16 +86,13 @@ void ProsilicaVimba::connect(QString IPaddress)
 	if ( res != VmbErrorSuccess )
 			throw CameraException(QString("Can not open camera: %1").arg(convErrToMsg(res)));
 
-//	//set large packet size
-//	if(isPmodel)
-//	{
-//		res = pGoldeye->GetFeatureByName("GVSPPacketSize", pCmd);
+	//set large packet size
+	res = pProsilica->GetFeatureByName("GVSPPacketSize", pCmd);
 
-//		if( res == VmbErrorSuccess )
-//		{
-//			res = pCmd->SetValue(8164);
-//		}
-//	}
+	if( res == VmbErrorSuccess )
+	{
+		res = pCmd->SetValue(8164);
+	}
 //	else
 //	{
 //		res = pGoldeye->GetFeatureByName("GVSPAdjustPacketSize", pCmd);
@@ -118,10 +115,10 @@ void ProsilicaVimba::connect(QString IPaddress)
 //			}
 //		}
 //	}
-//	if ( res != VmbErrorSuccess )
-//	{
-//		throw CameraException(QString("Can't adjust PacketSize! Code: %1").arg(convErrToMsg(res)));
-//	}
+	if ( res != VmbErrorSuccess )
+	{
+		throw CameraException(QString("Can't adjust PacketSize! Code: %1").arg(convErrToMsg(res)));
+	}
 
 	//get image size
 	VmbInt64_t width, height;
@@ -151,7 +148,7 @@ void ProsilicaVimba::connect(QString IPaddress)
 	else
 		throw CameraException(QString("Invalid image size given by camera: %1x%2").arg(width).arg(height));
 
-	//create frame observer for goldeye:
+	//create frame observer for prosilica:
 	myFrameObserver.reset( new FrameObserver(pProsilica) );
 
 	connected = true;
@@ -266,22 +263,22 @@ void ProsilicaVimba::configure(double exposureTime, quint8 bufferSize)
 //		}
 //	}
 
-//	//configure Gain to 1:
+	//configure Gain to 1:
 //	setHighgain(false);
 
 //	//set default NUC correction:
 //	setCorrectionDataset(exposureTime);
 
-//	//start continuous acquisition (which means: wait for next trigger signal)
-//	res = pGoldeye->StartContinuousImageAcquisition(myBufferSize, myFrameObserver);
+	//start continuous acquisition (which means: wait for next trigger signal)
+	res = pProsilica->StartContinuousImageAcquisition(myBufferSize, myFrameObserver);
 
-//	if ( res != VmbErrorSuccess )
-//	{
-//		throw CameraException(QString("Can't start acquisition! Code: %1")
-//							  .arg(convErrToMsg(res)));
-//	}
+	if ( res != VmbErrorSuccess )
+	{
+		throw CameraException(QString("Can't start acquisition! Code: %1")
+							  .arg(convErrToMsg(res)));
+	}
 
-//	configured = true;
+	configured = true;
 }
 
 void ProsilicaVimba::setExposureTime(double ms)

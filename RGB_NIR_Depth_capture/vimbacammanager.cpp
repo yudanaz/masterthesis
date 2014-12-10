@@ -8,7 +8,6 @@ VimbaCamManager::VimbaCamManager():
 	detected_goldeye(false)
 {
 	startVimbaAPI();
-	detectCameras();
 }
 
 VimbaCamManager::~VimbaCamManager()
@@ -24,20 +23,20 @@ void VimbaCamManager::startVimbaAPI()
 
 void VimbaCamManager::detectCameras()
 {
-//	if(!detected_goldeye)
-//	{
-//		goldeye = new GoldeyeVimba();
-//		try
-//		{
-//			goldeye->connect();
-//			goldeye->configure();//camConfig.integrationTime, camConfig.bufferSize);
-//			detected_goldeye = goldeye->isConnected() && goldeye->isConfigured();
-//		}
-//		catch(CameraException e)
-//		{
-//			QMessageBox::information(NULL, "Goldeye: Camera Exception", e.getMessage(), QMessageBox::Ok);
-//		}
-//	}
+	if(!detected_goldeye)
+	{
+		goldeye = new GoldeyeVimba();
+		try
+		{
+			goldeye->connect();
+			goldeye->configure();//camConfig.integrationTime, camConfig.bufferSize);
+			detected_goldeye = goldeye->isConnected() && goldeye->isConfigured();
+		}
+		catch(CameraException e)
+		{
+			QMessageBox::information(NULL, "Goldeye: Camera Exception", e.getMessage(), QMessageBox::Ok);
+		}
+	}
 
 	if(!detected_prosilica)
 	{
