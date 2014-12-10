@@ -366,12 +366,32 @@
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_7">
        <item>
+        <widget class="QPushButton" name="btn_loadParams">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(170, 200, 135)</string>
+         </property>
+         <property name="text">
+          <string>load Params</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btn_saveParams">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(170, 200, 135)</string>
+         </property>
+         <property name="text">
+          <string>save Params</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="btn_stereoVision">
          <property name="styleSheet">
           <string notr="true">background-color: rgb(170, 200, 135)</string>
          </property>
          <property name="text">
-          <string>Stereo Vision Test BLOCK MATCHING</string>
+          <string>make Disparity Map</string>
          </property>
         </widget>
        </item>
@@ -941,7 +961,7 @@
      <x>0</x>
      <y>0</y>
      <width>977</width>
-     <height>25</height>
+     <height>20</height>
     </rect>
    </property>
   </widget>

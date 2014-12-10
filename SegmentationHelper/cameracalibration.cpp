@@ -3,6 +3,7 @@
 CameraCalibration::CameraCalibration(QWidget *parent):
 	cameraCalibrated(false),
 	stereoCalibrated(false),
+	rectifyMapsCreated(false),
 	nrOfNIRChannels(4), //4 NIR channels max right now (will change with new flashlight)
 	cameraMatrices(4),
 	distCoefficients(4)
@@ -106,9 +107,10 @@ void CameraCalibration::calibrateStereoCameras(QStringList calibFilesLeft, QStri
 					cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 100, 1e-5),
 					CV_CALIB_SAME_FOCAL_LENGTH | CV_CALIB_ZERO_TANGENT_DIST);
 
-	//start stereo rectification
+	//start stereo rectification and trigger making the rectify maps (in undist and remap method)
 	Mat R1, R2, P1, P2, Q;
 	stereoRectify(CM_L, D_L, CM_R, D_R, imgSize, rotMat, translVec, R1, R2, P1, P2, Q);
+	rectifyMapsCreated = false;
 
 	//store everythin in class members for later use
 	cameraMatrices[0] = CM_L.clone();
@@ -258,61 +260,63 @@ void CameraCalibration::undistortGoldeyeMultiChImg(QStringList tarFileNames)
 
 void CameraCalibration::undistortAndRemapStereoImages(Mat leftImage, Mat rightImage, Mat& leftImgOut, Mat& rightImgOut)
 {
-	Mat mapLx, mapLy, mapRx, mapRy;
-//    Mat imgUL, imgUR;
-
-	initUndistortRectifyMap(cameraMatrices[0], distCoefficients[0], rectificTransf_L, projectionMat_L,
-			leftImage.size(), CV_32FC1, mapLx, mapLy);
-	initUndistortRectifyMap(cameraMatrices[1], distCoefficients[1], rectificTransf_R, projectionMat_R,
-			rightImage.size(), CV_32FC1, mapRx, mapRy);
-
+	if(!rectifyMapsCreated){ makeRectifyMapsForStereo(leftImage.size(), rightImage.size()); }
 	remap(leftImage, leftImgOut, mapLx, mapLy, INTER_LINEAR, BORDER_CONSTANT, Scalar());
 	remap(rightImage, rightImgOut, mapRx, mapRy, INTER_LINEAR, BORDER_CONSTANT, Scalar());
 }
 
-void CameraCalibration::setDisparityParameters(int minDisparity, int nrOfDisparities, int SADWindowSize,
-                                               int prefilterSize, int prefilterCap,
-                                               int textureThresh, float uniquenessRatio,
-                                               int specklewindowSize, int speckleRange)
+void CameraCalibration::makeRectifyMapsForStereo(Size leftImgSize, Size rightImgSize)
 {
-    //assure that parameters meet requirements
-    //(disparaties must be multiple of 16, blocksize must be odd!)
+	initUndistortRectifyMap(cameraMatrices[0], distCoefficients[0], rectificTransf_L, projectionMat_L,
+			leftImgSize, CV_32FC1, mapLx, mapLy);
+	initUndistortRectifyMap(cameraMatrices[1], distCoefficients[1], rectificTransf_R, projectionMat_R,
+			rightImgSize, CV_32FC1, mapRx, mapRy);
+	rectifyMapsCreated = true;
+}
+
+void CameraCalibration::setDisparityParameters(int minDisparity, int nrOfDisparities, int SADWindowSize,
+											   int prefilterSize, int prefilterCap,
+											   int textureThresh, float uniquenessRatio,
+											   int specklewindowSize, int speckleRange)
+{
+	//assure that parameters meet requirements
+	//(disparaties must be multiple of 16, blocksize must be odd!)
 //    int dispTemp = nrOfDisparities % 16;
 //    if(dispTemp != 0) { nrOfDisparities -= dispTemp; } //subtract so it's multiple of 16
 //    if(SADWindowSize % 2 == 0) { SADWindowSize++; } //make odd if even
 //    if(SADWindowSize < 5) { SADWindowSize += 5-SADWindowSize; } //make >= 5
 //	if(smoothKernelSize % 2 == 0) { smoothKernelSize++; } //make odd if even
 
-    //pre filter (normalization)
-    sbm.state->preFilterType = StereoBM::PREFILTER_NORMALIZED_RESPONSE;
-    sbm.state->preFilterSize = prefilterSize;
-    sbm.state->preFilterCap = prefilterCap;
+	//pre filter (normalization)
+	sbm.state->preFilterType = StereoBM::PREFILTER_NORMALIZED_RESPONSE;
+	sbm.state->preFilterSize = prefilterSize;
+	sbm.state->preFilterCap = prefilterCap;
 
-    //correspondence vai SAD
-    sbm.state->minDisparity = minDisparity;
-    sbm.state->numberOfDisparities = nrOfDisparities;
-    sbm.state->SADWindowSize = SADWindowSize;
+	//correspondence vai SAD
+	sbm.state->minDisparity = minDisparity;
+	sbm.state->numberOfDisparities = nrOfDisparities;
+	sbm.state->SADWindowSize = SADWindowSize;
 
-    //post filters -> remove bad matches
-    sbm.state->textureThreshold = textureThresh;
-    sbm.state->uniquenessRatio = uniquenessRatio;
-    sbm.state->speckleWindowSize = specklewindowSize;
-    sbm.state->speckleRange = speckleRange;
+	//post filters -> remove bad matches
+	sbm.state->textureThreshold = textureThresh;
+	sbm.state->uniquenessRatio = uniquenessRatio;
+	sbm.state->speckleWindowSize = specklewindowSize;
+	sbm.state->speckleRange = speckleRange;
 }
 
 Mat CameraCalibration::makeDisparityImage(Mat leftGrayImg, Mat rightGrayImg)
 {
-    //set parameters
+	//set parameters
 
-    //smooth images
+	//smooth images
 //	GaussianBlur(leftGrayImg, leftGrayImg, Size(smoothKernelSize, smoothKernelSize), 0);
 //	GaussianBlur(rightGrayImg, rightGrayImg, Size(smoothKernelSize, smoothKernelSize), 0);
 
-	//compute disparities    
-    Mat disp(leftGrayImg.rows, leftGrayImg.cols, CV_16SC1);
-    sbm(leftGrayImg, rightGrayImg, disp, CV_16S);
+	//compute disparities
+	Mat disp(leftGrayImg.rows, leftGrayImg.cols, CV_16SC1);
+	sbm(leftGrayImg, rightGrayImg, disp, CV_16S);
 
-    //normalize (from 16 to 8 bit) and return
+	//normalize (from 16 to 8 bit) and return
 	double minVal, maxVal;
 	minMaxLoc(disp, &minVal, &maxVal); //find minimum and maximum intensities
 	Mat disp2;
@@ -370,7 +374,7 @@ void CameraCalibration::saveCalibrationFile(QString calibFileName, int channelIn
 {
 	if(calibFileName != "" && channelIndex < nrOfNIRChannels)
 	{
-		calibFileName += ".singlecal";
+		calibFileName = calibFileName.remove(".singlecal").append(".singlecal");
 		FileStorage fs(calibFileName.toStdString().c_str(), FileStorage::WRITE);
 		fs << "CM" << cameraMatrices[channelIndex];
 		fs << "D" << distCoefficients[channelIndex];
@@ -382,7 +386,7 @@ void CameraCalibration::saveStereoCalibrationFile(QString calibFileName)
 {
 	if(calibFileName != "")
 	{
-		calibFileName += ".stereocal";
+		calibFileName = calibFileName.remove(".stereocal").append(".stereocal");
 		FileStorage fs(calibFileName.toStdString().c_str(), FileStorage::WRITE);
 		fs << "CM_L" << cameraMatrices[0];
 		fs << "CM_R" << cameraMatrices[1];
@@ -435,6 +439,7 @@ void CameraCalibration::loadCalibrationFile(QStringList calibFiles)
 			distCoefficients[1] = DR.clone();
 
 			stereoCalibrated = true;
+			rectifyMapsCreated = false; //trigger making the rectify maps once in stereo undist.&remap method
 			cameraCalibrated = goldeyeCalibrated = false;
 			return;
 		}

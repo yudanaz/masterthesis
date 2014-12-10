@@ -34,33 +34,40 @@ public:
 	void calibrateStereoCameras(QStringList calibImgsLeft, QStringList calibImgsRight,
 								int chessboard_width, int chessboard_height);
 
+	/*!
+	 * \brief Loads and distignuishes between calibration files for the three camera types:
+	 * single, goldeye and stereo cameras.
+	 * \param calibFiles: List containing the calibration files (goldeye needs separate single-camera
+	 * calibratedcalibration for each waveband).
+	 */
 	void loadCalibrationFile(QStringList calibFiles);
+
 	void undistortSingleImage(QString fileName);
 	void undistortGoldeyeMultiChImg(QStringList tarFileNames);
-    void undistortAndRemapStereoImages(Mat leftImage, Mat rightImage, Mat &leftImgOut, Mat &rightImgOut);
+	void undistortAndRemapStereoImages(Mat leftImage, Mat rightImage, Mat &leftImgOut, Mat &rightImgOut);
 
-    /*!
-     * \brief Sets the parameters for the opencv blockmatching algorithm.
-     * \param minDisparity: Minimal disparity in pixels
-     * \param nrOfDisparities: Disparity range in pixels
-     * \param SADWindowSize: Size of Sum-of-Absolute-Differences window
-     * \param prefilterSize: Size of normalization pre-filter kernel (reduce lighting differences)
-     * \param prefilterCap: Positive limit I_cap for nomralization by min(max(I-I_avg, -I_cap) , I_cap)
-     * \param textureThresh: below is considered noise
-     * \param uniquenessRatio: Filter out if [match_val - min_match < uniqueRatio * min_match]
-     * \param specklewindowSize: handle speckels at object border
-     * \param speckleRange: if min and max inside speckle window are inside this range, match is allowed
-     */
-    void setDisparityParameters(int minDisparity, int nrOfDisparities, int SADWindowSize,
-                                int prefilterSize, int prefilterCap,
-                                int textureThresh, float uniquenessRatio,
-                                int specklewindowSize, int speckleRange);
+	/*!
+	 * \brief Sets the parameters for the opencv blockmatching algorithm.
+	 * \param minDisparity: Minimal disparity in pixels
+	 * \param nrOfDisparities: Disparity range in pixels
+	 * \param SADWindowSize: Size of Sum-of-Absolute-Differences window
+	 * \param prefilterSize: Size of normalization pre-filter kernel (reduce lighting differences)
+	 * \param prefilterCap: Positive limit I_cap for nomralization by min(max(I-I_avg, -I_cap) , I_cap)
+	 * \param textureThresh: below is considered noise
+	 * \param uniquenessRatio: Filter out if [match_val - min_match < uniqueRatio * min_match]
+	 * \param specklewindowSize: handle speckels at object border
+	 * \param speckleRange: if min and max inside speckle window are inside this range, match is allowed
+	 */
+	void setDisparityParameters(int minDisparity, int nrOfDisparities, int SADWindowSize,
+								int prefilterSize, int prefilterCap,
+								int textureThresh, float uniquenessRatio,
+								int specklewindowSize, int speckleRange);
 
-    /*!
-     * \brief Computes a disparity image using the Block Matching algorithm by [Konolige97]
-     */
-    Mat makeDisparityImage(Mat leftGrayImg, Mat rightGrayImg);
-    Mat alignImageByFeatures(Mat imageL, Mat imageRtoBeAligned);
+	/*!
+	 * \brief Computes a disparity image using the Block Matching algorithm by [Konolige97]
+	 */
+	Mat makeDisparityImage(Mat leftGrayImg, Mat rightGrayImg);
+	Mat alignImageByFeatures(Mat imageL, Mat imageRtoBeAligned);
 
 	bool isCalibrated_cam(){ return cameraCalibrated; }
 	bool isCalibrated_goldeye(){ return goldeyeCalibrated; }
@@ -74,9 +81,10 @@ private:
 								 bool isGrayScale = false);
 	void saveCalibrationFile(QString calibFileName, int channelIndex);
 	void saveStereoCalibrationFile(QString calibFileName);
+	void makeRectifyMapsForStereo(Size leftImgSize, Size rightImgSize);
 
 	QWidget *parentWidget;
-    StereoBM sbm;
+	StereoBM sbm;
 	bool cameraCalibrated;
 	bool goldeyeCalibrated;
 	bool stereoCalibrated;
@@ -91,6 +99,11 @@ private:
 	Mat projectionMat_L;
 	Mat projectionMat_R;
 	Mat disparity2DepthMat;
+	Mat mapLx;
+	Mat mapLy;
+	Mat mapRx;
+	Mat mapRy;
+	bool rectifyMapsCreated;
 	int nrOfNIRChannels;
 };
 

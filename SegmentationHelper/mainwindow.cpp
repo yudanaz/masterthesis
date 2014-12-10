@@ -345,26 +345,28 @@ void MainWindow::makeFelsenzwalbSuperpixels(QString fileName)
 
 void MainWindow::makeDisparityImage(QString fileNameL, QString fileNameR)
 {
-    //load L and R images as grayscale
+	if(fileNameL == "" || fileNameR ==""){ return; }
+
+	//load L and R images as grayscale
 	Mat leftImg, rightImg, disp;
 	leftImg = imread(fileNameL.toStdString().c_str(), CV_LOAD_IMAGE_GRAYSCALE);
 	rightImg = imread(fileNameR.toStdString().c_str(), CV_LOAD_IMAGE_GRAYSCALE);
 
-    //set parameters
-    camCalib.setDisparityParameters(ui->slider_minDisp->value(),
-                                    ui->slider_dispRange->value(),
-                                    ui->slider_SADwindow->value(),
-                                    ui->slider_prefilterSize->value(),
-                                    ui->slider_prefilterCAP->value(),
-                                    ui->slider_textureThresh->value(),
-                                    ui->slider_uniqueness->value(),
-                                    ui->slider_speckleWindow->value(),
-                                    ui->slider_speckleRange->value());
+	//set parameters
+	camCalib.setDisparityParameters(ui->slider_minDisp->value(),
+									ui->slider_dispRange->value(),
+									ui->slider_SADwindow->value(),
+									ui->slider_prefilterSize->value(),
+									ui->slider_prefilterCAP->value(),
+									ui->slider_textureThresh->value(),
+									ui->slider_uniqueness->value(),
+									ui->slider_speckleWindow->value(),
+									ui->slider_speckleRange->value());
 
-    //process and display
-    disp = camCalib.makeDisparityImage(leftImg, rightImg);
-    imshow("left image", leftImg);
-    imshow("image", disp);
+	//process and display
+	disp = camCalib.makeDisparityImage(leftImg, rightImg);
+	imshow("left image", leftImg);
+	imshow("image", disp);
 }
 
 void MainWindow::makeSurfFeatures(QString fileName)
@@ -468,27 +470,6 @@ void MainWindow::on_pushButton_felsenzwalbAgain_released()
 	if(lastFelsenzwalbFilename != "") { makeFelsenzwalbSuperpixels(lastFelsenzwalbFilename); }
 }
 
-void MainWindow::on_btn_stereoVision_released()
-{
-	QString fileName = QFileDialog::getOpenFileName(this, tr("Select LEFT image"), lastDir, tr(IMGTYPES));
-	if(fileName == "") return;
-	lastStereoFileNameL = fileName;
-	lastDir = QFileInfo(fileName).path();
-
-	fileName = QFileDialog::getOpenFileName(this, tr("Select RIGHT image"), lastDir, tr(IMGTYPES));
-	if(fileName == "") return;
-	lastStereoFileNameR = fileName;
-	lastDir = QFileInfo(fileName).path();
-
-	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
-}
-
-void MainWindow::on_pushButton_stereoAgain_released()
-{
-	if(lastStereoFileNameL == "" || lastStereoFileNameR == ""){ return; }
-	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
-}
-
 void MainWindow::on_btn_surf_released()
 {
 	QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr(IMGTYPES));
@@ -573,32 +554,65 @@ void MainWindow::on_btn_undistStereo_released()
 	}
 
 	//get files
-	QString fileName_L = QFileDialog::getOpenFileName(this, tr("Select LEFT image file"), lastDir, tr(IMGTYPES));
-	if(fileName_L == ""){ return; }
-	lastDir = QFileInfo(fileName_L).path();
-	QString fileName_R = QFileDialog::getOpenFileName(this, tr("Select RIGHT image file"), lastDir, tr(IMGTYPES));
-	if(fileName_R == ""){ return; }
-	lastDir = QFileInfo(fileName_R).path();
+	QStringList fileNames_L = QFileDialog::getOpenFileNames(this, tr("Select LEFT image file(s)"), lastDir, tr(IMGTYPES));
+	if(fileNames_L.length() == 0){ return; }
+	lastDir = QFileInfo(fileNames_L.first()).path();
+	QStringList fileNames_R = QFileDialog::getOpenFileNames(this, tr("Select RIGHT image file(s)"), lastDir, tr(IMGTYPES));
+	if(fileNames_R.length() == 0){ return; }
+	lastDir = QFileInfo(fileNames_R.first()).path();
 
-	//get images from files, do remapping, get disparity image and show it
-	Mat leftImage = imread(fileName_L.toStdString().c_str());
-	Mat rightImage = imread(fileName_R.toStdString().c_str());
-	if(fileName_L != "" && fileName_R != "")
+	QString nmLeft, nmRight;
+
+	//make undistorted images for all stereo pairs
+	for(int i = 0; i < fileNames_L.length(); ++i)
 	{
-		Mat imgUL, imgUR;
-		camCalib.undistortAndRemapStereoImages(leftImage, rightImage, imgUL, imgUR);
+		QString fileName_L = fileNames_L.at(i);
+		QString fileName_R = fileNames_R.at(i);
 
-		//save images
-		QString fileNameLeft = fileName_L;
-		QString fileNameRight = fileName_R;
-		QString nmLeft = (fileNameLeft.remove(".png").remove(".jpg")).append("_remap.png");
-		QString nmRight = (fileNameRight.remove(".png").remove(".jpg")).append("_remap.png");
-		imwrite(nmLeft.toStdString().c_str(), imgUL);
-		imwrite(nmRight.toStdString().c_str(), imgUR);
-		QMessageBox::information(this, "Save successful", "Remapped images have been saved", QMessageBox::Ok);
+		//get images from files, do remapping, get disparity image and show it
+		Mat leftImage = imread(fileName_L.toStdString().c_str());
+		Mat rightImage = imread(fileName_R.toStdString().c_str());
+		if(fileName_L != "" && fileName_R != "")
+		{
+			Mat imgUL, imgUR;
+			camCalib.undistortAndRemapStereoImages(leftImage, rightImage, imgUL, imgUR);
 
-        makeDisparityImage(nmLeft, nmRight);
+			//save images -> use left fileName as base name and append "L" and "R"
+			QString fileNameLeft = fileName_L;
+			QString fileNameRight = fileName_L;
+			nmLeft = (fileNameLeft.remove(".png").remove(".jpg")).append("_remap_L.png");
+			nmRight = (fileNameRight.remove(".png").remove(".jpg")).append("_remap_R.png");
+			imwrite(nmLeft.toStdString().c_str(), imgUL);
+			imwrite(nmRight.toStdString().c_str(), imgUR);
+		}
 	}
+	QMessageBox::information(this, "Save successful", "Remapped images have been saved", QMessageBox::Ok);
+
+	//show and remmeber last image
+	makeDisparityImage(nmLeft, nmRight);
+	lastStereoFileNameL = nmLeft;
+	lastStereoFileNameR = nmRight;
+}
+
+
+void MainWindow::on_btn_stereoVision_released()
+{
+	QString fileName = QFileDialog::getOpenFileName(this, tr("Select LEFT image"), lastDir, tr(IMGTYPES));
+	if(fileName == "") return;
+	lastStereoFileNameL = fileName;
+	lastDir = QFileInfo(fileName).path();
+
+	fileName = QFileDialog::getOpenFileName(this, tr("Select RIGHT image"), lastDir, tr(IMGTYPES));
+	if(fileName == "") return;
+	lastStereoFileNameR = fileName;
+	lastDir = QFileInfo(fileName).path();
+
+	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
+}
+
+void MainWindow::on_pushButton_stereoAgain_released()
+{
+	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
 }
 
 void MainWindow::on_btn_undistLOAD_released()
@@ -647,70 +661,158 @@ void MainWindow::on_btn_alignImgs_released()
 //BLOCK-MATCHING SLIDER:
 void MainWindow::on_slider_prefilterSize_sliderMoved(int position)
 {
-    //make odd
-    if(position % 2 == 0)
-    {
-        position++;
-        ui->slider_prefilterSize->setValue(position);
-    }
-    ui->label_prefilterSize->setText( QString::number(position) );
+	//make odd
+	if(position % 2 == 0)
+	{
+		position++;
+		ui->slider_prefilterSize->setValue(position);
+	}
+	ui->label_prefilterSize->setText( QString::number(position) );
+	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
 }
 
 void MainWindow::on_slider_prefilterCAP_sliderMoved(int position)
 {
-    ui->label_prefilterCAP->setText( QString::number(position) );
+	ui->label_prefilterCAP->setText( QString::number(position) );
+	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
 }
 
 void MainWindow::on_slider_SADwindow_sliderMoved(int position)
 {
-    //make odd
-    if(position % 2 == 0)
-    {
-        position++;
-        ui->slider_SADwindow->setValue(position);
-    }
-    ui->label_SADwindow->setText( QString::number(position) );
+	//make odd
+	if(position % 2 == 0)
+	{
+		position++;
+		ui->slider_SADwindow->setValue(position);
+	}
+	ui->label_SADwindow->setText( QString::number(position) );
+	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
 }
 
 void MainWindow::on_slider_minDisp_sliderMoved(int position)
 {
-    ui->label_minDisp->setText( QString::number(position) );
+	ui->label_minDisp->setText( QString::number(position) );
+	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
 }
 
 void MainWindow::on_slider_dispRange_sliderMoved(int position)
 {
-    //make multiple of 16
-    int dispTemp = position % 16;
-    if(dispTemp != 0)
-    {
-        position -= dispTemp;
-        ui->slider_dispRange->setValue(position);
-    }
-    ui->label_dispRange->setText( QString::number(position) );
+	//make multiple of 16
+	int dispTemp = position % 16;
+	if(dispTemp != 0)
+	{
+		position -= dispTemp;
+		ui->slider_dispRange->setValue(position);
+	}
+	ui->label_dispRange->setText( QString::number(position) );
+	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
 }
 
 void MainWindow::on_slider_textureThresh_sliderMoved(int position)
 {
-    ui->label_textureThresh->setText( QString::number(position) );
+	ui->label_textureThresh->setText( QString::number(position) );
+	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
 }
 
 void MainWindow::on_slider_speckleWindow_sliderMoved(int position)
 {
-    //make odd
-    if(position % 2 == 0)
-    {
-        position++;
-        ui->slider_speckleWindow->setValue(position);
-    }
-    ui->label_speckleWindow->setText( QString::number(position) );
+	//make odd
+	if(position % 2 == 0)
+	{
+		position++;
+		ui->slider_speckleWindow->setValue(position);
+	}
+	ui->label_speckleWindow->setText( QString::number(position) );
+	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
 }
 
 void MainWindow::on_slider_speckleRange_sliderMoved(int position)
 {
-    ui->label_speckleRange->setText( QString::number(position) );
+	ui->label_speckleRange->setText( QString::number(position) );
+	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
 }
 
 void MainWindow::on_slider_uniqueness_sliderMoved(int position)
 {
-    ui->label_uniqueness->setText( QString::number(position) );
+	ui->label_uniqueness->setText( QString::number(position) );
+	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
+}
+
+void MainWindow::on_btn_saveParams_released()
+{
+	QString fileName = QFileDialog::getSaveFileName(this, "Select file for BM parameters", lastDir);
+	if(fileName == ""){ return; }
+
+	QFile file(fileName.remove(".bmparams").append(".bmparams"));
+	if (!file.open(QIODevice::WriteOnly))
+	{
+		 QMessageBox::information(this, tr("Unable to open file"), file.errorString());
+		 return;
+	}
+
+	QTextStream out(&file);
+	out << "mindDisp:" << ui->slider_minDisp->value() << "\n" <<
+			"dispRange:" << ui->slider_dispRange->value() << "\n" <<
+			"SADwindow:" << ui->slider_SADwindow->value() << "\n" <<
+			"prefilterSize:" << ui->slider_prefilterSize->value() << "\n" <<
+			"prefilterCAP:" << ui->slider_prefilterCAP->value() << "\n" <<
+			"textureThresh:" << ui->slider_textureThresh->value() << "\n" <<
+			"uniquenessRatio:" << ui->slider_uniqueness->value() << "\n" <<
+			"speckleWindow:" << ui->slider_speckleWindow->value() << "\n" <<
+			"speckleRange:" << ui->slider_speckleRange->value();
+	file.close();
+}
+
+void MainWindow::on_btn_loadParams_released()
+{
+	QString fileName = QFileDialog::getOpenFileName(this, "Select file for BM parameters", lastDir, tr("*.bmparams"));
+	if(fileName == ""){ return; }
+
+	QFile file(fileName);
+	if (!file.open(QIODevice::ReadOnly))
+	{
+		 QMessageBox::information(this, tr("Unable to open file"), file.errorString());
+		 return;
+	}
+
+	QTextStream in(&file);
+	int v1, v2, v3, v4, v5, v6, v7, v8, v9;
+	if(!in.atEnd()){ v1 = in.readLine().split(":").last().toInt(); }
+	if(!in.atEnd()){ v2 = in.readLine().split(":").last().toInt(); }
+	if(!in.atEnd()){ v3 = in.readLine().split(":").last().toInt(); }
+	if(!in.atEnd()){ v4 = in.readLine().split(":").last().toInt(); }
+	if(!in.atEnd()){ v5 = in.readLine().split(":").last().toInt(); }
+	if(!in.atEnd()){ v6 = in.readLine().split(":").last().toInt(); }
+	if(!in.atEnd()){ v7 = in.readLine().split(":").last().toInt(); }
+	if(!in.atEnd()){ v8 = in.readLine().split(":").last().toInt(); }
+	if(!in.atEnd()){ v9 = in.readLine().split(":").last().toInt(); }
+	file.close();
+
+
+	ui->slider_minDisp->setValue(v1);
+	ui->label_minDisp->setText(QString::number(v1));
+
+	ui->slider_dispRange->setValue(v2);
+	ui->label_dispRange->setText(QString::number(v2));
+
+	ui->slider_SADwindow->setValue(v3);
+	ui->label_SADwindow->setText(QString::number(v3));
+
+	ui->slider_prefilterSize->setValue(v4);
+	ui->label_prefilterSize->setText(QString::number(v4));
+
+	ui->slider_prefilterCAP->setValue(v5);
+	ui->label_prefilterCAP->setText(QString::number(v5));
+
+	ui->slider_textureThresh->setValue(v6);
+	ui->label_textureThresh->setText(QString::number(v6));
+
+	ui->slider_uniqueness->setValue(v7);
+	ui->label_uniqueness->setText(QString::number(v7));
+
+	ui->slider_speckleWindow->setValue(v8);
+	ui->label_speckleWindow->setText(QString::number(v8));
+
+	ui->slider_speckleRange->setValue(v9);
+	ui->label_speckleRange->setText(QString::number(v9));
 }

@@ -58,10 +58,6 @@ private slots:
 
 	void on_pushButton_felsenzwalbAgain_released();
 
-	void on_btn_stereoVision_released();
-
-	void on_pushButton_stereoAgain_released();
-
 	void on_btn_surf_released();
 
 	void on_pushButton_surfAgain_released();
@@ -74,38 +70,46 @@ private slots:
 
 	void on_btn_undistGoldeye_released();
 
-    void on_btn_undistLOAD_released();
+	void on_btn_undistLOAD_released();
 
-    void on_btn_calibStereo_released();
+	void on_btn_calibStereo_released();
 
-    void on_btn_undistStereo_released();
+	void on_btn_undistStereo_released();
 
-    void on_btn_alignImgs_released();
+	void on_btn_stereoVision_released();
 
-    void on_slider_prefilterSize_sliderMoved(int position);
+	void on_pushButton_stereoAgain_released();
 
-    void on_slider_prefilterCAP_sliderMoved(int position);
+	void on_btn_alignImgs_released();
 
-    void on_slider_SADwindow_sliderMoved(int position);
+	void on_slider_prefilterSize_sliderMoved(int position);
 
-    void on_slider_minDisp_sliderMoved(int position);
+	void on_slider_prefilterCAP_sliderMoved(int position);
 
-    void on_slider_dispRange_sliderMoved(int position);
+	void on_slider_SADwindow_sliderMoved(int position);
 
-    void on_slider_textureThresh_sliderMoved(int position);
+	void on_slider_minDisp_sliderMoved(int position);
 
-    void on_slider_speckleWindow_sliderMoved(int position);
+	void on_slider_dispRange_sliderMoved(int position);
 
-    void on_slider_speckleRange_sliderMoved(int position);
+	void on_slider_textureThresh_sliderMoved(int position);
 
-    void on_slider_uniqueness_sliderMoved(int position);
+	void on_slider_speckleWindow_sliderMoved(int position);
+
+	void on_slider_speckleRange_sliderMoved(int position);
+
+	void on_slider_uniqueness_sliderMoved(int position);
+
+	void on_btn_saveParams_released();
+
+	void on_btn_loadParams_released();
 
 private:
 	void makeLabelImages(QStringList fileNames);
 	void makeSeedsSuperpixels(QString fileName);
 	void makeSlicSuperpixels(QString fileName);
-    void makeFelsenzwalbSuperpixels(QString fileName);
-    void makeDisparityImage(QString fileNameL, QString fileNameR);
+	void makeFelsenzwalbSuperpixels(QString fileName);
+	void makeDisparityImage(QString fileNameL, QString fileNameR);
 	void makeSurfFeatures(QString fileName);
 
 
