@@ -692,6 +692,40 @@ void MainWindow::on_btn_alignImgs_released()
 }
 
 
+void MainWindow::on_btn_homogenMake_released()
+{
+	QStringList fileNames = QFileDialog::getOpenFileNames(this, tr("Select tar-files containing calibration images"), lastDir, tr("*.tar"));
+	if(fileNames.count() == 0) return;
+	lastDir = QFileInfo(fileNames.first()).path();
+
+	camCalib.makeAndSaveHomogeneityMatrices(fileNames, lastDir);
+
+	QMessageBox::information(this, "Homogeneity Calibration Successful", "Homogeneity calibration matrix has created and saved", QMessageBox::Ok);
+}
+
+
+void MainWindow::on_btn_homogenLoad_released()
+{
+	QString fileName = QFileDialog::getOpenFileName(this, "Select homogeneity calibration file", lastDir);
+	if(fileName == ""){ return; }
+	lastDir = QFileInfo(fileName).path();
+
+	if(camCalib.loadHomogeneityMatrices(fileName))
+	{
+		QMessageBox::information(this, "Load Successful", "Homogeneity calibration file has been loaded", QMessageBox::Ok);
+	}
+}
+
+void MainWindow::on_btn_homogenApply_released()
+{
+	QString fileName = QFileDialog::getOpenFileName(this, "Select multichannel image (tar)", lastDir, tr("*.tar"));
+	if(fileName == ""){ return; }
+	lastDir = QFileInfo(fileName).path();
+
+	camCalib.applyHomogeneityMatrices(fileName);
+}
+
+
 //BLOCK-MATCHING SLIDER:
 void MainWindow::on_slider_prefilterSize_sliderMoved(int position)
 {
@@ -850,3 +884,7 @@ void MainWindow::on_btn_loadParams_released()
 	ui->slider_speckleRange->setValue(v9);
 	ui->label_speckleRange->setText(QString::number(v9));
 }
+
+
+
+

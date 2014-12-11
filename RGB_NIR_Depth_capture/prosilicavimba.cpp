@@ -87,33 +87,33 @@ void ProsilicaVimba::connect(QString IPaddress)
 			throw CameraException(QString("Can not open camera: %1").arg(convErrToMsg(res)));
 
 	//set large packet size
-	res = pProsilica->GetFeatureByName("GVSPPacketSize", pCmd);
+//	res = pProsilica->GetFeatureByName("GVSPPacketSize", pCmd);
 
-	if( res == VmbErrorSuccess )
-	{
-		res = pCmd->SetValue(8164);
-	}
+//	if( res == VmbErrorSuccess )
+//	{
+//		res = pCmd->SetValue(8096);
+//	}
 //	else
 //	{
-//		res = pGoldeye->GetFeatureByName("GVSPAdjustPacketSize", pCmd);
+		res = pProsilica->GetFeatureByName("GVSPAdjustPacketSize", pCmd);
 
-//		if( res == VmbErrorSuccess )
-//		{
-//			res = pCmd->RunCommand();
+		if( res == VmbErrorSuccess )
+		{
+			res = pCmd->RunCommand();
 
-//			if( res == VmbErrorSuccess )
-//			{
-//				bool bIsCommandDone = false;
-//				do
-//				{
-//					res = pCmd->IsCommandDone( bIsCommandDone );
-//					if( res != VmbErrorSuccess )
-//					{
-//						break;
-//					}
-//				} while( false == bIsCommandDone );
-//			}
-//		}
+			if( res == VmbErrorSuccess )
+			{
+				bool bIsCommandDone = false;
+				do
+				{
+					res = pCmd->IsCommandDone( bIsCommandDone );
+					if( res != VmbErrorSuccess )
+					{
+						break;
+					}
+				} while( false == bIsCommandDone );
+			}
+		}
 //	}
 	if ( res != VmbErrorSuccess )
 	{
@@ -144,6 +144,8 @@ void ProsilicaVimba::connect(QString IPaddress)
 	{
 		myWidth = width;
 		myHeight = height;
+
+		qDebug() << "Image size: " << myWidth << "x" << myHeight;
 	}
 	else
 		throw CameraException(QString("Invalid image size given by camera: %1x%2").arg(width).arg(height));
@@ -185,6 +187,11 @@ void ProsilicaVimba::configure(double exposureTime, quint8 bufferSize)
 	if( res == VmbErrorSuccess )
 	{
 		res = pFeature->SetValue(0);//1);
+
+		//TEST
+//		res = pProsilica->GetFeatureByName("AcquisitionFrameRateAbs", pFeature);
+//		res = pFeature->SetValue(10.0f); //fps
+		//endof TEST
 	}
 	if ( res != VmbErrorSuccess )
 	{
@@ -270,13 +277,13 @@ void ProsilicaVimba::configure(double exposureTime, quint8 bufferSize)
 //	setCorrectionDataset(exposureTime);
 
 	//start continuous acquisition (which means: wait for next trigger signal)
-	res = pProsilica->StartContinuousImageAcquisition(myBufferSize, myFrameObserver);
+//	res = pProsilica->StartContinuousImageAcquisition(myBufferSize, myFrameObserver);
 
-	if ( res != VmbErrorSuccess )
-	{
-		throw CameraException(QString("Can't start acquisition! Code: %1")
-							  .arg(convErrToMsg(res)));
-	}
+//	if ( res != VmbErrorSuccess )
+//	{
+//		throw CameraException(QString("Can't start acquisition! Code: %1")
+//							  .arg(convErrToMsg(res)));
+//	}
 
 	configured = true;
 }
@@ -342,6 +349,15 @@ Mat ProsilicaVimba::getCVFrame()
 
 	Mat out(myHeight, myWidth, CV_16UC1);
 
+	//TEST
+	res = pProsilica->StartContinuousImageAcquisition(myBufferSize, myFrameObserver);
+	if ( res != VmbErrorSuccess )
+	{
+		throw CameraException(QString("Can't start acquisition! Code: %1")
+							  .arg(convErrToMsg(res)));
+	}
+	//endof TEST
+
 	quint16 count = 0;
 	while (!(SP_DYN_CAST(myFrameObserver, FrameObserver)->isFrameAvailable()))
 	{
@@ -358,15 +374,15 @@ Mat ProsilicaVimba::getCVFrame()
 	if ( (res == VmbErrorSuccess) && (eReceiveStatus == VmbFrameStatusComplete) )
 	{
 		VmbUchar_t *pBuffer;
-		if ( frame->GetImage( pBuffer ) == VmbErrorSuccess)
+		if ( SP_ACCESS(frame)->GetImage( pBuffer ) == VmbErrorSuccess)
 		{
 			//create new Mat with correct size and use buffer as data:
-			Mat newMat(myHeight, myWidth, CV_16UC1, pBuffer);
+			Mat newMat(myHeight, myWidth, CV_8UC3, pBuffer);
 
 			//memcpy( newMat.data, pBuffer, myWidth * myHeight );
 
 			//scale the input mat to output
-			out = newMat * 16; //12 to 16 bit, color is 12 bit
+			out = newMat.clone();
 		}
 		pProsilica->QueueFrame(frame);
 	}
@@ -376,6 +392,15 @@ Mat ProsilicaVimba::getCVFrame()
 
 		throw CameraReadException(QString("Corrupt frame: %1").arg(convErrToMsg(eReceiveStatus)));
 	}
+
+	//TEST
+	res = pProsilica->StopContinuousImageAcquisition();
+	if ( res != VmbErrorSuccess )
+	{
+		throw CameraException(QString("Can't stop acquisition! Code: %1")
+							  .arg(convErrToMsg(res)));
+	}
+	//endof TEST
 
 	return out;
 }

@@ -4,9 +4,10 @@ CameraCalibration::CameraCalibration(QWidget *parent):
 	cameraCalibrated(false),
 	stereoCalibrated(false),
 	rectifyMapsCreated(false),
+	homogeneityCalibrated(false),
 	nrOfNIRChannels(4), //4 NIR channels max right now (will change with new flashlight)
-	cameraMatrices(4),
-	distCoefficients(4)
+	camMatrices_goldeye(4),
+	distCoeffs_goldeye(4)
 {
 	parentWidget = parent;
 }
@@ -98,10 +99,10 @@ void CameraCalibration::calibrateStereoCameras(QList<Mat> calibImgsLeft, QList<M
 	rectifyMapsCreated = false;
 
 	//store everythin in class members for later use
-	cameraMatrices[0] = CM_L.clone();
-	cameraMatrices[1] = CM_R.clone();
-	distCoefficients[0] = D_L.clone();
-	distCoefficients[1] = D_R.clone();
+	camMatrices_goldeye[0] = CM_L.clone();
+	camMatrices_goldeye[1] = CM_R.clone();
+	distCoeffs_goldeye[0] = D_L.clone();
+	distCoeffs_goldeye[1] = D_R.clone();
 	rotationMatrix = rotMat.clone();
 	translationVec = translVec.clone();
 	essentialMat = E.clone();
@@ -150,8 +151,8 @@ void CameraCalibration::calibrateCamFromImages(QList<Mat> calibImgs, int channel
 	vector<Mat> rvecs, tvecs;
 
 	calibrateCamera(objectPoints, imagePoints, imgSize, camMatrix, distCoeff, rvecs, tvecs);
-	cameraMatrices[channelIndex] = camMatrix.clone();
-	distCoefficients[channelIndex] = distCoeff.clone();
+	camMatrices_goldeye[channelIndex] = camMatrix.clone();
+	distCoeffs_goldeye[channelIndex] = distCoeff.clone();
 }
 
 void CameraCalibration::getObjectAndImagePoints(QList<Mat> calibImgs, int width, int height,
@@ -203,7 +204,7 @@ void CameraCalibration::undistortSingleImage(QString fileName)
 {
 	Mat img, imgUndist;
 	img = imread(fileName.toStdString().c_str());
-	undistort(img, imgUndist, cameraMatrices[0], distCoefficients[0]);
+	undistort(img, imgUndist, camMatrices_goldeye[0], distCoeffs_goldeye[0]);
 
 	namedWindow("original", CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO);
 	namedWindow("undistorted", CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO);
@@ -228,7 +229,7 @@ void CameraCalibration::undistortGoldeyeMultiChImg(QStringList tarFileNames)
 		for(int i = 0; i< 4/*imgs.length()*/; ++i)
 		{
 			Mat imgU;
-			undistort(imgs.at(i), imgU, cameraMatrices[i], distCoefficients[i]);
+			undistort(imgs.at(i), imgU, camMatrices_goldeye[i], distCoeffs_goldeye[i]);
 
 			//save orig and undistorted for all channels
 			QString imgNm = newName + "_" + wavebands.at(i) + "_orig.png";
@@ -250,9 +251,9 @@ void CameraCalibration::undistortAndRemapStereoImages(Mat leftImage, Mat rightIm
 
 void CameraCalibration::makeRectifyMapsForStereo(Size leftImgSize, Size rightImgSize)
 {
-	initUndistortRectifyMap(cameraMatrices[0], distCoefficients[0], rectificTransf_L, projectionMat_L,
+	initUndistortRectifyMap(camMatrices_goldeye[0], distCoeffs_goldeye[0], rectificTransf_L, projectionMat_L,
 			leftImgSize, CV_32FC1, mapLx, mapLy);
-	initUndistortRectifyMap(cameraMatrices[1], distCoefficients[1], rectificTransf_R, projectionMat_R,
+	initUndistortRectifyMap(camMatrices_goldeye[1], distCoeffs_goldeye[1], rectificTransf_R, projectionMat_R,
 			rightImgSize, CV_32FC1, mapRx, mapRy);
 	rectifyMapsCreated = true;
 }
@@ -359,8 +360,8 @@ void CameraCalibration::saveCalibrationFile(QString calibFileName, int channelIn
 	{
 		calibFileName = calibFileName.remove(".singlecal").append(".singlecal");
 		FileStorage fs(calibFileName.toStdString().c_str(), FileStorage::WRITE);
-		fs << "CM" << cameraMatrices[channelIndex];
-		fs << "D" << distCoefficients[channelIndex];
+		fs << "CM" << camMatrices_goldeye[channelIndex];
+		fs << "D" << distCoeffs_goldeye[channelIndex];
 		fs.release();
 	}
 }
@@ -371,10 +372,10 @@ void CameraCalibration::saveStereoCalibrationFile(QString calibFileName)
 	{
 		calibFileName = calibFileName.remove(".stereocal").append(".stereocal");
 		FileStorage fs(calibFileName.toStdString().c_str(), FileStorage::WRITE);
-		fs << "CM_L" << cameraMatrices[0];
-		fs << "CM_R" << cameraMatrices[1];
-		fs << "D_L" << distCoefficients[0];
-		fs << "D_R" << distCoefficients[1];
+		fs << "CM_L" << camMatrices_goldeye[0];
+		fs << "CM_R" << camMatrices_goldeye[1];
+		fs << "D_L" << distCoeffs_goldeye[0];
+		fs << "D_R" << distCoeffs_goldeye[1];
 		fs << "R" << rotationMatrix;
 		fs << "T" << translationVec;
 		fs << "E" << essentialMat;
@@ -416,10 +417,10 @@ void CameraCalibration::loadCalibrationFile(QStringList calibFiles)
 			fs["P_R"] >> projectionMat_R;
 			fs["Q"] >> disparity2DepthMat;
 
-			cameraMatrices[0] = CML.clone();
-			cameraMatrices[1] = CMR.clone();
-			distCoefficients[0] = DL.clone();
-			distCoefficients[1] = DR.clone();
+			camMatrices_goldeye[0] = CML.clone();
+			camMatrices_goldeye[1] = CMR.clone();
+			distCoeffs_goldeye[0] = DL.clone();
+			distCoeffs_goldeye[1] = DR.clone();
 
 			stereoCalibrated = true;
 			rectifyMapsCreated = false; //trigger making the rectify maps once in stereo undist.&remap method
@@ -432,8 +433,8 @@ void CameraCalibration::loadCalibrationFile(QStringList calibFiles)
 		fs["CM"] >> CM;
 		fs["D"] >> D;
 
-		cameraMatrices[cnt] = CM.clone();
-		distCoefficients[cnt] = D.clone();
+		camMatrices_goldeye[cnt] = CM.clone();
+		distCoeffs_goldeye[cnt] = D.clone();
 
 		cnt++;
 	}
@@ -442,3 +443,166 @@ void CameraCalibration::loadCalibrationFile(QStringList calibFiles)
 	if(cnt == 1){ cameraCalibrated = true; }
 	else if(cnt == nrOfNIRChannels){ goldeyeCalibrated = true; }
 }
+
+void CameraCalibration::makeAndSaveHomogeneityMatrices(QStringList calibImgTarFiles, QString folderURL)
+{
+	//get calibration images for each waveband
+	QList<Mat> b935, b1060, b1300, b1550;
+
+	foreach(QString tarFileName, calibImgTarFiles)
+	{
+		QList<Mat> imgs = InOut::getImagesFromTarFile(tarFileName);
+		b935.append(imgs.at(0));
+		b1060.append(imgs.at(1));
+		b1300.append(imgs.at(2));
+		b1550.append(imgs.at(3));
+	}
+
+	//average over all images
+	double total = calibImgTarFiles.length();
+	int w = b935.at(0).cols;
+	int h = b935.at(0).rows;
+	Mat avg935_temp(h, w, CV_16UC1, cv::Scalar(0));
+	Mat avg1060_temp(h, w, CV_16UC1, cv::Scalar(0));
+	Mat avg1300_temp(h, w, CV_16UC1, cv::Scalar(0));
+	Mat avg1550_temp(h, w, CV_16UC1, cv::Scalar(0));
+
+	//first sum up
+	int i, x, y;
+	for(i = 0; i < total; ++i)
+	{
+		for(y = 0; y < h; ++y)
+		{
+			for(x = 0; x < w; ++x)
+			{
+				avg935_temp.at<ushort>(y, x) += b935.at(i).at<uchar>(y, x);
+				avg1060_temp.at<ushort>(y, x) += b1060.at(i).at<uchar>(y, x);
+				avg1300_temp.at<ushort>(y, x) += b1300.at(i).at<uchar>(y, x);
+				avg1550_temp.at<ushort>(y, x) += b1550.at(i).at<uchar>(y, x);
+			}
+		}
+	}
+
+	//now make average
+	Mat avg935(h, w, CV_8UC1, cv::Scalar(0));
+	Mat avg1060(h, w, CV_8UC1, cv::Scalar(0));
+	Mat avg1300(h, w, CV_8UC1, cv::Scalar(0));
+	Mat avg1550(h, w, CV_8UC1, cv::Scalar(0));
+	for(y = 0; y < h; ++y)
+	{
+		for(x = 0; x < w; ++x)
+		{
+			avg935.at<uchar>(y, x) = (uchar)(avg935_temp.at<ushort>(y, x) / total);
+			avg1060.at<uchar>(y, x) = (uchar)(avg1060_temp.at<ushort>(y, x) / total);
+			avg1300.at<uchar>(y, x) = (uchar)(avg1300_temp.at<ushort>(y, x) / total);
+			avg1550.at<uchar>(y, x) = (uchar)(avg1550_temp.at<ushort>(y, x) / total);
+		}
+	}
+
+	//maximize brightness
+	double min, max935, max1060, max1300, max1550;
+	minMaxLoc(avg935, &min, &max935);
+	minMaxLoc(avg1060, &min, &max1060);
+	minMaxLoc(avg1300, &min, &max1300);
+	minMaxLoc(avg1550, &min, &max1550);
+
+	//normalize images
+	Mat norm935(h, w, CV_64F, cv::Scalar(0));
+	Mat norm1060(h, w, CV_64F, cv::Scalar(0));
+	Mat norm1300(h, w, CV_64F, cv::Scalar(0));
+	Mat norm1550(h, w, CV_64F, cv::Scalar(0));
+
+	for(y = 0; y < h; ++y)
+	{
+		for(x = 0; x < w; ++x)
+		{
+			norm935.at<double>(y, x) = 1.0 / ( (float)avg935.at<uchar>(y, x) / max935 );
+			norm1060.at<double>(y, x) = 1.0 / ( (float)avg1060.at<uchar>(y, x) / max1060 );
+			norm1300.at<double>(y, x) = 1.0 / ( (float)avg1300.at<uchar>(y, x) / max1300 );
+			norm1550.at<double>(y, x) = 1.0 / ( (float)avg1550.at<uchar>(y, x) / max1550 );
+		}
+	}
+
+	//save in matrix in this object
+	homoGen935 = norm935.clone();
+	homoGen1060 = norm1060.clone();
+	homoGen1300 = norm1300.clone();
+	homoGen1550 = norm1550.clone();
+	homogeneityCalibrated = true;
+
+	//save to disk
+	QString fileNm = folderURL + "/" + "homogCalib";
+	FileStorage fs(fileNm.toStdString().c_str(), FileStorage::WRITE);
+	fs << "Calib935" << norm935;
+	fs << "Calib1060" << norm1060;
+	fs << "Calib1300" << norm1300;
+	fs << "Calib1550" << norm1550;
+	fs.release();
+}
+
+bool CameraCalibration::loadHomogeneityMatrices(QString loadFileURL)
+{
+	FileStorage fs(loadFileURL.toStdString().c_str(), FileStorage::READ);
+	fs["Calib935"] >> homoGen935;
+	fs["Calib1060"] >> homoGen1060;
+	fs["Calib1300"] >> homoGen1300;
+	fs["Calib1550"] >> homoGen1550;
+	homogeneityCalibrated = true;
+	fs.release();
+	return true;
+}
+
+void CameraCalibration::applyHomogeneityMatrices(QString multiChImgtarFile)
+{
+	QList<Mat> imgs = InOut::getImagesFromTarFile(multiChImgtarFile);
+	if(imgs.length() != 4){ return; }
+	QString path = QFileInfo(multiChImgtarFile).path();
+
+	int w = imgs.first().cols;
+	int h = imgs.first().rows;
+	int x,y;
+
+	Mat c935(h, w, CV_8UC1, cv::Scalar(0));
+	Mat c1060(h, w, CV_8UC1, cv::Scalar(0));
+	Mat c1300(h, w, CV_8UC1, cv::Scalar(0));
+	Mat c1550(h, w, CV_8UC1, cv::Scalar(0));
+
+
+	for(y = 0; y < h; ++y)
+	{
+		for(x = 0; x < w; ++x)
+		{
+			c935.at<uchar>(y,x) = (uchar)std::min( 255, (int)( (double)imgs.at(0).at<uchar>(y,x) * homoGen935.at<double>(y,x) ) );
+			c1060.at<uchar>(y,x) = (uchar)std::min( 255, (int)( (double)imgs.at(1).at<uchar>(y,x) * homoGen1060.at<double>(y,x) ) );
+			c1300.at<uchar>(y,x) = (uchar)std::min( 255, (int)( (double)imgs.at(2).at<uchar>(y,x) * homoGen1300.at<double>(y,x) ) );
+			c1550.at<uchar>(y,x) = (uchar)std::min( 255, (int)( (double)imgs.at(3).at<uchar>(y,x) * homoGen1550.at<double>(y,x) ) );
+		}
+	}
+
+//	imshow("1", c935);
+//	imshow("2", c1060);
+//	imshow("3", c1300);
+//	imshow("4", c1550);
+
+	imwrite(multiChImgtarFile.remove(".tar").append("_homgen935.png").toStdString().c_str(), c935);
+	imwrite(multiChImgtarFile.remove(".tar").append("_homgen1060.png").toStdString().c_str(), c1060);
+	imwrite(multiChImgtarFile.remove(".tar").append("_homgen1300.png").toStdString().c_str(), c1300);
+	imwrite(multiChImgtarFile.remove(".tar").append("_homgen1550.png").toStdString().c_str(), c1550);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

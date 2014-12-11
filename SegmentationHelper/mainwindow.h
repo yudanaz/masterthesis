@@ -104,6 +104,12 @@ private slots:
 
 	void on_btn_loadParams_released();
 
+	void on_btn_homogenMake_released();
+
+	void on_btn_homogenLoad_released();
+
+	void on_btn_homogenApply_released();
+
 private:
 	void makeLabelImages(QStringList fileNames);
 	void makeSeedsSuperpixels(QString fileName);

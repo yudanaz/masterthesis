@@ -95,6 +95,12 @@ public:
 	Mat makeDisparityImage(Mat leftGrayImg, Mat rightGrayImg);
 	Mat alignImageByFeatures(Mat imageL, Mat imageRtoBeAligned);
 
+	void makeAndSaveHomogeneityMatrices(QStringList calibImgTarFiles, QString folderURL);
+	bool loadHomogeneityMatrices(QString loadFileURL);
+	void applyHomogeneityMatrices(QString multiChImgtarFile);
+
+
+
 	bool isCalibrated_cam(){ return cameraCalibrated; }
 	bool isCalibrated_goldeye(){ return goldeyeCalibrated; }
 	bool isCalibrated_stereo(){ return stereoCalibrated; }
@@ -114,8 +120,18 @@ private:
 	bool cameraCalibrated;
 	bool goldeyeCalibrated;
 	bool stereoCalibrated;
-	QVector<Mat> cameraMatrices;
-	QVector<Mat> distCoefficients;
+
+	Mat camMatrix_single;
+	Mat distCoeff_single;
+
+	QVector<Mat> camMatrices_goldeye;
+	QVector<Mat> distCoeffs_goldeye;
+	int nrOfNIRChannels;
+
+	Mat camMatrix_stereoL;
+	Mat camMatrix_stereoR;
+	Mat distCoeff_stereoL;
+	Mat distCoeff_stereoR;
 	Mat rotationMatrix;
 	Mat translationVec;
 	Mat essentialMat;
@@ -130,7 +146,12 @@ private:
 	Mat mapRx;
 	Mat mapRy;
 	bool rectifyMapsCreated;
-	int nrOfNIRChannels;
+
+	Mat homoGen935;
+	Mat homoGen1060;
+	Mat homoGen1300;
+	Mat homoGen1550;
+	bool homogeneityCalibrated;
 };
 
 #endif // CAMERACALIBRATION_H
