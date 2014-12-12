@@ -718,11 +718,13 @@ void MainWindow::on_btn_homogenLoad_released()
 
 void MainWindow::on_btn_homogenApply_released()
 {
-	QString fileName = QFileDialog::getOpenFileName(this, "Select multichannel image (tar)", lastDir, tr("*.tar"));
-	if(fileName == ""){ return; }
-	lastDir = QFileInfo(fileName).path();
+	QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select multichannel images (*.tar)", lastDir, tr("*.tar"));
+	if(fileNames.length() == 0){ return; }
+	lastDir = QFileInfo(fileNames.first()).path();
 
-	camCalib.applyHomogeneityMatrices(fileName);
+	foreach(QString fileName, fileNames){ camCalib.applyHomogeneityMatrices(fileName); }
+
+	QMessageBox::information(this, "Success", "Processed images have been stored in original folder", QMessageBox::Ok);
 }
 
 

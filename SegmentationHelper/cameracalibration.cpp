@@ -531,7 +531,8 @@ void CameraCalibration::makeAndSaveHomogeneityMatrices(QStringList calibImgTarFi
 	homogeneityCalibrated = true;
 
 	//save to disk
-	QString fileNm = folderURL + "/" + "homogCalib";
+	QString parentFolder = folderURL.split("/").last();
+	QString fileNm = folderURL + "/" + parentFolder + "_homogCalib";
 	FileStorage fs(fileNm.toStdString().c_str(), FileStorage::WRITE);
 	fs << "Calib935" << norm935;
 	fs << "Calib1060" << norm1060;
@@ -543,10 +544,17 @@ void CameraCalibration::makeAndSaveHomogeneityMatrices(QStringList calibImgTarFi
 bool CameraCalibration::loadHomogeneityMatrices(QString loadFileURL)
 {
 	FileStorage fs(loadFileURL.toStdString().c_str(), FileStorage::READ);
-	fs["Calib935"] >> homoGen935;
-	fs["Calib1060"] >> homoGen1060;
-	fs["Calib1300"] >> homoGen1300;
-	fs["Calib1550"] >> homoGen1550;
+	Mat m1, m2, m3, m4;
+	fs["Calib935"] >> m1;
+	fs["Calib1060"] >> m2;
+	fs["Calib1300"] >> m3;
+	fs["Calib1550"] >> m4;
+
+	homoGen935 = m1.clone();
+	homoGen1060 = m2.clone();
+	homoGen1300 = m3.clone();
+	homoGen1550 = m4.clone();
+
 	homogeneityCalibrated = true;
 	fs.release();
 	return true;
@@ -584,10 +592,11 @@ void CameraCalibration::applyHomogeneityMatrices(QString multiChImgtarFile)
 //	imshow("3", c1300);
 //	imshow("4", c1550);
 
-	imwrite(multiChImgtarFile.remove(".tar").append("_homgen935.png").toStdString().c_str(), c935);
-	imwrite(multiChImgtarFile.remove(".tar").append("_homgen1060.png").toStdString().c_str(), c1060);
-	imwrite(multiChImgtarFile.remove(".tar").append("_homgen1300.png").toStdString().c_str(), c1300);
-	imwrite(multiChImgtarFile.remove(".tar").append("_homgen1550.png").toStdString().c_str(), c1550);
+	QString outNm = multiChImgtarFile.remove(".tar");
+	imwrite((outNm + "_homgen935.png").toStdString().c_str(), c935);
+	imwrite((outNm + "_homgen1060.png").toStdString().c_str(), c1060);
+	imwrite((outNm + "_homgen1300.png").toStdString().c_str(), c1300);
+	imwrite((outNm + "_homgen1550.png").toStdString().c_str(), c1550);
 }
 
 

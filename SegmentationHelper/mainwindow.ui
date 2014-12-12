@@ -971,7 +971,7 @@
 color: rgb(255, 255, 127);</string>
        </property>
        <property name="text">
-        <string>Goldeye LED Homogenity Matrix:</string>
+        <string>Goldeye Homogeneity Matrix:</string>
        </property>
       </widget>
      </item>
