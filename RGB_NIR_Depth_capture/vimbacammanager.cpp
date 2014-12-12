@@ -62,13 +62,29 @@ QList<Mat> VimbaCamManager::getCamImages()
 	Mat img;
 	if(detected_goldeye)
 	{
-		img = goldeye->getCVFrame();
-		atLeastOneCam = true;
+		try
+		{
+			img = goldeye->getCVFrame();
+			atLeastOneCam = true;
+		}
+		catch(CameraException e)
+		{
+			QMessageBox::information(NULL, "Prosilica: Camera Exception", e.getMessage(), QMessageBox::Ok);
+		}
 	}
 	if(detected_prosilica)
 	{
-		img = prosilica->getCVFrame();
-		atLeastOneCam = true;
+		try
+		{
+			prosilica->triggerViaSoftware();
+//			usleep(500);
+			img = prosilica->getCVFrame();
+			atLeastOneCam = true;
+		}
+		catch(CameraException e)
+		{
+			QMessageBox::information(NULL, "Prosilica: Camera Exception", e.getMessage(), QMessageBox::Ok);
+		}
 	}
 
 	if(atLeastOneCam){ camImgs.append(img); }

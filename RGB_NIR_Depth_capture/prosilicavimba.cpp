@@ -1,4 +1,5 @@
 #include "prosilicavimba.h"
+#include "VmbTransform.h"
 
 ProsilicaVimba::ProsilicaVimba() : system ( VimbaSystem::GetInstance() )
 {
@@ -186,12 +187,7 @@ void ProsilicaVimba::configure(double exposureTime, quint8 bufferSize)
 	res = pProsilica->GetFeatureByName("TriggerMode", pFeature);
 	if( res == VmbErrorSuccess )
 	{
-		res = pFeature->SetValue(0);//1);
-
-		//TEST
-//		res = pProsilica->GetFeatureByName("AcquisitionFrameRateAbs", pFeature);
-//		res = pFeature->SetValue(10.0f); //fps
-		//endof TEST
+		res = pFeature->SetValue(1);
 	}
 	if ( res != VmbErrorSuccess )
 	{
@@ -199,12 +195,35 @@ void ProsilicaVimba::configure(double exposureTime, quint8 bufferSize)
 							  .arg(convErrToMsg(res)));
 	}
 
+	//set trigger source
+	/*INFO: differently than for the Goldeye, the image acquisition can be started either by the
+	StartContinuousImageAcquisition - feature software command, or through a trigger.
+	Software trigger doesn't seem to work
+	*/
+//	res = pProsilica->GetFeatureByName("TriggerSource", pFeature);
+//	if(res == VmbErrorSuccess){ res = pFeature->SetValue(5); } //5 = software trigger
+//	if(res != VmbErrorSuccess)
+//	{
+//		throw CameraException(QString("Can't set TriggerSource! Code: %1")
+//							  .arg(convErrToMsg(res)));
+//	}
+
 	//set pixel format and image height, width and offset
 	res = pProsilica->GetFeatureByName("PixelFormat", pFeature);
-	if(res == VmbErrorSuccess){ res = pFeature->SetValue("BayerGB8"); } //BayerGB8
+	if(res == VmbErrorSuccess){ res = pFeature->SetValue("BayerGB8"); } //8bit BGR
+//	if(res == VmbErrorSuccess){ res = pFeature->SetValue("Mono8"); } //8bit Monochromatic
 	if(res != VmbErrorSuccess)
 	{
 		throw CameraException(QString("Can't set Pixelformat! Code: %1").arg(convErrToMsg(res)));
+	}
+
+	//get pixel format back from camera (for image conversion)
+	VmbInt64_t m_nPixelFormat;
+	res = pFeature->GetValue( m_nPixelFormat );
+	pixelFormat = (VmbPixelFormatType)m_nPixelFormat;
+	if(res != VmbErrorSuccess)
+	{
+		throw CameraException(QString("Can't get Pixelformat from camera! Code: %1").arg(convErrToMsg(res)));
 	}
 
 	res = pProsilica->GetFeatureByName("Height", pFeature);
@@ -235,55 +254,12 @@ void ProsilicaVimba::configure(double exposureTime, quint8 bufferSize)
 		throw CameraException(QString("Can't set y-axis offset to zero! Code: %1").arg(convErrToMsg(res)));
 	}
 
-//	//for Goldeye P:
-//	if(isPmodel)
-//	{
-//		//configure ExposureMode off (trigger controls exposure time):
-//		res = pGoldeye->GetFeatureByName("ExposureMode", pCmd);
-//		if( res == VmbErrorSuccess )
-//		{
-//			res = pCmd->SetValue(0);
-//		}
-//		if ( res != VmbErrorSuccess )
-//		{
-//			throw CameraException(QString("Can't set ExposureMode! Code: %1")
-//								  .arg(convErrToMsg(res)));
-//		}
-//	}
-
-//	//for Goldeye G:
-//	if(!isPmodel)
-//	{
-//		//configure ExposureTime
-//		setExposureTime(exposureTime);
-
-//		//configure trigger source to line 2
-//		res = pGoldeye->GetFeatureByName("TriggerSource", pCmd);
-//		if( res == VmbErrorSuccess )
-//		{
-//			res = pCmd->SetValue(2);
-//		}
-//		if ( res != VmbErrorSuccess )
-//		{
-//			throw CameraException(QString("Can't set TriggerSource! Code: %1")
-//								  .arg(convErrToMsg(res)));
-//		}
-//	}
 
 	//configure Gain to 1:
 //	setHighgain(false);
 
 //	//set default NUC correction:
 //	setCorrectionDataset(exposureTime);
-
-	//start continuous acquisition (which means: wait for next trigger signal)
-//	res = pProsilica->StartContinuousImageAcquisition(myBufferSize, myFrameObserver);
-
-//	if ( res != VmbErrorSuccess )
-//	{
-//		throw CameraException(QString("Can't start acquisition! Code: %1")
-//							  .arg(convErrToMsg(res)));
-//	}
 
 	configured = true;
 }
@@ -343,21 +319,26 @@ quint16 ProsilicaVimba::getMaxFPS()
 
 Mat ProsilicaVimba::getCVFrame()
 {
+	FeaturePtr pfeature;
 	FramePtr frame;
 	VmbErrorType res;
 	VmbFrameStatusType eReceiveStatus;
 
 	Mat out(myHeight, myWidth, CV_16UC1);
 
-	//TEST
+	/*INFO: differently than for the Goldeye, the image acquisition can be started either by the
+	StartContinuousImageAcquisition - feature software command, or through a trigger.
+	Software trigger doesn't seem to work
+	*/
+	//start image acquisition
 	res = pProsilica->StartContinuousImageAcquisition(myBufferSize, myFrameObserver);
 	if ( res != VmbErrorSuccess )
 	{
 		throw CameraException(QString("Can't start acquisition! Code: %1")
 							  .arg(convErrToMsg(res)));
 	}
-	//endof TEST
 
+	//wait for frame
 	quint16 count = 0;
 	while (!(SP_DYN_CAST(myFrameObserver, FrameObserver)->isFrameAvailable()))
 	{
@@ -377,9 +358,8 @@ Mat ProsilicaVimba::getCVFrame()
 		if ( SP_ACCESS(frame)->GetImage( pBuffer ) == VmbErrorSuccess)
 		{
 			//create new Mat with correct size and use buffer as data:
-			Mat newMat(myHeight, myWidth, CV_8UC3, pBuffer);
-
-			//memcpy( newMat.data, pBuffer, myWidth * myHeight );
+			Mat newMat(myHeight, myWidth, CV_8UC3);
+			convertImageFormat(pBuffer, newMat);
 
 			//scale the input mat to output
 			out = newMat.clone();
@@ -393,14 +373,13 @@ Mat ProsilicaVimba::getCVFrame()
 		throw CameraReadException(QString("Corrupt frame: %1").arg(convErrToMsg(eReceiveStatus)));
 	}
 
-	//TEST
+	//stop image aquisition
 	res = pProsilica->StopContinuousImageAcquisition();
 	if ( res != VmbErrorSuccess )
 	{
 		throw CameraException(QString("Can't stop acquisition! Code: %1")
 							  .arg(convErrToMsg(res)));
 	}
-	//endof TEST
 
 	return out;
 }
@@ -413,3 +392,57 @@ void ProsilicaVimba::reset()
 
 	pProsilica->StartContinuousImageAcquisition(myBufferSize, myFrameObserver);
 }
+
+
+void ProsilicaVimba::triggerViaSoftware()
+{
+	FeaturePtr pFeature;
+	VmbErrorType res = pProsilica->GetFeatureByName("TriggerSoftware", pFeature);
+	if(res  == VmbErrorSuccess )
+	{
+		res = pFeature->RunCommand();
+	}
+	if(res != VmbErrorSuccess)
+	{
+		throw CameraException(QString("Can't send Software Trigger! Code: %1")
+						  .arg(convErrToMsg(res)));
+	}
+}
+
+void ProsilicaVimba::convertImageFormat(VmbUchar_t *pInBuffer, Mat &outImg)
+{
+	VmbImage            SourceImage,DestImage;
+	VmbErrorType        res;
+	SourceImage.Size    = sizeof( SourceImage );
+	DestImage.Size      = sizeof( DestImage );
+
+	//set format of the input image
+	res = (VmbErrorType)VmbSetImageInfoFromPixelFormat( pixelFormat, myWidth, myHeight, &SourceImage );
+	if ( res != VmbErrorSuccess )
+	{
+		throw CameraException(QString("Can't set image info from pixel format! Code: %1").arg(convErrToMsg(res)));
+	}
+
+	//set format for output image
+	QString outputFormat = "BGR8";
+	res = (VmbErrorType)VmbSetImageInfoFromString( outputFormat.toStdString().c_str(), outputFormat.length(),myWidth, myHeight, &DestImage );
+	if ( res != VmbErrorSuccess )
+	{
+		throw CameraException(QString("Can't set image info from format string! Code: %1").arg(convErrToMsg(res)));
+	}
+
+	//set pointer of VMB images to in buffer and opencv Mat buffer
+	SourceImage.Data    = pInBuffer;
+//	QImage *debugImg = new QImage( myWidth, myHeight, QImage::Format_RGB888 );
+//	DestImage.Data      = debugImg->bits();
+	DestImage.Data = outImg.data;
+
+	//make format transformation
+	res = (VmbErrorType)VmbImageTransform( &SourceImage, &DestImage, NULL, 0 );
+	if ( res != VmbErrorSuccess )
+	{
+		throw CameraException(QString("Can't transform image! Code: %1").arg(convErrToMsg(res)));
+	}
+}
+
+

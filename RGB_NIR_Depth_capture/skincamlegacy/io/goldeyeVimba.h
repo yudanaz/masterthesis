@@ -115,6 +115,10 @@ public:
 	*/
 	virtual void reset ();
 
+	//Methods by Maurice
+	virtual void triggerViaSoftware();
+	//endof methods by Maurice
+
 
 private:
 	VimbaSystem			&system;

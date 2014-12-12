@@ -564,5 +564,9 @@ void GoldeyeVimba::setHighgain(bool setGain)
 	myGain = setGain;
 }
 
+//Methods by Maurice:
+void GoldeyeVimba::triggerViaSoftware()
+{
 
+}
 

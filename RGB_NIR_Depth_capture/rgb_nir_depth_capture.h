@@ -31,6 +31,8 @@ private:
 
 	Ui::RGBNIRD_MainWindow *ui;
 	VimbaCamManager vimbaCamManager;
+
+	bool acquiring;
 };
 
 #endif // RGBNIRD_MAINWINDOW_H

@@ -4,6 +4,7 @@
 #include <QString>
 #include <QtDebug>
 #include <QMap>
+#include<QImage>
 #include <unistd.h>
 #include <VimbaCPP/Include/VimbaCPP.h>
 
@@ -110,15 +111,21 @@ public:
 	*/
 	virtual void reset ();
 
+	/*!
+	 * \brief Effects a software trigger for testing purposes.
+	 */
+	virtual void triggerViaSoftware();
+
+
 
 private:
+	void convertImageFormat(VmbUchar_t *pInBuffer, Mat &outImg);
+
 	VimbaSystem			&system;
 	CameraPtr			pProsilica;
 	IFrameObserverPtr	myFrameObserver;
-
-//	bool isPmodel;
 	quint8 myBufferSize;
-
+	VmbPixelFormatType pixelFormat;
 //	bool myGain; /*!< flag holding status of highgain setting. */
 };
 

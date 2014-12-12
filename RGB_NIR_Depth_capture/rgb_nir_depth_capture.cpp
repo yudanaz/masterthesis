@@ -3,7 +3,8 @@
 
 RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	QMainWindow(parent),
-	ui(new Ui::RGBNIRD_MainWindow)
+	ui(new Ui::RGBNIRD_MainWindow),
+	acquiring(false)
 {
 	ui->setupUi(this);
 
@@ -17,14 +18,25 @@ RGB_NIR_Depth_Capture::~RGB_NIR_Depth_Capture()
 
 void RGB_NIR_Depth_Capture::acquireImages()
 {
-	QList<Mat> images = vimbaCamManager.getCamImages();
-	int imgNr = 0;
-	foreach(Mat img, images)
+	while(true)
 	{
-		QString windowName = "image " + QString::number(imgNr);
-		Mat img8bit(img.rows, img.cols, CV_8UC1);
-		img.convertTo(img8bit, CV_8UC1);
-		imshow(windowName.toStdString(), img);
+		QList<Mat> images = vimbaCamManager.getCamImages();
+		int imgNr = 0;
+		foreach(Mat img, images)
+		{
+			QString windowName = "image " + QString::number(imgNr);
+			Mat img8bit(img.rows, img.cols, CV_8UC3);
+			if(img.type() != CV_8UC3)
+			{
+				img.convertTo(img8bit, CV_8UC3);
+			}
+			else{ img8bit = img; }
+			namedWindow(windowName.toStdString(), CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO | CV_GUI_EXPANDED);
+			imshow(windowName.toStdString(), img);
+
+			//if any key is pressed, stop
+			if(waitKey(1) != -1){ return; }
+		}
 	}
 }
 

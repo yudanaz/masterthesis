@@ -140,6 +140,11 @@ public:
 	 * \return a boolean configure state.
 	 */
 	bool isConfigured();
+
+	/*!
+	 * \brief Effects a software trigger for testing purposes.
+	 */
+	virtual void triggerViaSoftware() = 0;
 	//endof Methods from Maurice
 
 	QString convErrToMsg( VmbErrorType eErr );
