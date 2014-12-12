@@ -14,6 +14,9 @@ TEMPLATE = app
 ### openCV
 LIBS += -lopencv_core -lopencv_imgproc -lopencv_highgui
 
+### libSerial -> for the serial port
+LIBS += -lserial
+
 ### AVT Vimba
 INCLUDEPATH += /opt/Vimba_1_3/
 LIBS += -L/opt/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit -lVimbaC -lVimbaCPP
@@ -30,7 +33,8 @@ SOURCES += \
 	skincamlegacy/io/goldeyeVimba.cpp \
 	skincamlegacy/io/imagesource.cpp \
 	frameobserver.cpp \
-	prosilicavimba.cpp
+	prosilicavimba.cpp \
+	skincamlegacy/io/flashlightcontrol.cpp
 HEADERS += \
 	vimbacammanager.h \
 	rgb_nir_depth_capture.h \
@@ -42,7 +46,8 @@ HEADERS += \
 	skincamlegacy/io/goldeyeVimba.h \
 	skincamlegacy/io/imagesource.h \
 	frameobserver.h \
-	prosilicavimba.h
+	prosilicavimba.h \
+	skincamlegacy/io/flashlightcontrol.h
 
 DEFINES += AVT_VIMBA
 

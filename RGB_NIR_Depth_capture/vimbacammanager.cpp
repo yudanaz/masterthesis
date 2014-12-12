@@ -8,6 +8,7 @@ VimbaCamManager::VimbaCamManager():
 	detected_goldeye(false)
 {
 	startVimbaAPI();
+	flashlight = new FlashlightControl();
 }
 
 VimbaCamManager::~VimbaCamManager()
@@ -25,6 +26,8 @@ void VimbaCamManager::detectCameras()
 {
 	if(!detected_goldeye)
 	{
+		flashlight->connect("/dev/ttyUSB1");
+
 		goldeye = new GoldeyeVimba();
 		try
 		{
@@ -57,15 +60,30 @@ void VimbaCamManager::detectCameras()
 QList<Mat> VimbaCamManager::getCamImages()
 {
 	QList<Mat> camImgs;
-
-	bool atLeastOneCam = false;
 	Mat img;
+	int i;
+
 	if(detected_goldeye)
 	{
 		try
 		{
-			img = goldeye->getCVFrame();
-			atLeastOneCam = true;
+			//trigger flashlight
+			flashlight->triggerSeries();
+
+			//get waveband images from camera (plus dark)
+			for(i = 0; i < 5; ++i)
+			{
+				flashlight->getFrameKey();
+
+				//acknowledge flashlight when last waveband is reached
+				if(i == 4)
+				{
+					flashlight->sendAck();
+				}
+
+				img = goldeye->getCVFrame();
+				camImgs.append(img);
+			}
 		}
 		catch(CameraException e)
 		{
@@ -77,17 +95,14 @@ QList<Mat> VimbaCamManager::getCamImages()
 		try
 		{
 			prosilica->triggerViaSoftware();
-//			usleep(500);
 			img = prosilica->getCVFrame();
-			atLeastOneCam = true;
+			camImgs.append(img);
 		}
 		catch(CameraException e)
 		{
 			QMessageBox::information(NULL, "Prosilica: Camera Exception", e.getMessage(), QMessageBox::Ok);
 		}
 	}
-
-	if(atLeastOneCam){ camImgs.append(img); }
 	return camImgs;
 }
 

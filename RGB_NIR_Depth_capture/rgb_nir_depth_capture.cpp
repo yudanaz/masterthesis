@@ -21,10 +21,11 @@ void RGB_NIR_Depth_Capture::acquireImages()
 	while(true)
 	{
 		QList<Mat> images = vimbaCamManager.getCamImages();
-		int imgNr = 0;
-		foreach(Mat img, images)
+		int i;
+		for(i = 0; i < images.length(); ++i)
 		{
-			QString windowName = "image " + QString::number(imgNr);
+			Mat img = images[i];
+			QString windowName = "image " + QString::number(i);
 			Mat img8bit(img.rows, img.cols, CV_8UC3);
 			if(img.type() != CV_8UC3)
 			{
@@ -33,10 +34,10 @@ void RGB_NIR_Depth_Capture::acquireImages()
 			else{ img8bit = img; }
 			namedWindow(windowName.toStdString(), CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO | CV_GUI_EXPANDED);
 			imshow(windowName.toStdString(), img);
-
-			//if any key is pressed, stop
-			if(waitKey(1) != -1){ return; }
 		}
+
+		//if any key is pressed, stop
+		if(waitKey(1) != -1){ return; }
 	}
 }
 

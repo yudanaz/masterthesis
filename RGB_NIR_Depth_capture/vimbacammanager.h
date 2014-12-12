@@ -10,6 +10,7 @@
 #include<opencv2/opencv.hpp>
 #include"skincamlegacy/io/goldeyeVimba.h"
 #include"skincamlegacy/io/camerasystemconfig.h"
+#include"skincamlegacy/io/flashlightcontrol.h"
 #include"prosilicavimba.h"
 
 
@@ -43,6 +44,7 @@ private:
 	VimbaSystem &vimbaSystem;
 	bool APIrunning;
 //	CameraSystemConfig camConfig;
+	FlashlightControl *flashlight;
 	CameraInterface *goldeye;
 	CameraInterface *prosilica;
 
