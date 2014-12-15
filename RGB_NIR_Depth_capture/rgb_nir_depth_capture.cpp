@@ -20,12 +20,13 @@ void RGB_NIR_Depth_Capture::acquireImages()
 {
 	while(true)
 	{
-		QList<Mat> images = vimbaCamManager.getCamImages();
-		int i;
-		for(i = 0; i < images.length(); ++i)
+		QMap<RGBDNIR_captureType, Mat> images = vimbaCamManager.getCamImages();
+		QMapIterator<RGBDNIR_captureType, Mat> i(images);
+		while(i.hasNext())
 		{
-			Mat img = images[i];
-			QString windowName = "image " + QString::number(i);
+			i.next();
+			Mat img = i.value();
+			QString windowName = vimbaCamManager.getRGBDNIR_captureTypeString( (RGBDNIR_captureType)i.key() );
 			Mat img8bit(img.rows, img.cols, CV_8UC3);
 			if(img.type() != CV_8UC3)
 			{

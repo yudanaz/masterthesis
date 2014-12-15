@@ -17,6 +17,11 @@
 using namespace AVT::VmbAPI;
 using namespace cv;
 
+enum RGBDNIR_captureType
+{
+	RGB, Kinect_Depth, Kinect_RGB, NIR_Dark, NIR_935, NIR_1060, NIR_1300, NIR_1550
+};
+
 class VimbaCamManager
 {
 public:
@@ -36,7 +41,8 @@ public:
 	 */
 	void closeCameras();
 
-	QList<Mat> getCamImages();
+	QMap<RGBDNIR_captureType, Mat> getCamImages();
+	QString getRGBDNIR_captureTypeString(RGBDNIR_captureType i);
 
 private:
 	void startVimbaAPI();
@@ -45,12 +51,14 @@ private:
 	bool APIrunning;
 //	CameraSystemConfig camConfig;
 	FlashlightControl *flashlight;
+	QMutex flashlightLock;
 	CameraInterface *goldeye;
 	CameraInterface *prosilica;
 
 //	CameraPtrVector cameras;
 //	QStringList cameraNames;
 //	QList< QPair<qint16,qint16> > cameraSizes;
+
 	bool detected_prosilica;
 	bool detected_goldeye;
 };

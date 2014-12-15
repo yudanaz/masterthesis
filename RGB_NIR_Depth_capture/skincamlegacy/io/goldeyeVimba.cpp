@@ -215,7 +215,7 @@ void GoldeyeVimba::configure(double exposureTime, quint8 bufferSize)
 	res = pGoldeye->GetFeatureByName("TriggerMode", pCmd);
 	if( res == VmbErrorSuccess )
 	{
-		res = pCmd->SetValue(0);//1);  // 0 = trigger mode off!!
+		res = pCmd->SetValue(1);  // 0 = trigger mode off!!
 	}
 	if ( res != VmbErrorSuccess )
 	{

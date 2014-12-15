@@ -57,14 +57,17 @@ void VimbaCamManager::detectCameras()
 	}
 }
 
-QList<Mat> VimbaCamManager::getCamImages()
+QMap<RGBDNIR_captureType, Mat> VimbaCamManager::getCamImages()
 {
-	QList<Mat> camImgs;
+	QMap<RGBDNIR_captureType, Mat> camImgs;
 	Mat img;
 	int i;
 
 	if(detected_goldeye)
 	{
+		//get lock on flashlight usage:
+		QMutexLocker locker(&flashlightLock);
+
 		try
 		{
 			//trigger flashlight
@@ -73,7 +76,7 @@ QList<Mat> VimbaCamManager::getCamImages()
 			//get waveband images from camera (plus dark)
 			for(i = 0; i < 5; ++i)
 			{
-				flashlight->getFrameKey();
+				quint8 key = flashlight->getFrameKey();
 
 				//acknowledge flashlight when last waveband is reached
 				if(i == 4)
@@ -82,12 +85,23 @@ QList<Mat> VimbaCamManager::getCamImages()
 				}
 
 				img = goldeye->getCVFrame();
-				camImgs.append(img);
+
+
+				//create correct entry for image list depending on channel returned by goldeye
+				switch(key)
+				{
+					case 0: camImgs[NIR_Dark] = img;
+					case 1: camImgs[NIR_935] = img;
+					case 2: camImgs[NIR_1060] = img;
+					case 3: camImgs[NIR_1300] = img;
+					case 4: camImgs[NIR_1550] = img;
+					default: break;
+				}
 			}
 		}
 		catch(CameraException e)
 		{
-			QMessageBox::information(NULL, "Prosilica: Camera Exception", e.getMessage(), QMessageBox::Ok);
+			QMessageBox::information(NULL, "Goldeye: Camera Exception", e.getMessage(), QMessageBox::Ok);
 		}
 	}
 	if(detected_prosilica)
@@ -96,7 +110,7 @@ QList<Mat> VimbaCamManager::getCamImages()
 		{
 			prosilica->triggerViaSoftware();
 			img = prosilica->getCVFrame();
-			camImgs.append(img);
+			camImgs[RGB] = img;
 		}
 		catch(CameraException e)
 		{
@@ -110,4 +124,20 @@ void VimbaCamManager::closeCameras()
 {
 	if(goldeye->isConnected()){ goldeye->disconnect(); }
 	if(prosilica->isConnected()){ prosilica->disconnect(); }
+}
+
+QString VimbaCamManager::getRGBDNIR_captureTypeString(RGBDNIR_captureType i)
+{
+	switch (i) {
+		case RGB: return "RGB";
+		case Kinect_Depth: return "Kinect Depth Map";
+		case Kinect_RGB: return "Kinect RGB Image";
+		case NIR_Dark: return "NIR Dark image";
+		case NIR_935: return "NIR 935 nm Waveband";
+		case NIR_1060: return "NIR 1060 nm Waveband";
+		case NIR_1300: return "NIR 1300 nm Waveband";
+		case NIR_1550: return "NIR 1550 nm Waveband";
+		default:
+			break;
+	}
 }
