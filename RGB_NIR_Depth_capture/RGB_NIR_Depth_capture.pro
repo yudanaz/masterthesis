@@ -34,7 +34,8 @@ SOURCES += \
 	skincamlegacy/io/imagesource.cpp \
 	frameobserver.cpp \
 	prosilicavimba.cpp \
-	skincamlegacy/io/flashlightcontrol.cpp
+	skincamlegacy/io/flashlightcontrol.cpp \
+    imgacquisitionworker.cpp
 HEADERS += \
 	vimbacammanager.h \
 	rgb_nir_depth_capture.h \
@@ -47,7 +48,8 @@ HEADERS += \
 	skincamlegacy/io/imagesource.h \
 	frameobserver.h \
 	prosilicavimba.h \
-	skincamlegacy/io/flashlightcontrol.h
+	skincamlegacy/io/flashlightcontrol.h \
+    imgacquisitionworker.h
 
 DEFINES += AVT_VIMBA
 

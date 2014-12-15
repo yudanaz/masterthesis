@@ -6,26 +6,46 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>300</height>
+    <width>910</width>
+    <height>688</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>RGBNIRD_MainWindow</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <widget class="QPushButton" name="btn_acquireImage">
+   <widget class="QWidget" name="horizontalLayoutWidget">
     <property name="geometry">
      <rect>
-      <x>140</x>
+      <x>10</x>
       <y>10</y>
-      <width>131</width>
-      <height>23</height>
+      <width>891</width>
+      <height>41</height>
      </rect>
     </property>
-    <property name="text">
-     <string>Acquire Image</string>
-    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QPushButton" name="btn_startAcquisition">
+       <property name="text">
+        <string>Start Acquisition</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btn_saveImgs">
+       <property name="text">
+        <string>Save Images</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="checkBox_showAllChannels">
+       <property name="text">
+        <string>Show all Channels</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
@@ -33,7 +53,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>400</width>
+     <width>910</width>
      <height>20</height>
     </rect>
    </property>

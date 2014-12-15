@@ -4,12 +4,16 @@
 #include<QMainWindow>
 #include<QDebug>
 #include<QList>
+#include<QThread>
 #include<opencv2/opencv.hpp>
+#include"imgacquisitionworker.h"
 #include"vimbacammanager.h"
 
+Q_DECLARE_METATYPE(RGBDNIR_MAP)
 
 using namespace AVT::VmbAPI;
 using namespace cv;
+
 
 namespace Ui {
 class RGBNIRD_MainWindow;
@@ -23,16 +27,22 @@ public:
 	explicit RGB_NIR_Depth_Capture(QWidget *parent = 0);
 	~RGB_NIR_Depth_Capture();
 
+public slots:
+	void imagesReady(RGBDNIR_MAP images);
+
+signals:
+	void startImgAcquisition();
+	void stopImgAcquisition();
+
 private slots:
-	void on_btn_acquireImage_released();
+	void on_btn_startAcquisition_released();
+
+	void on_btn_saveImgs_released();
 
 private:
-	void acquireImages();
-
 	Ui::RGBNIRD_MainWindow *ui;
-	VimbaCamManager vimbaCamManager;
-
-	bool acquiring;
+	QThread workerThread;
+	bool triggerSave;
 };
 
 #endif // RGBNIRD_MAINWINDOW_H

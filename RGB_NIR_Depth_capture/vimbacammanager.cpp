@@ -26,8 +26,6 @@ void VimbaCamManager::detectCameras()
 {
 	if(!detected_goldeye)
 	{
-		flashlight->connect("/dev/ttyUSB1");
-
 		goldeye = new GoldeyeVimba();
 		try
 		{
@@ -39,6 +37,9 @@ void VimbaCamManager::detectCameras()
 		{
 			QMessageBox::information(NULL, "Goldeye: Camera Exception", e.getMessage(), QMessageBox::Ok);
 		}
+
+		//if goldeye was detected, try opening the flashlight
+		if(detected_goldeye){ flashlight->connect("/dev/ttyUSB1"); }
 	}
 
 	if(!detected_prosilica)
@@ -57,7 +58,7 @@ void VimbaCamManager::detectCameras()
 	}
 }
 
-QMap<RGBDNIR_captureType, Mat> VimbaCamManager::getCamImages()
+RGBDNIR_MAP VimbaCamManager::getCamImages()
 {
 	QMap<RGBDNIR_captureType, Mat> camImgs;
 	Mat img;

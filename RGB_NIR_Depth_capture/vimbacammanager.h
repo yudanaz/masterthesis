@@ -13,7 +13,6 @@
 #include"skincamlegacy/io/flashlightcontrol.h"
 #include"prosilicavimba.h"
 
-
 using namespace AVT::VmbAPI;
 using namespace cv;
 
@@ -21,6 +20,7 @@ enum RGBDNIR_captureType
 {
 	RGB, Kinect_Depth, Kinect_RGB, NIR_Dark, NIR_935, NIR_1060, NIR_1300, NIR_1550
 };
+typedef QMap<RGBDNIR_captureType, Mat> RGBDNIR_MAP;
 
 class VimbaCamManager
 {
@@ -41,8 +41,8 @@ public:
 	 */
 	void closeCameras();
 
-	QMap<RGBDNIR_captureType, Mat> getCamImages();
-	QString getRGBDNIR_captureTypeString(RGBDNIR_captureType i);
+	RGBDNIR_MAP getCamImages();
+	static QString getRGBDNIR_captureTypeString(RGBDNIR_captureType i);
 
 private:
 	void startVimbaAPI();
