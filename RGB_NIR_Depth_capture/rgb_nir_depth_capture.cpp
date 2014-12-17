@@ -10,6 +10,7 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 {
 	ui->setupUi(this);
 
+	//start the worker thread and connect signals
 	qRegisterMetaType<RGBDNIR_MAP>();
 	myImgAcqWorker = new ImgAcquisitionWorker();
 	myImgAcqWorker->moveToThread(&workerThread);
@@ -19,6 +20,13 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	connect(this, SIGNAL(stopImgAcquisition()), myImgAcqWorker, SLOT(stopAcquisition()));
 	workerThread.start();
 
+	//get image widget sizes for display (-2 because of widget borders)
+	width_rgb = ui->graphicsView_RGB->width()-2;
+	height_rgb = ui->graphicsView_RGB->height()-2;
+	width_nir = ui->graphicsView_NIR->width()-2;
+	height_nir = ui->graphicsView_NIR->height()-2;
+	width_depth = ui->graphicsView_Depth->width()-2;
+	height_depth = ui->graphicsView_Depth->height()-2;
 }
 
 RGB_NIR_Depth_Capture::~RGB_NIR_Depth_Capture()
@@ -40,15 +48,53 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP images)
 	{
 		i.next();
 		Mat img = i.value();
-		QString windowName = VimbaCamManager::getRGBDNIR_captureTypeString( (RGBDNIR_captureType)i.key() );
-		Mat img8bit(img.rows, img.cols, CV_8UC3);
-		if(img.type() != CV_8UC3)
-		{
-			img.convertTo(img8bit, CV_8UC3);
-		}
-		else{ img8bit = img; }
+		RGBDNIR_captureType type = (RGBDNIR_captureType)i.key();
+		QString windowName = VimbaCamManager::getRGBDNIR_captureTypeString( type );
 
-		//show everything if user wants that
+		//show the "most important" images in the GUI
+		Mat imgSmall;
+		QGraphicsScene *scene = new QGraphicsScene();
+
+		if(type == RGB)
+		{
+			//make a resized copy of the image according to graphic widget size
+			cv::resize(img, imgSmall, Size(width_rgb,height_rgb));
+
+			//show in widget width inverted channels (because Mat is BGR and QImage is RGB)
+			QImage qimg(imgSmall.data, imgSmall.cols, imgSmall.rows, imgSmall.step, QImage::Format_RGB888);
+			scene->addPixmap(QPixmap::fromImage(qimg.rgbSwapped()));
+			ui->graphicsView_RGB->setScene(scene);
+		}
+		else if(type == NIR_1300)
+		{
+			//make a resized copy of the image according to graphic widget size
+			cv::resize(img, imgSmall, Size(width_nir,height_nir));
+
+			//convert and scale from 16 to 8 bit so image can be displayed
+			Mat img8bit(imgSmall.rows, imgSmall.cols, CV_8UC1);
+			Mat imgRGB8(imgSmall.rows, imgSmall.cols, CV_8UC3);
+			double minVal, maxVal;
+			minMaxLoc(imgSmall, &minVal, &maxVal); //find minimum and maximum intensities
+			imgSmall.convertTo(img8bit, CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
+			cvtColor(img8bit, imgRGB8, CV_GRAY2RGB);
+
+			//show in widget width inverted channels (because Mat is BGR and QImage is RGB)
+			QImage qimg(imgRGB8.data, imgRGB8.cols, imgRGB8.rows, imgRGB8.step, QImage::Format_RGB888);
+			scene->addPixmap(QPixmap::fromImage(qimg));
+			ui->graphicsView_NIR->setScene(scene);
+		}
+		else if(type == Kinect_Depth)
+		{
+//			//make a resized copy of the image according to graphic widget size
+//			cv::resize(img, imgSmall, Size(width_depth,height_depth));
+
+//			//show in widget width inverted channels (because Mat is BGR and QImage is RGB)
+//			QImage qimg(imgSmall.data, imgSmall.cols, imgSmall.rows, imgSmall.step, QImage::Format_RGB888);
+//			scene->addPixmap(QPixmap::fromImage(qimg.rgbSwapped()));
+//			ui->graphicsView_Depth->setScene(scene);
+		}
+
+		//show all channels in extra windows if user wants that
 		if(ui->checkBox_showAllChannels->isChecked())
 		{
 			namedWindow(windowName.toStdString(), CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO | CV_GUI_EXPANDED);
@@ -91,4 +137,13 @@ void RGB_NIR_Depth_Capture::on_btn_stopAcquisition_released()
 {
 	myImgAcqWorker->setStatus(false);
 //	emit stopImgAcquisition();
+}
+
+void RGB_NIR_Depth_Capture::on_checkBox_showAllChannels_clicked()
+{
+	//if unchecked, close all opencv windows
+	if(!ui->checkBox_showAllChannels->isChecked())
+	{
+		destroyAllWindows();
+	}
 }

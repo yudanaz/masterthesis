@@ -14,17 +14,12 @@ void ImgAcquisitionWorker::setStatus(bool acquiring)
 
 void ImgAcquisitionWorker::startAcquisition()
 {
-	bool running = true;
 	do
 	{
 		RGBDNIR_MAP images = vimbaCamManager.getCamImages();
 		emit imagesReady(images);
-
-		running = acquiring;
-		//if any key is pressed, stop
-//		if(waitKey(1) != -1){ return; }
 	}
-	while(running);
+	while(acquiring);
 }
 
 void ImgAcquisitionWorker::stopAcquisition()

@@ -41,11 +41,16 @@ private slots:
 
 	void on_btn_stopAcquisition_released();
 
+	void on_checkBox_showAllChannels_clicked();
+
 private:
 	Ui::RGBNIRD_MainWindow *ui;
 	QThread workerThread;
 	bool triggerSave;
 	ImgAcquisitionWorker *myImgAcqWorker;
+
+
+	int width_rgb, height_rgb, width_nir, height_nir, width_depth, height_depth;
 };
 
 #endif // RGBNIRD_MAINWINDOW_H

@@ -324,7 +324,7 @@ Mat ProsilicaVimba::getCVFrame()
 	VmbErrorType res;
 	VmbFrameStatusType eReceiveStatus;
 
-	Mat out(myHeight, myWidth, CV_16UC1);
+	Mat out; //(myHeight, myWidth, CV_16UC1);
 
 	/*INFO: differently than for the Goldeye, the image acquisition can be started either by the
 	StartContinuousImageAcquisition - feature software command, or through a trigger.
