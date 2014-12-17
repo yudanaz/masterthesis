@@ -1,10 +1,11 @@
+#include<unistd.h>
 #include "imgacquisitionworker.h"
 
 ImgAcquisitionWorker::ImgAcquisitionWorker(QObject *parent) :
 	QThread(parent),
 	acquiring(false)
 {
-	vimbaCamManager.detectCameras();
+	vimbaCamManager.connectCameras();
 }
 
 void ImgAcquisitionWorker::setStatus(bool acquiring)
@@ -14,15 +15,12 @@ void ImgAcquisitionWorker::setStatus(bool acquiring)
 
 void ImgAcquisitionWorker::startAcquisition()
 {
+	vimbaCamManager.startFlashlight();
 	do
 	{
 		RGBDNIR_MAP images = vimbaCamManager.getCamImages();
 		emit imagesReady(images);
 	}
 	while(acquiring);
-}
-
-void ImgAcquisitionWorker::stopAcquisition()
-{
-	acquiring = false;
+	vimbaCamManager.stopFlashlight();
 }

@@ -33,11 +33,6 @@ public slots:
 	 */
 	void startAcquisition();
 
-	/*!
-	 * \brief stops the image acquisition
-	 */
-	void stopAcquisition();
-
 private:
 	VimbaCamManager vimbaCamManager;
 	bool acquiring;

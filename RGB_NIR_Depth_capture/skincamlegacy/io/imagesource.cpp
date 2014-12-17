@@ -165,6 +165,10 @@ void ImageSource::setWhiteReference(CvPoint refPos)
 //	cout << "Unlock: setWhiteReference" << endl;
 }
 
+/***
+ * This method has been modified from the original:
+ * fixed pattern noise reference file URL has been hard-coded for simplicity
+ * */
 void ImageSource::loadFPNReference()
 {
 	QProcess process;
@@ -172,7 +176,8 @@ void ImageSource::loadFPNReference()
 	QDir imageDir;
 	QFileInfo archive;
 
-	archive = QFileInfo(myCalSettings.fpnRefFile);
+//	archive = QFileInfo(myCalSettings.fpnRefFile);
+	archive = QFileInfo("fpnRef.tar");
 	if(!archive.exists())
 		throw ImageSourceException("Given FPN reference archive does not exist!");
 
@@ -188,7 +193,7 @@ void ImageSource::loadFPNReference()
 #ifdef __linux__
 	//Linux with tar:
 	process.setProgram("tar");
-	arguments << "-xf" << myCalSettings.fpnRefFile << "-C" << imageDir.absolutePath();
+	arguments << "-xf" << "fpnRef.tar" << "-C" << imageDir.absolutePath();
 #endif
 #ifdef _WIN32
 	//Windows with bsdtar installed:

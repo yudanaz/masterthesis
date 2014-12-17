@@ -1,14 +1,31 @@
 #include "vimbacammanager.h"
 
+void MyImageSource::doWhiteCalib(Mat m, int index)
+{
+	Mat temp;
+	switch(index)
+	{
+		case 0: return; //dark image
+		case 1: m.convertTo(temp, -1, 3.0);
+		case 2: m.convertTo(temp, -1, 1.0);
+		case 3: m.convertTo(temp, -1, 1.105);
+		case 4: m.convertTo(temp, -1, 1.13);
+	}
+	m = temp.clone();
+}
 
 VimbaCamManager::VimbaCamManager():
 	vimbaSystem(VimbaSystem::GetInstance()),
 	APIrunning(false),
-	detected_prosilica(false),
-	detected_goldeye(false)
+	connected_prosilica(false),
+	connected_goldeye(false),
+	connected_flashlight(false),
+	flashLightRunning(false)
 {
 	startVimbaAPI();
 	flashlight = new FlashlightControl();
+
+	myImageSource.loadFPNRef();
 }
 
 VimbaCamManager::~VimbaCamManager()
@@ -22,16 +39,16 @@ void VimbaCamManager::startVimbaAPI()
 	APIrunning = (VmbErrorSuccess == vimbaSystem.Startup());
 }
 
-void VimbaCamManager::detectCameras()
+void VimbaCamManager::connectCameras()
 {
-	if(!detected_goldeye)
+	if(!connected_goldeye)
 	{
 		goldeye = new GoldeyeVimba();
 		try
 		{
 			goldeye->connect();
 			goldeye->configure();//camConfig.integrationTime, camConfig.bufferSize);
-			detected_goldeye = goldeye->isConnected() && goldeye->isConfigured();
+			connected_goldeye = goldeye->isConnected() && goldeye->isConfigured();
 		}
 		catch(CameraException e)
 		{
@@ -39,17 +56,28 @@ void VimbaCamManager::detectCameras()
 		}
 
 		//if goldeye was detected, try opening the flashlight
-		if(detected_goldeye){ flashlight->connect("/dev/ttyUSB1"); }
+		if(connected_goldeye)
+		{
+			try
+			{
+				flashlight->connect("/dev/ttyUSB1");
+				connected_flashlight = true;
+			}
+			catch(FlashlightException e)
+			{
+				QMessageBox::information(NULL, "Goldeye: Flashlight Exception", e.getMessage(), QMessageBox::Ok);
+			}
+		}
 	}
 
-	if(!detected_prosilica)
+	if(!connected_prosilica)
 	{
 		prosilica = new ProsilicaVimba();
 		try
 		{
 			prosilica->connect();
 			prosilica->configure();
-			detected_prosilica = prosilica->isConnected() && prosilica->isConfigured();
+			connected_prosilica = prosilica->isConnected() && prosilica->isConfigured();
 		}
 		catch(CameraException e)
 		{
@@ -58,13 +86,25 @@ void VimbaCamManager::detectCameras()
 	}
 }
 
+void VimbaCamManager::startFlashlight()
+{
+//	if(!flashLightRunning){ flashlight->run(); }
+//	flashLightRunning = true;
+}
+
+void VimbaCamManager::stopFlashlight()
+{
+//	if(flashLightRunning){ flashlight->halt(); }
+//	flashLightRunning = false;
+}
+
 RGBDNIR_MAP VimbaCamManager::getCamImages()
 {
 	QMap<RGBDNIR_captureType, Mat> camImgs;
 	Mat img;
 	int i;
 
-	if(detected_goldeye)
+	if(connected_goldeye & connected_flashlight)
 	{
 		//get lock on flashlight usage:
 		QMutexLocker locker(&flashlightLock);
@@ -73,6 +113,12 @@ RGBDNIR_MAP VimbaCamManager::getCamImages()
 		{
 			//trigger flashlight
 			flashlight->triggerSeries();
+//			if(!flashLightRunning)
+//			{
+//				startFlashlight();
+//			}
+
+			bool darkImageSaved = false;
 
 			//get waveband images from camera (plus dark)
 			for(i = 0; i < 5; ++i)
@@ -87,6 +133,24 @@ RGBDNIR_MAP VimbaCamManager::getCamImages()
 
 				img = goldeye->getCVFrame();
 
+				//return if image empty to avoid runtime errors
+				if(img.rows == 0 || img.cols == 0){ break; }
+
+				//apply fixed pattern noise calibration
+				myImageSource.doFPNCalib(img);
+
+				//if waveband, subtract dark image to get "pure" waveband image
+				//and do white calibration
+
+				if(key == 0){ darkImageSaved = true; }
+				else
+				{
+					if(darkImageSaved)
+					{
+						cv::subtract(img, camImgs[NIR_Dark], img);
+					}
+					myImageSource.doWhiteCalib(img, key);
+				}
 
 				//create correct entry for image list depending on channel returned by goldeye
 				switch(key)
@@ -105,7 +169,7 @@ RGBDNIR_MAP VimbaCamManager::getCamImages()
 			QMessageBox::information(NULL, "Goldeye: Camera Exception", e.getMessage(), QMessageBox::Ok);
 		}
 	}
-	if(detected_prosilica)
+	if(connected_prosilica)
 	{
 		try
 		{
