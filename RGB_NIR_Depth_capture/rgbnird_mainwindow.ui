@@ -32,6 +32,13 @@
       </widget>
      </item>
      <item>
+      <widget class="QPushButton" name="btn_stopAcquisition">
+       <property name="text">
+        <string>Stop Acquisition</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="btn_saveImgs">
        <property name="text">
         <string>Save Images</string>

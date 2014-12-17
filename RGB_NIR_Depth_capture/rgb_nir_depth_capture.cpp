@@ -11,18 +11,19 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	ui->setupUi(this);
 
 	qRegisterMetaType<RGBDNIR_MAP>();
-	ImgAcquisitionWorker *imgAcqWorker = new ImgAcquisitionWorker();
-	imgAcqWorker->moveToThread(&workerThread);
-	connect(&workerThread, SIGNAL(finished()), imgAcqWorker, SLOT(deleteLater()));
-	connect(this, SIGNAL(startImgAcquisition()), imgAcqWorker, SLOT(startAcquisition()));
-	connect(imgAcqWorker, SIGNAL(imagesReady(RGBDNIR_MAP)), this, SLOT(imagesReady(RGBDNIR_MAP)));
-	connect(this, SIGNAL(stopImgAcquisition()), imgAcqWorker, SLOT(stopAcquisition()));
+	myImgAcqWorker = new ImgAcquisitionWorker();
+	myImgAcqWorker->moveToThread(&workerThread);
+	connect(&workerThread, SIGNAL(finished()), myImgAcqWorker, SLOT(deleteLater()));
+	connect(this, SIGNAL(startImgAcquisition()), myImgAcqWorker, SLOT(startAcquisition()));
+	connect(myImgAcqWorker, SIGNAL(imagesReady(RGBDNIR_MAP)), this, SLOT(imagesReady(RGBDNIR_MAP)));
+	connect(this, SIGNAL(stopImgAcquisition()), myImgAcqWorker, SLOT(stopAcquisition()));
 	workerThread.start();
 
 }
 
 RGB_NIR_Depth_Capture::~RGB_NIR_Depth_Capture()
 {
+	myImgAcqWorker->setStatus(false);
 	workerThread.quit();
 	workerThread.wait();
 	destroyAllWindows();
@@ -77,10 +78,17 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP images)
 ************************************************/
 void RGB_NIR_Depth_Capture::on_btn_startAcquisition_released()
 {
+	myImgAcqWorker->setStatus(true);
 	emit startImgAcquisition();
 }
 
 void RGB_NIR_Depth_Capture::on_btn_saveImgs_released()
 {
 	triggerSave = true;
+}
+
+void RGB_NIR_Depth_Capture::on_btn_stopAcquisition_released()
+{
+	myImgAcqWorker->setStatus(false);
+//	emit stopImgAcquisition();
 }

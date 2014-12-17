@@ -39,10 +39,13 @@ private slots:
 
 	void on_btn_saveImgs_released();
 
+	void on_btn_stopAcquisition_released();
+
 private:
 	Ui::RGBNIRD_MainWindow *ui;
 	QThread workerThread;
 	bool triggerSave;
+	ImgAcquisitionWorker *myImgAcqWorker;
 };
 
 #endif // RGBNIRD_MAINWINDOW_H

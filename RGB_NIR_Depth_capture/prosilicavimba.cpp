@@ -4,7 +4,7 @@
 ProsilicaVimba::ProsilicaVimba() : system ( VimbaSystem::GetInstance() )
 {
 	//configure Camera class
-	myDepth = 16; //actually only 8 or 12 bit, but upscaled to 16
+	myDepth = 8; //usign BayerGB 8 bit
 	myWidth = 0;
 	myHeight = 0;
 
@@ -92,7 +92,7 @@ void ProsilicaVimba::connect(QString IPaddress)
 
 //	if( res == VmbErrorSuccess )
 //	{
-//		res = pCmd->SetValue(8096);
+//		res = pCmd->SetValue(8228);
 //	}
 //	else
 //	{
