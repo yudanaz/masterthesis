@@ -117,7 +117,7 @@ void GoldeyeVimba::connect(QString IPaddress)
 
 		if( res == VmbErrorSuccess )
 		{
-			res = pCmd->SetValue(8164);
+			res = pCmd->SetValue(8096);
 		}
 	}
 	else

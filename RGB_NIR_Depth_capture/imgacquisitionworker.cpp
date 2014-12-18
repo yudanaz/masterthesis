@@ -20,6 +20,7 @@ void ImgAcquisitionWorker::startAcquisition()
 	{
 		RGBDNIR_MAP images = vimbaCamManager.getCamImages();
 		emit imagesReady(images);
+//		usleep(100000);
 	}
 	while(acquiring);
 	vimbaCamManager.stopFlashlight();

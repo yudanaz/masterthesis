@@ -72,9 +72,10 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP images)
 			//convert and scale from 16 to 8 bit so image can be displayed
 			Mat img8bit(imgSmall.rows, imgSmall.cols, CV_8UC1);
 			Mat imgRGB8(imgSmall.rows, imgSmall.cols, CV_8UC3);
-			double minVal, maxVal;
-			minMaxLoc(imgSmall, &minVal, &maxVal); //find minimum and maximum intensities
-			imgSmall.convertTo(img8bit, CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
+//			double minVal, maxVal;
+//			minMaxLoc(imgSmall, &minVal, &maxVal); //find minimum and maximum intensities
+//			imgSmall.convertTo(img8bit, CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
+			imgSmall.convertTo(img8bit, CV_8U, 0.016, 0); // 0.016 = 255/16000, assuming 16k as max value
 			cvtColor(img8bit, imgRGB8, CV_GRAY2RGB);
 
 			//show in widget width inverted channels (because Mat is BGR and QImage is RGB)
@@ -104,12 +105,14 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP images)
 	//save current image list if save button is clicked
 	if(triggerSave)
 	{
+		QDir dir;
+		if(!dir.exists(QDir::currentPath()+"/out")){ dir.mkdir(QDir::currentPath()+"/out"); }
 		i.toFront();
 		QTime time;
 		while(i.hasNext())
 		{
 			i.next();
-			QString nm = QDir::currentPath() + "/" + time.currentTime().toString() + "_" +
+			QString nm = QDir::currentPath() + "/out/" + time.currentTime().toString() + "_" +
 						 VimbaCamManager::getRGBDNIR_captureTypeString( (RGBDNIR_captureType)i.key() ) + ".png";
 			imwrite(nm.toStdString().c_str(), i.value());
 		}

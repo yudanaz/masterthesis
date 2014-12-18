@@ -94,6 +94,9 @@ private:
 	bool connected_flashlight;
 
 	MyImageSource myImageSource;
+
+	quint16 maxFPS;
+	long FramePause;
 };
 
 #endif // VIMBACAMMANAGER_H

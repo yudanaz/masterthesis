@@ -20,7 +20,8 @@ VimbaCamManager::VimbaCamManager():
 	connected_prosilica(false),
 	connected_goldeye(false),
 	connected_flashlight(false),
-	flashLightRunning(false)
+	flashLightRunning(false),
+	maxFPS(30), FramePause(33333)
 {
 	startVimbaAPI();
 	flashlight = new FlashlightControl();
@@ -66,14 +67,20 @@ void VimbaCamManager::connectCameras()
 			connected_flashlight = true;
 
 			/****************************************************************************************************
-			 *  The next section is an altered version of the configureFlashlight() and calcWavebandsValue()
+			 *  The next section is an altered version of the setConfig() / configureFlashlight() and calcWavebandsValue()
 			 *  methods in the skincam cameraSystem class. Normally the values are read out of a config file,
 			 *  but for the sake of simplicity they're hard-coded here.
 			 * **************************************************************************************************/
 			//warning: the ringlight needs integration time in 1/10ths of a ms as Integer!
-			quint16 intVal = (quint16)(10*10);
+			quint16 integrationTime = 10;
+			quint16 intVal = (quint16)(integrationTime * 10);
 			flashlight->sendCommand(QString("P%1;").arg(intVal), true); //integration time
-			flashlight->sendCommand(QString("F%1;").arg(30), true); //frequency
+			goldeye->setExposureTime(integrationTime);
+
+			maxFPS = goldeye->getMaxFPS();
+			FramePause = 1000000 / maxFPS; //1Mio us / fps
+			flashlight->sendCommand(QString("F%1;").arg(maxFPS), true); //frequency
+			qDebug() << "fps for Goldeye: " << maxFPS << "overall fps: " << (maxFPS/4);
 
 			quint8 value = 0;
 			//calculate waveband value: binary representation, 1 = enabled, from left
@@ -112,14 +119,24 @@ void VimbaCamManager::connectCameras()
 
 void VimbaCamManager::startFlashlight()
 {
-	if(!flashLightRunning){ flashlight->run(); }
-	flashLightRunning = true;
+//	if(!connected_flashlight){ return; }
+//	if(!flashLightRunning)
+//	{
+//		flashlight->run();
+//		flashLightRunning = true;
+//		goldeye->reset();
+//	}
 }
 
 void VimbaCamManager::stopFlashlight()
 {
-	if(flashLightRunning){ flashlight->halt(); }
-	flashLightRunning = false;
+//	if(!connected_flashlight){ return; }
+//	if(flashLightRunning)
+//	{
+//		flashlight->halt();
+//		flashLightRunning = false;
+//		goldeye->reset();
+//	}
 }
 
 RGBDNIR_MAP VimbaCamManager::getCamImages()
@@ -128,6 +145,22 @@ RGBDNIR_MAP VimbaCamManager::getCamImages()
 	Mat img;
 	quint8 i;
 	quint8 errorCnt = 0;
+
+	if(connected_prosilica)
+	{
+		try
+		{
+			prosilica->triggerViaSoftware();
+			img = prosilica->getCVFrame();
+			camImgs[RGB] = img;
+		}
+		catch(CameraException e)
+		{
+			qDebug() << "Prosilica: Camera Exception:  "<< e.getMessage();
+			//QMessageBox::information(NULL, "Prosilica: Camera Exception", e.getMessage(), QMessageBox::Ok);
+		}
+
+	}
 
 	if(connected_goldeye & connected_flashlight)
 	{
@@ -138,17 +171,17 @@ RGBDNIR_MAP VimbaCamManager::getCamImages()
 		{
 			//trigger flashlight
 //			flashlight->triggerSeries();
-//			if(!flashLightRunning)
-//			{
-//				startFlashlight();
-//			}
 
 			bool darkImageSaved = false;
 
 			//get waveband images from camera (plus dark)
-			for(i = 0; i < 5; ++i)
+			for(i = 0; i < 5; i++)
 			{
+				//get current channel - this waits for the flashlight!
+				flashlight->triggerBand(i);
 				quint8 key = flashlight->getFrameKey();
+
+//				qDebug() << "index: " << i << "frameKey: " << key;
 
 				//acknowledge flashlight when last waveband is reached
 				if(i == 4)
@@ -156,10 +189,11 @@ RGBDNIR_MAP VimbaCamManager::getCamImages()
 					flashlight->sendAck();
 				}
 
+				//get next frame from camera
 				img = goldeye->getCVFrame();
 
 				//return if image empty to avoid runtime errors
-				if(img.rows == 0 || img.cols == 0){ break; }
+				if(img.rows == 0 || img.cols == 0){ continue; }
 
 				//apply fixed pattern noise calibration
 				myImageSource.doFPNCalib(img);
@@ -197,7 +231,7 @@ RGBDNIR_MAP VimbaCamManager::getCamImages()
 				flashlight->halt();
 			}
 
-			qDebug() << "Acquisition:" << e.getMessage();
+			qDebug() << "Goldeye acquisition (Frame " << i << "):" << e.getMessage();
 
 			goldeye->reset();
 
@@ -209,24 +243,31 @@ RGBDNIR_MAP VimbaCamManager::getCamImages()
 			//only show error if too many errors occur
 			if(errorCnt++ > 3)
 			{
-				QMessageBox::information(NULL, "Goldeye: Camera Exception",
-										 e.getMessage(), QMessageBox::Ok);
+				QMessageBox::information(NULL, "Goldeye: Camera Exception ("
+										 + QString::number(i) + "):", e.getMessage(), QMessageBox::Ok);
 			}
 		}
-	}
-	if(connected_prosilica)
-	{
-		try
+		catch (SkinCamException e)
 		{
-			prosilica->triggerViaSoftware();
-			img = prosilica->getCVFrame();
-			camImgs[RGB] = img;
+			if(flashLightRunning)
+			{
+				flashlight->halt();
+			}
+			QMessageBox::information(NULL, "Goldeye: Error during frame acquisition ("
+									 + QString::number(i) + "):", e.getMessage(), QMessageBox::Ok);
 		}
-		catch(CameraException e)
+		catch (...)
 		{
-			QMessageBox::information(NULL, "Prosilica: Camera Exception", e.getMessage(), QMessageBox::Ok);
+			if(flashLightRunning)
+			{
+				flashlight->halt();
+			}
+			QMessageBox::information(NULL, "Goldeye: Unknown error",
+									 "Unknown error during frame acquisition", QMessageBox::Ok);
 		}
 	}
+
+//	usleep(FramePause);
 	return camImgs;
 }
 

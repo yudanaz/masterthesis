@@ -88,14 +88,15 @@ void ProsilicaVimba::connect(QString IPaddress)
 			throw CameraException(QString("Can not open camera: %1").arg(convErrToMsg(res)));
 
 	//set large packet size
-//	res = pProsilica->GetFeatureByName("GVSPPacketSize", pCmd);
+	res = pProsilica->GetFeatureByName("GVSPPacketSize", pCmd);
 
-//	if( res == VmbErrorSuccess )
-//	{
-//		res = pCmd->SetValue(8228);
-//	}
-//	else
-//	{
+	if( res == VmbErrorSuccess )
+	{
+		res = pCmd->SetValue(8096);
+//		qDebug() << "Set Prosilica packet size successfuly";
+	}
+	else
+	{
 		res = pProsilica->GetFeatureByName("GVSPAdjustPacketSize", pCmd);
 
 		if( res == VmbErrorSuccess )
@@ -115,7 +116,7 @@ void ProsilicaVimba::connect(QString IPaddress)
 				} while( false == bIsCommandDone );
 			}
 		}
-//	}
+	}
 	if ( res != VmbErrorSuccess )
 	{
 		throw CameraException(QString("Can't adjust PacketSize! Code: %1").arg(convErrToMsg(res)));

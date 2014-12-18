@@ -59,7 +59,7 @@ public:
 
 	 \param bufferSize sets the number of frame buffers to use (3 by default).
 	*/
-	virtual void configure (double exposureTime = 10.0, quint8 bufferSize = 3);
+	virtual void configure (double exposureTime = 10.0, quint8 bufferSize = 4);
 
 	/*!
 	 \brief changes the cameras exposure time (if applicable).
