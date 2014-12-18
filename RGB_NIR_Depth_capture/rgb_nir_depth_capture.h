@@ -32,7 +32,6 @@ public slots:
 
 signals:
 	void startImgAcquisition();
-	void stopImgAcquisition();
 
 private slots:
 	void on_btn_startAcquisition_released();

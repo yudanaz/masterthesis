@@ -17,7 +17,6 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	connect(&workerThread, SIGNAL(finished()), myImgAcqWorker, SLOT(deleteLater()));
 	connect(this, SIGNAL(startImgAcquisition()), myImgAcqWorker, SLOT(startAcquisition()));
 	connect(myImgAcqWorker, SIGNAL(imagesReady(RGBDNIR_MAP)), this, SLOT(imagesReady(RGBDNIR_MAP)));
-	connect(this, SIGNAL(stopImgAcquisition()), myImgAcqWorker, SLOT(stopAcquisition()));
 	workerThread.start();
 
 	//get image widget sizes for display (-2 because of widget borders)

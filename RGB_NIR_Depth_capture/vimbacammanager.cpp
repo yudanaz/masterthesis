@@ -41,6 +41,7 @@ void VimbaCamManager::startVimbaAPI()
 
 void VimbaCamManager::connectCameras()
 {
+	//connect to goldeye
 	if(!connected_goldeye)
 	{
 		goldeye = new GoldeyeVimba();
@@ -54,22 +55,45 @@ void VimbaCamManager::connectCameras()
 		{
 			QMessageBox::information(NULL, "Goldeye: Camera Exception", e.getMessage(), QMessageBox::Ok);
 		}
+	}
 
-		//if goldeye was detected, try opening the flashlight
-		if(connected_goldeye)
+	//if goldeye was detected, try opening and configuring the flashlight
+	if(connected_goldeye && !connected_flashlight)
+	{
+		try
 		{
-			try
+			flashlight->connect("/dev/ttyUSB1");
+			connected_flashlight = true;
+
+			/****************************************************************************************************
+			 *  The next section is an altered version of the configureFlashlight() and calcWavebandsValue()
+			 *  methods in the skincam cameraSystem class. Normally the values are read out of a config file,
+			 *  but for the sake of simplicity they're hard-coded here.
+			 * **************************************************************************************************/
+			//warning: the ringlight needs integration time in 1/10ths of a ms as Integer!
+			quint16 intVal = (quint16)(10*10);
+			flashlight->sendCommand(QString("P%1;").arg(intVal), true); //integration time
+			flashlight->sendCommand(QString("F%1;").arg(30), true); //frequency
+
+			quint8 value = 0;
+			//calculate waveband value: binary representation, 1 = enabled, from left
+			QList<bool> bands;// = myConfig.wavebands.config.values();
+			bands << true << true << true << true;
+			for (quint8 i = 0; i < 4 /*myConfig.wavebands.totalNumber*/; i++)
 			{
-				flashlight->connect("/dev/ttyUSB1");
-				connected_flashlight = true;
+				if(bands.at(i))
+					value |= 1<<(4 /*myConfig.wavebands.totalNumber*/ - (i+1));
 			}
-			catch(FlashlightException e)
-			{
-				QMessageBox::information(NULL, "Goldeye: Flashlight Exception", e.getMessage(), QMessageBox::Ok);
-			}
+			flashlight->sendCommand(QString("W%1;").arg(value), true);
+			/*** endof hardcoded section ************************************************************************/
+		}
+		catch(FlashlightException e)
+		{
+			QMessageBox::information(NULL, "Goldeye: Flashlight Exception", e.getMessage(), QMessageBox::Ok);
 		}
 	}
 
+	//connect to prosilica
 	if(!connected_prosilica)
 	{
 		prosilica = new ProsilicaVimba();
@@ -88,21 +112,22 @@ void VimbaCamManager::connectCameras()
 
 void VimbaCamManager::startFlashlight()
 {
-//	if(!flashLightRunning){ flashlight->run(); }
-//	flashLightRunning = true;
+	if(!flashLightRunning){ flashlight->run(); }
+	flashLightRunning = true;
 }
 
 void VimbaCamManager::stopFlashlight()
 {
-//	if(flashLightRunning){ flashlight->halt(); }
-//	flashLightRunning = false;
+	if(flashLightRunning){ flashlight->halt(); }
+	flashLightRunning = false;
 }
 
 RGBDNIR_MAP VimbaCamManager::getCamImages()
 {
 	QMap<RGBDNIR_captureType, Mat> camImgs;
 	Mat img;
-	int i;
+	quint8 i;
+	quint8 errorCnt = 0;
 
 	if(connected_goldeye & connected_flashlight)
 	{
@@ -112,7 +137,7 @@ RGBDNIR_MAP VimbaCamManager::getCamImages()
 		try
 		{
 			//trigger flashlight
-			flashlight->triggerSeries();
+//			flashlight->triggerSeries();
 //			if(!flashLightRunning)
 //			{
 //				startFlashlight();
@@ -166,7 +191,27 @@ RGBDNIR_MAP VimbaCamManager::getCamImages()
 		}
 		catch(CameraException e)
 		{
-			QMessageBox::information(NULL, "Goldeye: Camera Exception", e.getMessage(), QMessageBox::Ok);
+			//handle problem
+			if(flashLightRunning)
+			{
+				flashlight->halt();
+			}
+
+			qDebug() << "Acquisition:" << e.getMessage();
+
+			goldeye->reset();
+
+			if(flashLightRunning)
+			{
+				flashlight->run();
+			}
+
+			//only show error if too many errors occur
+			if(errorCnt++ > 3)
+			{
+				QMessageBox::information(NULL, "Goldeye: Camera Exception",
+										 e.getMessage(), QMessageBox::Ok);
+			}
 		}
 	}
 	if(connected_prosilica)
