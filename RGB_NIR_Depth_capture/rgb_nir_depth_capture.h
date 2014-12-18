@@ -48,6 +48,8 @@ private:
 	bool triggerSave;
 	ImgAcquisitionWorker *myImgAcqWorker;
 
+	int imgCnt;
+
 
 	int width_rgb, height_rgb, width_nir, height_nir, width_depth, height_depth;
 };

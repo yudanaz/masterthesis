@@ -6,7 +6,8 @@
 RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::RGBNIRD_MainWindow),
-	triggerSave(false)
+	triggerSave(false),
+	imgCnt(0)
 {
 	ui->setupUi(this);
 
@@ -112,11 +113,14 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP images)
 		while(i.hasNext())
 		{
 			i.next();
-			QString nm = QDir::currentPath() + "/out/" + time.currentTime().toString() + "_" +
+			QString nm = QDir::currentPath() + "/out/" +
+						 QString::number(imgCnt) + "_" +
+						 //time.currentTime().toString() + "_" +
 						 VimbaCamManager::getRGBDNIR_captureTypeString( (RGBDNIR_captureType)i.key() ) + ".png";
 			imwrite(nm.toStdString().c_str(), i.value());
 		}
 		triggerSave = false;
+		imgCnt++;
 	}
 }
 
