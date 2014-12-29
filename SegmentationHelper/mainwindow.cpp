@@ -364,7 +364,7 @@ void MainWindow::makeDisparityImage(QString fileNameL, QString fileNameR)
 									ui->slider_speckleRange->value());
 
 	//process and display
-	disp = camCalib.makeDisparityImage(leftImg, rightImg);
+    disp = camCalib.makeDisparityImage(leftImg, rightImg, ui->checkBox_useSGBM->isChecked());
 	imshow("left image", leftImg);
 	imshow("image", disp);
 }
@@ -890,3 +890,15 @@ void MainWindow::on_btn_loadParams_released()
 
 
 
+
+void MainWindow::on_checkBox_useSGBM_clicked()
+{
+    bool enabled = !ui->checkBox_useSGBM->isChecked();
+    ui->slider_prefilterSize->setEnabled(enabled);
+    ui->label_prefilterSize->setEnabled(enabled);
+    ui->label_preFilterSizeLabel->setEnabled(enabled);
+
+    ui->slider_textureThresh->setEnabled(enabled);
+    ui->label_textureThresh->setEnabled(enabled);
+    ui->label_textureThresholdLabel->setEnabled(enabled);
+}

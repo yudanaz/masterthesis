@@ -91,12 +91,33 @@ public:
 
 	/*!
 	 * \brief Computes a disparity image using the Block Matching algorithm by [Konolige97]
-	 */
-	Mat makeDisparityImage(Mat leftGrayImg, Mat rightGrayImg);
-	Mat alignImageByFeatures(Mat imageL, Mat imageRtoBeAligned);
+     * OR
+     * the semi-global Block Matching algorithm by [Hirschmuller,
+     * H. Stereo Processing by Semiglobal Matching and Mutual Information, PAMI(30), No. 2, February 2008, pp. 328-341.]
+     */
+    Mat makeDisparityImage(Mat leftGrayImg, Mat rightGrayImg, bool useSGBM);
 
-	void makeAndSaveHomogeneityMatrices(QStringList calibImgTarFiles, QString folderURL);
-	bool loadHomogeneityMatrices(QString loadFileURL);
+    /*!
+     * \brief Aligns an image to a reference image of the same scene, usign SURF features and
+     * brute-force matching. Cameras shouldn't be too far apart.
+     * \param imageL: the reference image
+     * \param imageRtoBeAligned: image that is aligned to the reference image
+     * \return the aligned image.
+     */
+    Mat alignImageByFeatures(Mat imageL, Mat imageRtoBeAligned);
+
+
+    /*!
+     * \brief Generates matrices which can be used to make goldeye camera waveband images homogeneous
+     * (in terms of brightness resulting from LED ring flash). The resulting matrices should be used
+     * for pixel-wise multiplication with the corresponding waveband image.
+     * \param calibImgTarFiles: A list of multichannel reference images, preferably focused in middle
+     * waveband(s) and captured in front of a white wall.
+     * \param folderURL: Folder to which the homogeneity matrices should be saved.
+     */
+    void makeAndSaveHomogeneityMatrices(QStringList calibImgTarFiles, QString folderURL);
+
+    bool loadHomogeneityMatrices(QString loadFileURL);
 	void applyHomogeneityMatrices(QString multiChImgtarFile);
 
 
@@ -117,6 +138,7 @@ private:
 
 	QWidget *parentWidget;
 	StereoBM sbm;
+    StereoSGBM sgbm;
 	bool cameraCalibrated;
 	bool goldeyeCalibrated;
 	bool stereoCalibrated;

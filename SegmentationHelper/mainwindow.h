@@ -110,6 +110,8 @@ private slots:
 
 	void on_btn_homogenApply_released();
 
+    void on_checkBox_useSGBM_clicked();
+
 private:
 	void makeLabelImages(QStringList fileNames);
 	void makeSeedsSuperpixels(QString fileName);

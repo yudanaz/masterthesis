@@ -276,29 +276,46 @@ void CameraCalibration::setDisparityParameters(int minDisparity, int nrOfDispari
 	sbm.state->preFilterSize = prefilterSize;
 	sbm.state->preFilterCap = prefilterCap;
 
-	//correspondence vai SAD
+    sgbm.preFilterCap = prefilterCap;
+
+    //correspondence via SAD
 	sbm.state->minDisparity = minDisparity;
 	sbm.state->numberOfDisparities = nrOfDisparities;
 	sbm.state->SADWindowSize = SADWindowSize;
+
+    sgbm.minDisparity = minDisparity;
+    sgbm.numberOfDisparities = nrOfDisparities;
+    int sgbmWindowSize = SADWindowSize > 0 ? SADWindowSize : 3;
+    int channels = 1; //because we convert images to grayscale
+    sgbm.SADWindowSize = sgbmWindowSize;
+    sgbm.P1 = 8 * channels * sgbmWindowSize * sgbmWindowSize;
+    sgbm.P2 = 32 * channels * sgbmWindowSize * sgbmWindowSize;
+    sgbm.disp12MaxDiff = 1; //Maximum allowed difference (in integer pixel units)
+    //in the left-right disparity check. Set it to a non-positive value to disable the check.
 
 	//post filters -> remove bad matches
 	sbm.state->textureThreshold = textureThresh;
 	sbm.state->uniquenessRatio = uniquenessRatio;
 	sbm.state->speckleWindowSize = specklewindowSize;
 	sbm.state->speckleRange = speckleRange;
+
+    sgbm.uniquenessRatio = uniquenessRatio;
+    sgbm.speckleWindowSize = specklewindowSize;
+    sgbm.speckleRange = speckleRange;
 }
 
-Mat CameraCalibration::makeDisparityImage(Mat leftGrayImg, Mat rightGrayImg)
+Mat CameraCalibration::makeDisparityImage(Mat leftGrayImg, Mat rightGrayImg, bool useSGBM)
 {
-	//set parameters
-
-	//smooth images
-//	GaussianBlur(leftGrayImg, leftGrayImg, Size(smoothKernelSize, smoothKernelSize), 0);
-//	GaussianBlur(rightGrayImg, rightGrayImg, Size(smoothKernelSize, smoothKernelSize), 0);
-
 	//compute disparities
 	Mat disp(leftGrayImg.rows, leftGrayImg.cols, CV_16SC1);
-	sbm(leftGrayImg, rightGrayImg, disp, CV_16S);
+    if(useSGBM)
+    {
+        sgbm(leftGrayImg, rightGrayImg,disp);
+    }
+    else
+    {
+        sbm(leftGrayImg, rightGrayImg, disp, CV_16S);
+    }
 
 	//normalize (from 16 to 8 bit) and return
 	double minVal, maxVal;
@@ -307,6 +324,7 @@ Mat CameraCalibration::makeDisparityImage(Mat leftGrayImg, Mat rightGrayImg)
 	disp.convertTo(disp2,CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
 	return disp2;
 }
+
 
 Mat CameraCalibration::alignImageByFeatures(Mat imageL, Mat imageRtoBeAligned)
 {

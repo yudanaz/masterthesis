@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>977</width>
-    <height>510</height>
+    <width>1008</width>
+    <height>511</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,8 +19,8 @@
      <rect>
       <x>20</x>
       <y>10</y>
-      <width>486</width>
-      <height>344</height>
+      <width>491</width>
+      <height>379</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout">
@@ -351,6 +351,54 @@
        </item>
       </layout>
      </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_21">
+       <item>
+        <widget class="QLabel" name="label_17">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(0, 0, 0);
+color: rgb(255, 255, 127);</string>
+         </property>
+         <property name="text">
+          <string>Goldeye Homogeneity Matrix:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btn_homogenMake">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(31, 31, 31);
+color: rgb(255, 255, 127);</string>
+         </property>
+         <property name="text">
+          <string>Make</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btn_homogenLoad">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(31, 31, 31);
+color: rgb(255, 255, 127);</string>
+         </property>
+         <property name="text">
+          <string>Load</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btn_homogenApply">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(31, 31, 31);
+color: rgb(255, 255, 127);</string>
+         </property>
+         <property name="text">
+          <string>Apply</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
     </layout>
    </widget>
    <widget class="QWidget" name="verticalLayoutWidget_2">
@@ -358,8 +406,8 @@
      <rect>
       <x>520</x>
       <y>10</y>
-      <width>431</width>
-      <height>318</height>
+      <width>464</width>
+      <height>346</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -412,6 +460,13 @@
         </widget>
        </item>
       </layout>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="checkBox_useSGBM">
+       <property name="text">
+        <string>use SGBM (semiglobal block matching, false = SBM)</string>
+       </property>
+      </widget>
      </item>
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_14" stretch="0,0,0">
@@ -596,7 +651,7 @@
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_8">
        <item>
-        <widget class="QLabel" name="label_4">
+        <widget class="QLabel" name="label_preFilterSizeLabel">
          <property name="maximumSize">
           <size>
            <width>16777215</width>
@@ -709,7 +764,7 @@
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_17">
        <item>
-        <widget class="QLabel" name="label_13">
+        <widget class="QLabel" name="label_textureThresholdLabel">
          <property name="maximumSize">
           <size>
            <width>16777215</width>
@@ -954,70 +1009,14 @@
      </item>
     </layout>
    </widget>
-   <widget class="QWidget" name="horizontalLayoutWidget">
-    <property name="geometry">
-     <rect>
-      <x>19</x>
-      <y>360</y>
-      <width>481</width>
-      <height>31</height>
-     </rect>
-    </property>
-    <layout class="QHBoxLayout" name="horizontalLayout_21">
-     <item>
-      <widget class="QLabel" name="label_17">
-       <property name="styleSheet">
-        <string notr="true">background-color: rgb(0, 0, 0);
-color: rgb(255, 255, 127);</string>
-       </property>
-       <property name="text">
-        <string>Goldeye Homogeneity Matrix:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btn_homogenMake">
-       <property name="styleSheet">
-        <string notr="true">background-color: rgb(31, 31, 31);
-color: rgb(255, 255, 127);</string>
-       </property>
-       <property name="text">
-        <string>Make</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btn_homogenLoad">
-       <property name="styleSheet">
-        <string notr="true">background-color: rgb(31, 31, 31);
-color: rgb(255, 255, 127);</string>
-       </property>
-       <property name="text">
-        <string>Load</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btn_homogenApply">
-       <property name="styleSheet">
-        <string notr="true">background-color: rgb(31, 31, 31);
-color: rgb(255, 255, 127);</string>
-       </property>
-       <property name="text">
-        <string>Apply</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>977</width>
-     <height>20</height>
+     <width>1008</width>
+     <height>25</height>
     </rect>
    </property>
   </widget>
