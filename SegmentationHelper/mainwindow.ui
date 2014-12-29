@@ -466,6 +466,9 @@ color: rgb(255, 255, 127);</string>
        <property name="text">
         <string>use SGBM (semiglobal block matching, false = SBM)</string>
        </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
       </widget>
      </item>
      <item>

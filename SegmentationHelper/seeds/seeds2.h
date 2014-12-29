@@ -46,7 +46,7 @@ public:
 	void iterate();
 
 	UINT* get_labels() { return labels[seeds_top_level]; }
-	Mat getLabelsAsMat() { return getMat(labels[seeds_top_level]); }
+    Mat getLabelsAsMat();// { return getMat(labels[seeds_top_level]); }
 	// output labels
 	UINT** labels;	 //[level][y * width + x]
 

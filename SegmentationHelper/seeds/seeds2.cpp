@@ -71,7 +71,7 @@ void SEEDS::iterate()
 
 Mat SEEDS::getMat(UINT *img_uint)
 {
-	IplImage* img = cvCreateImage(cvSize(width,height), IPL_DEPTH_8U, 3);
+    IplImage* img = cvCreateImage(cvSize(width,height), IPL_DEPTH_8U, 3);
 	uchar* pValue;
 	int idx = 0;
 
@@ -80,14 +80,27 @@ Mat SEEDS::getMat(UINT *img_uint)
 		for(int i = 0; i < img->width; i++)
 		{
 		pValue = &((uchar*)(img->imageData + img->widthStep*(j)))[(i)*img->nChannels];
-		pValue[2] = img_uint[idx] & 0xff;
-		pValue[1] = (img_uint[idx] >> 8) & 0xff;
-		pValue[0] = (img_uint[idx] >>16) & 0xff;
+        pValue[2] = img_uint[idx] & 0xff;
+        pValue[1] = (img_uint[idx] >> 8) & 0xff;
+        pValue[0] = (img_uint[idx] >>16) & 0xff;
 		idx++;
 		}
 	}
 
 	return cvarrToMat(img);
+}
+
+Mat SEEDS::getLabelsAsMat()
+{
+    UINT *labels = get_labels();
+    Mat cvLabels(height, width, CV_16UC1);
+    MatIterator_<ushort> it, end;
+    int i = 0;
+    for( it = cvLabels.begin<ushort>(), end = cvLabels.end<ushort>(); it != end; ++it)
+    {
+        *it = labels[i++];
+    }
+    return cvLabels;
 }
 
 UINT* SEEDS::getUINT(Mat mat)

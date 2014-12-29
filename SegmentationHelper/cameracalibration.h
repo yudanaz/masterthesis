@@ -95,7 +95,17 @@ public:
      * the semi-global Block Matching algorithm by [Hirschmuller,
      * H. Stereo Processing by Semiglobal Matching and Mutual Information, PAMI(30), No. 2, February 2008, pp. 328-341.]
      */
-    Mat makeDisparityImage(Mat leftGrayImg, Mat rightGrayImg, bool useSGBM);
+    Mat makeDisparityMap(Mat leftGrayImg, Mat rightGrayImg, bool useSGBM);
+
+    /*!
+     * \brief Improves a disparity map by propagating disparity to zero-valued pixels
+     * (mismatch / occlusion /...). For this the dispartity is averaged in each superpixel.
+     * \param superpixelmap: The superpixels for the original image with wich the disparity
+     * map is aligned (typically the left one)
+     * \param disp: The disparity map.
+     * \return: The improved disparity map.
+     */
+    Mat improveDisparityMap(int nrOfSuperPixel, Mat superpixelMap, Mat disparityMap);
 
     /*!
      * \brief Aligns an image to a reference image of the same scene, usign SURF features and

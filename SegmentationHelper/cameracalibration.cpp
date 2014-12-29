@@ -304,10 +304,10 @@ void CameraCalibration::setDisparityParameters(int minDisparity, int nrOfDispari
     sgbm.speckleRange = speckleRange;
 }
 
-Mat CameraCalibration::makeDisparityImage(Mat leftGrayImg, Mat rightGrayImg, bool useSGBM)
+Mat CameraCalibration::makeDisparityMap(Mat leftGrayImg, Mat rightGrayImg, bool useSGBM)
 {
 	//compute disparities
-	Mat disp(leftGrayImg.rows, leftGrayImg.cols, CV_16SC1);
+    Mat disp;//(leftGrayImg.rows, leftGrayImg.cols, CV_16UC1);
     if(useSGBM)
     {
         sgbm(leftGrayImg, rightGrayImg,disp);
@@ -317,12 +317,57 @@ Mat CameraCalibration::makeDisparityImage(Mat leftGrayImg, Mat rightGrayImg, boo
         sbm(leftGrayImg, rightGrayImg, disp, CV_16S);
     }
 
-	//normalize (from 16 to 8 bit) and return
-	double minVal, maxVal;
-	minMaxLoc(disp, &minVal, &maxVal); //find minimum and maximum intensities
-	Mat disp2;
-	disp.convertTo(disp2,CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
-	return disp2;
+    //get real values (disp values are multiple of 16, see http://docs.opencv.org/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html#stereosgbm-operator)
+    disp = disp / 16;
+    return disp;
+}
+
+Mat CameraCalibration::improveDisparityMap(int nrOfSuperPixel, Mat superpixelMap, Mat disparityMap)
+{
+    Mat res (disparityMap.rows, disparityMap.cols, disparityMap.type(), Scalar(0));
+    vector< vector<ushort> > superpxs(nrOfSuperPixel, vector<ushort>(2));
+
+    //if superpixel or disparity map not in ushort format, return emtpy
+    int type1 = superpixelMap.type();
+    int type2 = disparityMap.type();
+    if( type1 != CV_16UC1 || type2 != CV_16SC1)
+    {
+        return res;
+    }
+
+    //init superpixel vector
+    for(int i = 0; i < nrOfSuperPixel; ++i )
+    {
+        superpxs[i][0] = 0;
+        superpxs[i][1] = 0;
+    }
+
+    //sum and count all disparity values for each superpixel
+    MatIterator_<ushort> it_superpx, end;
+    MatIterator_<short> it_disp;
+    for( it_superpx = superpixelMap.begin<ushort>(), it_disp = disparityMap.begin<short>(),
+         end = superpixelMap.end<ushort>(); it_superpx != end; ++it_superpx, ++it_disp )
+    {
+        int indx = *it_superpx;
+        superpxs[indx][0] += *it_disp; //add disparity value
+        superpxs[*it_superpx][1]++; //count number of pixels in superpixel
+    }
+
+    //average values for each superpixel
+    for(int i = 0; i < nrOfSuperPixel; ++i )
+    {
+        superpxs[i][0] /= superpxs[i][1];
+    }
+
+    //write averaged values in output matrix
+    MatIterator_<short> it_res;
+    for( it_superpx = superpixelMap.begin<ushort>(), it_res = res.begin<short>(),
+         end = res.end<ushort>(); it_superpx != end; ++it_superpx, ++it_res )
+    {
+        *it_res = superpxs[*it_superpx][0];
+    }
+
+    return res;
 }
 
 

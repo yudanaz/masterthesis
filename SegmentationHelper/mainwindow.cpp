@@ -220,11 +220,7 @@ void MainWindow::makeSeedsSuperpixels(QString fileName)
 		seedW = 2;
 		seedH = 2;
 		seedLevels = 4;
-	}
-
-	//display the number of superpixels created with this settings
-	QString nrOfSuperpxs = QString::number((img.cols * img.rows) / (pow(seedW, seedLevels-1) * pow(seedH, seedLevels-1)));
-	ui->label_nrOfSuperpxs->setText("= " + nrOfSuperpxs + " superpixels");
+    }
 
 	QTime myTimer;
 	myTimer.start();
@@ -244,34 +240,31 @@ void MainWindow::makeSeedsSuperpixels(QString fileName)
 
 	//get labels, transform to opencv mat obj and display
 //	UINT* _labels = seeds.get_labels();
-//	Mat labels;
-//	labels = seeds.getLabelsAsMat();
-//	imshow("Labels", labels);
+    Mat cvLabels, cvLabels8bit;
+    cvLabels = seeds.getLabelsAsMat();
+    cvLabels.convertTo(cvLabels8bit, CV_8UC1, 256.0/seeds.count_superpixels());
+    imshow("Labels", cvLabels8bit);
 //	imshow("Original", img);
 
-	int sz = 3*width*height;
+//	int sz = 3*width*height;
 
 //	UINT* output_buff = new UINT[sz];
 //	for (int i = 0; i<sz; i++) output_buff[i] = 0;
 
-	UINT* imgUINT = seeds.getUINT(img);
-	DrawContoursAroundSegments(imgUINT, seeds.get_labels(), width, height, 0xFF1493, true);//0xff0000 draws white contours
+    UINT* imgUINT = seeds.getUINT(img);
+    UINT *labels = seeds.get_labels();
+    DrawContoursAroundSegments(imgUINT, labels, width, height, 0xFF1493, true);//0xff0000 draws white contours
 	Mat labelsOverlayed = seeds.getMat(imgUINT);
-	imshow("Superpixels", labelsOverlayed);
+    imshow("Superpixels", labelsOverlayed);
 
 	//save label names
-//	QString fileNameOnly = fileName.split("/").last().split(".")[0];
-//	QString labelsFileName = lastDir + "/" + fileNameOnly + "labels.txt";
-//	seeds.SaveLabels_Text(labelsFileName.toStdString().c_str());
-}
+    QString fileNameOnly = fileName.split("/").last().split(".")[0];
+    QString labelsFileName = lastDir + "/" + fileNameOnly + "labels.txt";
+    seeds.SaveLabels_Text(labelsFileName.toStdString().c_str());
 
-void MainWindow::on_btn_slic_released()
-{
-	QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr("*.jpg *.png"));
-	if(fileName == "") return;
-	lastDir = QFileInfo(fileName).path();
-	lastSlicFilename = fileName;
-	makeSlicSuperpixels(fileName);
+    //display the number of superpixels created with this settings
+    QString nrOfSuperpxs = QString::number(seeds.count_superpixels());
+    ui->label_nrOfSuperpxs->setText("= " + nrOfSuperpxs + " superpixels");
 }
 
 void MainWindow::makeSlicSuperpixels(QString fileName)
@@ -348,7 +341,7 @@ void MainWindow::makeDisparityImage(QString fileNameL, QString fileNameR)
 	if(fileNameL == "" || fileNameR ==""){ return; }
 
 	//load L and R images as grayscale
-	Mat leftImg, rightImg, disp;
+    Mat leftImg, rightImg, disp, dispImprov;
 	leftImg = imread(fileNameL.toStdString().c_str(), CV_LOAD_IMAGE_GRAYSCALE);
 	rightImg = imread(fileNameR.toStdString().c_str(), CV_LOAD_IMAGE_GRAYSCALE);
 
@@ -363,10 +356,30 @@ void MainWindow::makeDisparityImage(QString fileNameL, QString fileNameR)
 									ui->slider_speckleWindow->value(),
 									ui->slider_speckleRange->value());
 
-	//process and display
-    disp = camCalib.makeDisparityImage(leftImg, rightImg, ui->checkBox_useSGBM->isChecked());
-	imshow("left image", leftImg);
-	imshow("image", disp);
+    //process and improve with superpixels
+    disp = camCalib.makeDisparityMap(leftImg, rightImg, ui->checkBox_useSGBM->isChecked());
+
+    //run SEEDS algorithm
+    int NR_BINS = 5;
+    int width = leftImg.cols;
+    int height = leftImg.rows;
+    int channels = leftImg.channels();
+    SEEDS seeds(width, height, channels, NR_BINS);
+    seeds.initialize(2, 2, 4); //hard-coded for now, see makeSeedsSuperpixels() method
+    seeds.update_image_ycbcr(leftImg);
+    seeds.iterate();
+
+    dispImprov = camCalib.improveDisparityMap(seeds.count_superpixels(), seeds.getLabelsAsMat(), disp);
+
+    //normalize (from 16 to 8 bit) and show
+    double minVal, maxVal;
+    minMaxLoc(dispImprov, &minVal, &maxVal); //find minimum and maximum intensities
+    Mat disp2;
+    dispImprov.convertTo(disp2,CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
+
+    imshow("left image", leftImg); // disparity image is aligned with left image
+    //imshow("right image", rightImg);
+    imshow("image", disp2);
 }
 
 void MainWindow::makeSurfFeatures(QString fileName)
@@ -449,6 +462,15 @@ void MainWindow::on_btn_seed_released()
 void MainWindow::on_pushButton_seedAgain_released()
 {
 	if(lastSeedsFilename != "") { makeSeedsSuperpixels(lastSeedsFilename); }
+}
+
+void MainWindow::on_btn_slic_released()
+{
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr(IMGTYPES));
+    if(fileName == "") return;
+    lastDir = QFileInfo(fileName).path();
+    lastSlicFilename = fileName;
+    makeSlicSuperpixels(fileName);
 }
 
 void MainWindow::on_pushButton_slicAgain_released()
@@ -887,10 +909,6 @@ void MainWindow::on_btn_loadParams_released()
 	ui->label_speckleRange->setText(QString::number(v9));
 }
 
-
-
-
-
 void MainWindow::on_checkBox_useSGBM_clicked()
 {
     bool enabled = !ui->checkBox_useSGBM->isChecked();
@@ -901,4 +919,7 @@ void MainWindow::on_checkBox_useSGBM_clicked()
     ui->slider_textureThresh->setEnabled(enabled);
     ui->label_textureThresh->setEnabled(enabled);
     ui->label_textureThresholdLabel->setEnabled(enabled);
+
+    makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
+
 }
