@@ -324,8 +324,13 @@ Mat CameraCalibration::makeDisparityMap(Mat leftGrayImg, Mat rightGrayImg, bool 
 
 Mat CameraCalibration::improveDisparityMap(int nrOfSuperPixel, Mat superpixelMap, Mat disparityMap)
 {
+    nrOfSuperPixel += 30; //there seem to be always some numbers that are jumbed, resulting in unused indices
+
     Mat res (disparityMap.rows, disparityMap.cols, disparityMap.type(), Scalar(0));
-    vector< vector<ushort> > superpxs(nrOfSuperPixel, vector<ushort>(2));
+
+    //make 2D-vector to hold sum of disparities and pixel amount for each superpixel
+    //(vector type is long in order to hold summed value, although disparity map type is short)
+    vector< vector<long> > superpxs(nrOfSuperPixel, vector<long>(2));
 
     //if superpixel or disparity map not in ushort format, return emtpy
     int type1 = superpixelMap.type();
@@ -348,21 +353,28 @@ Mat CameraCalibration::improveDisparityMap(int nrOfSuperPixel, Mat superpixelMap
     for( it_superpx = superpixelMap.begin<ushort>(), it_disp = disparityMap.begin<short>(),
          end = superpixelMap.end<ushort>(); it_superpx != end; ++it_superpx, ++it_disp )
     {
-        int indx = *it_superpx;
-        superpxs[indx][0] += *it_disp; //add disparity value
-        superpxs[*it_superpx][1]++; //count number of pixels in superpixel
+        short dispVal = *it_disp;
+        if(dispVal > 0)
+        {
+            superpxs[*it_superpx][0] += dispVal; //add disparity value
+            superpxs[*it_superpx][1]++; //count number of pixels in superpixel
+        }
     }
 
     //average values for each superpixel
     for(int i = 0; i < nrOfSuperPixel; ++i )
     {
-        superpxs[i][0] /= superpxs[i][1];
+        ushort amountInSuperPx = superpxs[i][1];
+        if(amountInSuperPx > 0)
+        {
+            superpxs[i][0] /= amountInSuperPx;
+        }
     }
 
     //write averaged values in output matrix
     MatIterator_<short> it_res;
     for( it_superpx = superpixelMap.begin<ushort>(), it_res = res.begin<short>(),
-         end = res.end<ushort>(); it_superpx != end; ++it_superpx, ++it_res )
+         end = superpixelMap.end<ushort>(); it_superpx != end; ++it_superpx, ++it_res )
     {
         *it_res = superpxs[*it_superpx][0];
     }

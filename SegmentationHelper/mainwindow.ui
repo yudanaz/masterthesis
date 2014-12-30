@@ -407,7 +407,7 @@ color: rgb(255, 255, 127);</string>
       <x>520</x>
       <y>10</y>
       <width>464</width>
-      <height>346</height>
+      <height>354</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -462,14 +462,39 @@ color: rgb(255, 255, 127);</string>
       </layout>
      </item>
      <item>
-      <widget class="QCheckBox" name="checkBox_useSGBM">
-       <property name="text">
-        <string>use SGBM (semiglobal block matching, false = SBM)</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
-       </property>
-      </widget>
+      <layout class="QHBoxLayout" name="horizontalLayout_22">
+       <item>
+        <widget class="QCheckBox" name="checkBox_useSGBM">
+         <property name="text">
+          <string>use SGBM</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="checkBox_improveWithSeed">
+         <property name="text">
+          <string>improve with SEED</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_4">
+         <property name="text">
+          <string>| x-offset:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="lineEdit_SEEDxoffset">
+         <property name="text">
+          <string>10</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </item>
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_14" stretch="0,0,0">
@@ -655,6 +680,9 @@ color: rgb(255, 255, 127);</string>
       <layout class="QHBoxLayout" name="horizontalLayout_8">
        <item>
         <widget class="QLabel" name="label_preFilterSizeLabel">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="maximumSize">
           <size>
            <width>16777215</width>
@@ -668,6 +696,9 @@ color: rgb(255, 255, 127);</string>
        </item>
        <item>
         <widget class="QSlider" name="slider_prefilterSize">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="maximumSize">
           <size>
            <width>250</width>
@@ -690,6 +721,9 @@ color: rgb(255, 255, 127);</string>
        </item>
        <item>
         <widget class="QLabel" name="label_prefilterSize">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="maximumSize">
           <size>
            <width>50</width>
@@ -768,6 +802,9 @@ color: rgb(255, 255, 127);</string>
       <layout class="QHBoxLayout" name="horizontalLayout_17">
        <item>
         <widget class="QLabel" name="label_textureThresholdLabel">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="maximumSize">
           <size>
            <width>16777215</width>
@@ -781,6 +818,9 @@ color: rgb(255, 255, 127);</string>
        </item>
        <item>
         <widget class="QSlider" name="slider_textureThresh">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="maximumSize">
           <size>
            <width>250</width>
@@ -803,6 +843,9 @@ color: rgb(255, 255, 127);</string>
        </item>
        <item>
         <widget class="QLabel" name="label_textureThresh">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="maximumSize">
           <size>
            <width>50</width>

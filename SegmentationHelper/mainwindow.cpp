@@ -336,14 +336,16 @@ void MainWindow::makeFelsenzwalbSuperpixels(QString fileName)
 
 
 
-void MainWindow::makeDisparityImage(QString fileNameL, QString fileNameR)
+//void MainWindow::makeDisparityImage(QString fileNameL, QString fileNameR)
+void MainWindow::makeDisparityImage(Mat leftImgCol, Mat rightImgCol)
 {
-	if(fileNameL == "" || fileNameR ==""){ return; }
+    bool improve = false;
+    if(ui->checkBox_improveWithSeed->isChecked()){ improve = true; }
 
 	//load L and R images as grayscale
     Mat leftImg, rightImg, disp, dispImprov;
-	leftImg = imread(fileNameL.toStdString().c_str(), CV_LOAD_IMAGE_GRAYSCALE);
-	rightImg = imread(fileNameR.toStdString().c_str(), CV_LOAD_IMAGE_GRAYSCALE);
+    cvtColor(leftImgCol, leftImg, CV_BGR2GRAY);
+    cvtColor(rightImgCol, rightImg, CV_BGR2GRAY);
 
 	//set parameters
 	camCalib.setDisparityParameters(ui->slider_minDisp->value(),
@@ -356,30 +358,66 @@ void MainWindow::makeDisparityImage(QString fileNameL, QString fileNameR)
 									ui->slider_speckleWindow->value(),
 									ui->slider_speckleRange->value());
 
-    //process and improve with superpixels
+    //process
     disp = camCalib.makeDisparityMap(leftImg, rightImg, ui->checkBox_useSGBM->isChecked());
 
-    //run SEEDS algorithm
-    int NR_BINS = 5;
-    int width = leftImg.cols;
-    int height = leftImg.rows;
-    int channels = leftImg.channels();
-    SEEDS seeds(width, height, channels, NR_BINS);
-    seeds.initialize(2, 2, 4); //hard-coded for now, see makeSeedsSuperpixels() method
-    seeds.update_image_ycbcr(leftImg);
-    seeds.iterate();
+    if(improve)
+    {
+        //get info for seed alg
+        int seedW, seedH, seedLevels;
+        QStringList seedInfo = ui->lineEdit_seedInfo->text().split(",");
+        if(seedInfo.length() == 3)
+        {
+            seedW = seedInfo.at(0).toInt();
+            seedH = seedInfo.at(1).toInt();
+            seedLevels = seedInfo.at(2).toInt();
+        }
+        else
+        {
+            seedW = 2;
+            seedH = 2;
+            seedLevels = 4;
+        }
 
-    dispImprov = camCalib.improveDisparityMap(seeds.count_superpixels(), seeds.getLabelsAsMat(), disp);
+        //apply x-offset to original left image in order to get an image that is more aligned
+        //with the disparity map (which is somewhere between L and R image)
+        int xoffset = ui->lineEdit_SEEDxoffset->text().toInt();
+        Mat leftImgColShifted = Mat::zeros(leftImgCol.size(), leftImgCol.type());
+        leftImgCol(Rect(xoffset, 0,leftImgCol.cols-xoffset, leftImgCol.rows)).copyTo(
+                    leftImgColShifted(Rect(0, 0, leftImgCol.cols-xoffset, leftImgCol.rows)));
+
+        //run SEEDS algorithm
+        int NR_BINS = 5;
+        int width = leftImg.cols;
+        int height = leftImg.rows;
+        int channels = leftImg.channels();
+        SEEDS seeds(width, height, channels, NR_BINS);
+        seeds.initialize(seedW, seedH, seedLevels); //hard-coded for now, see makeSeedsSuperpixels() method
+        seeds.update_image_ycbcr(leftImgColShifted);
+        seeds.iterate();
+
+        //show labels
+    //    Mat cvLabels, cvLabels8bit;
+    //    cvLabels = seeds.getLabelsAsMat();
+    //    cvLabels.convertTo(cvLabels8bit, CV_8UC1, 256.0/seeds.count_superpixels());
+    //    imshow("seeds superpixels", cvLabels8bit);
+
+        //improve disparity image with superpixels
+        dispImprov = camCalib.improveDisparityMap(seeds.count_superpixels(), seeds.getLabelsAsMat(), disp);
+    }
 
     //normalize (from 16 to 8 bit) and show
     double minVal, maxVal;
-    minMaxLoc(dispImprov, &minVal, &maxVal); //find minimum and maximum intensities
-    Mat disp2;
-    dispImprov.convertTo(disp2,CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
+    Mat disp2, disp3;
+    minMaxLoc(disp, &minVal, &maxVal); //find minimum and maximum intensities
+    disp.convertTo(disp2, CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
+    //minMaxLoc(dispImprov, &minVal, &maxVal); //find minimum and maximum intensities
+    if(improve) { dispImprov.convertTo(disp3, CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal)); }
 
     imshow("left image", leftImg); // disparity image is aligned with left image
     //imshow("right image", rightImg);
-    imshow("image", disp2);
+    imshow("disparity map", disp2);
+    if(improve){ imshow("improved disparity map", disp3); }
 }
 
 void MainWindow::makeSurfFeatures(QString fileName)
@@ -645,7 +683,9 @@ void MainWindow::on_btn_undistStereo_released()
 	QMessageBox::information(this, "Save successful", "Remapped images have been saved", QMessageBox::Ok);
 
 	//show and remmeber last image
-	makeDisparityImage(nmLeft, nmRight);
+    lastStereoFileL = imread(nmLeft.toStdString().c_str(), CV_LOAD_IMAGE_COLOR);
+    lastStereoFileR = imread(nmRight.toStdString().c_str(), CV_LOAD_IMAGE_COLOR);
+    makeDisparityImage(lastStereoFileL, lastStereoFileR);
 	lastStereoFileNameL = nmLeft;
 	lastStereoFileNameR = nmRight;
 }
@@ -663,12 +703,18 @@ void MainWindow::on_btn_stereoVision_released()
 	lastStereoFileNameR = fileName;
 	lastDir = QFileInfo(fileName).path();
 
-	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
+    lastStereoFileL = imread(lastStereoFileNameL.toStdString().c_str(), CV_LOAD_IMAGE_COLOR);
+    lastStereoFileR = imread(lastStereoFileNameR.toStdString().c_str(), CV_LOAD_IMAGE_COLOR);
+
+    makeDisparityImage(lastStereoFileL, lastStereoFileR);
 }
 
 void MainWindow::on_pushButton_stereoAgain_released()
 {
-	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
+    if(lastStereoFileNameL != "" && lastStereoFileNameR != "")
+    {
+        makeDisparityImage(lastStereoFileL, lastStereoFileR);
+    }
 }
 
 void MainWindow::on_btn_undistLOAD_released()
@@ -760,13 +806,13 @@ void MainWindow::on_slider_prefilterSize_sliderMoved(int position)
 		ui->slider_prefilterSize->setValue(position);
 	}
 	ui->label_prefilterSize->setText( QString::number(position) );
-	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
+    makeDisparityImage(lastStereoFileL, lastStereoFileR);
 }
 
 void MainWindow::on_slider_prefilterCAP_sliderMoved(int position)
 {
 	ui->label_prefilterCAP->setText( QString::number(position) );
-	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
+    makeDisparityImage(lastStereoFileL, lastStereoFileR);
 }
 
 void MainWindow::on_slider_SADwindow_sliderMoved(int position)
@@ -778,13 +824,13 @@ void MainWindow::on_slider_SADwindow_sliderMoved(int position)
 		ui->slider_SADwindow->setValue(position);
 	}
 	ui->label_SADwindow->setText( QString::number(position) );
-	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
+    makeDisparityImage(lastStereoFileL, lastStereoFileR);
 }
 
 void MainWindow::on_slider_minDisp_sliderMoved(int position)
 {
 	ui->label_minDisp->setText( QString::number(position) );
-	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
+    makeDisparityImage(lastStereoFileL, lastStereoFileR);
 }
 
 void MainWindow::on_slider_dispRange_sliderMoved(int position)
@@ -797,13 +843,13 @@ void MainWindow::on_slider_dispRange_sliderMoved(int position)
 		ui->slider_dispRange->setValue(position);
 	}
 	ui->label_dispRange->setText( QString::number(position) );
-	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
+    makeDisparityImage(lastStereoFileL, lastStereoFileR);
 }
 
 void MainWindow::on_slider_textureThresh_sliderMoved(int position)
 {
 	ui->label_textureThresh->setText( QString::number(position) );
-	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
+    makeDisparityImage(lastStereoFileL, lastStereoFileR);
 }
 
 void MainWindow::on_slider_speckleWindow_sliderMoved(int position)
@@ -815,19 +861,19 @@ void MainWindow::on_slider_speckleWindow_sliderMoved(int position)
 		ui->slider_speckleWindow->setValue(position);
 	}
 	ui->label_speckleWindow->setText( QString::number(position) );
-	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
+    makeDisparityImage(lastStereoFileL, lastStereoFileR);
 }
 
 void MainWindow::on_slider_speckleRange_sliderMoved(int position)
 {
 	ui->label_speckleRange->setText( QString::number(position) );
-	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
+    makeDisparityImage(lastStereoFileL, lastStereoFileR);
 }
 
 void MainWindow::on_slider_uniqueness_sliderMoved(int position)
 {
 	ui->label_uniqueness->setText( QString::number(position) );
-	makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
+    makeDisparityImage(lastStereoFileL, lastStereoFileR);
 }
 
 void MainWindow::on_btn_saveParams_released()
@@ -920,6 +966,6 @@ void MainWindow::on_checkBox_useSGBM_clicked()
     ui->label_textureThresh->setEnabled(enabled);
     ui->label_textureThresholdLabel->setEnabled(enabled);
 
-    makeDisparityImage(lastStereoFileNameL, lastStereoFileNameR);
+    makeDisparityImage(lastStereoFileL, lastStereoFileR);
 
 }

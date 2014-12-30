@@ -117,7 +117,7 @@ private:
 	void makeSeedsSuperpixels(QString fileName);
 	void makeSlicSuperpixels(QString fileName);
 	void makeFelsenzwalbSuperpixels(QString fileName);
-	void makeDisparityImage(QString fileNameL, QString fileNameR);
+    void makeDisparityImage(Mat leftImgCol, Mat rightImgCol);
 	void makeSurfFeatures(QString fileName);
 
 
@@ -131,6 +131,8 @@ private:
 	QString lastFelsenzwalbFilename;
 	QString lastStereoFileNameL;
 	QString lastStereoFileNameR;
+    Mat lastStereoFileR;
+    Mat lastStereoFileL;
 	QString lastFeatureFileName;
 
 	CameraCalibration camCalib;
