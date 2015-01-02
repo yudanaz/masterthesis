@@ -112,6 +112,8 @@ private slots:
 
     void on_checkBox_useSGBM_clicked();
 
+    void on_pushButton_test_released();
+
 private:
 	void makeLabelImages(QStringList fileNames);
 	void makeSeedsSuperpixels(QString fileName);

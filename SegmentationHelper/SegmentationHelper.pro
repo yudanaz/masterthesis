@@ -32,7 +32,8 @@ SOURCES += main.cpp\
 	slic/slic.cpp \
 	segmentfelsenzwalb/segmentation.cpp \
     cameracalibration.cpp \
-    inout.cpp
+    inout.cpp \
+    helper.cpp
 
 HEADERS  += mainwindow.h \
 	seeds/seeds2.h \
@@ -50,7 +51,8 @@ HEADERS  += mainwindow.h \
 	segmentfelsenzwalb/segment-image.h \
 	segmentfelsenzwalb/segmentation.h \
     cameracalibration.h \
-    inout.h
+    inout.h \
+    helper.h
 
 FORMS    += mainwindow.ui
 

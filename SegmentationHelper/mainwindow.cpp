@@ -4,6 +4,7 @@
 #include "seeds/seedsHelper.h"
 #include "slic/slic.h"
 #include "segmentfelsenzwalb/segmentation.h"
+#include "helper.h"
 
 #define WHITE Scalar(255, 255, 255)
 #define PINK Scalar(255, 51, 153)
@@ -968,4 +969,19 @@ void MainWindow::on_checkBox_useSGBM_clicked()
 
     makeDisparityImage(lastStereoFileL, lastStereoFileR);
 
+}
+
+void MainWindow::on_pushButton_test_released()
+{
+    //test standardization
+    qDebug() << "Testing matrix standardization";
+    uchar arr[16] = { 25,  50, 100, 150,
+                      50, 100, 150, 200,
+                     100, 150, 200, 150,
+                     150, 200, 150, 100};
+    Mat a(4, 4, CV_8UC1, &arr);
+    Mat aStand = Helper::Standardize(a);
+
+    Helper::Print1ChMatrixToConsole(a);
+    Helper::Print1ChMatrixToConsole(aStand);
 }
