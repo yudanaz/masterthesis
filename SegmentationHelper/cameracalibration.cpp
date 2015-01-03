@@ -7,7 +7,9 @@ CameraCalibration::CameraCalibration(QWidget *parent):
 	homogeneityCalibrated(false),
 	nrOfNIRChannels(4), //4 NIR channels max right now (will change with new flashlight)
 	camMatrices_goldeye(4),
-	distCoeffs_goldeye(4)
+    distCoeffs_goldeye(4),
+    RGB2NIR_resizeFactor(0),
+    RGB2NIR_fittingComputed(false)
 {
 	parentWidget = parent;
 }
@@ -88,7 +90,7 @@ void CameraCalibration::calibrateStereoCameras(QList<Mat> calibImgsLeft, QList<M
 	Mat D_L, D_R;
 	Mat rotMat, translVec, E, F;
 
-	stereoCalibrate(objectPoints_L, imagePoints_L, imagePoints_R,
+    stereoCalibrate(objectPoints_L, imagePoints_L, imagePoints_R,
 					CM_L, D_L, CM_R, D_R, imgSize, rotMat, translVec, E, F,
 					cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 100, 1e-5),
 					CV_CALIB_SAME_FOCAL_LENGTH | CV_CALIB_ZERO_TANGENT_DIST);
@@ -120,6 +122,106 @@ void CameraCalibration::calibrateStereoCameras(QList<Mat> calibImgsLeft, QList<M
 	goldeyeCalibrated = false;
 	cameraCalibrated = false;
 	stereoCalibrated = true;
+}
+
+void CameraCalibration::calibrateRGBNIRStereoCameras(QList<Mat> calibImgsNIR_L, QList<Mat> calibImgsRGB_R, int chessboard_width, int chessboard_height, QString calibFileName)
+{
+    //resize and crop RGB images to fit NIR images:
+    QList<Mat> calibImgsRGB_R_fitted = fitRGBimgs2NIRimgs(calibImgsNIR_L, calibImgsRGB_R, chessboard_width, chessboard_height);
+
+    //calibrate stereo images
+    calibrateStereoCameras(calibImgsNIR_L, calibImgsRGB_R_fitted, chessboard_width, chessboard_height, calibFileName);
+}
+
+QList<Mat> CameraCalibration::fitRGBimgs2NIRimgs(QList<Mat> origNirs, QList<Mat> origRGBs,
+                                                 int chessboard_width, int chessboard_height)
+{
+    QList<Mat> resizedRGBs, fittedRGBs;
+
+    // 1) find chessboard corners
+    if(origNirs.count() != origRGBs.count()){ return fittedRGBs; } //amount of both lists must be equal
+    vector<vector<Point2f> > cornersNIR_L;
+    vector<vector<Point2f> > cornersRGB_R;
+    Size size = Size(chessboard_width, chessboard_height);
+
+    for (int i = 0; i < origNirs.count(); ++i)
+    {
+        Mat imgGrayL, imgGrayR;
+        vector<Point2f> cornersL, cornersR;
+
+        //NIR, left:
+        cvtColor(origNirs.at(i), imgGrayL, CV_BGR2GRAY); //must be gray scale
+        bool success = findChessboardCorners(imgGrayL, size, cornersL, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
+        if(success){ cornersNIR_L.push_back(cornersL); }
+
+        //RGB, right:
+        cvtColor(origRGBs.at(i), imgGrayR, CV_BGR2GRAY); //must be gray scale
+        success = findChessboardCorners(imgGrayR, size, cornersR, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
+        if(success){ cornersRGB_R.push_back(cornersR); }
+    }
+    //check wether all points have been found for left and right images
+    if(cornersRGB_R.size() != cornersNIR_L.size())
+    {
+        QMessageBox::information(parentWidget, "Error", "Couldnt find all chessboard corners", QMessageBox::Ok);
+        return fittedRGBs;
+    }
+
+
+    // 2) get average resize factor by comparing corner distances for NIR and RGB images
+    int nrOfImages = cornersNIR_L.size();
+    int nrOfCorners = cornersNIR_L[0].size();
+    double avgResizeFactor = 0.0;
+    for(int i = 0; i < nrOfImages; ++i)
+    {
+        //get distances between chessboard corners for each image type (NIR and RGB)
+        //and compute the relationship / resize factor
+        for (int j = 0; j < nrOfCorners-1; ++j)
+        {
+            Point2f diff_NIR = cornersNIR_L[i][j] - cornersNIR_L[i][j+1];
+            double euclDist_NIR = sqrt(diff_NIR.x * diff_NIR.x + diff_NIR.y * diff_NIR.y);
+
+            Point2f diff_RGB = cornersRGB_R[i][j] - cornersRGB_R[i][j+1];
+            double euclDist_RGB = sqrt(diff_RGB.x * diff_RGB.x + diff_RGB.y * diff_RGB.y);
+
+            double resizeFactor = euclDist_NIR / euclDist_RGB;
+            avgResizeFactor += resizeFactor;
+//            qDebug() << "resize factor: " << resizeFactor;
+//            qDebug() << "NIR: " << euclDist_NIR << "   RGB: " << euclDist_RGB;
+        }
+    }
+    //get average
+    avgResizeFactor /= (nrOfImages * nrOfCorners);
+    qDebug() << "average resize factor: " << avgResizeFactor;
+
+    // 3) resize the RGB images
+    foreach(Mat rgbImg, origRGBs)
+    {
+        Mat resized;
+        resize(rgbImg, resized, Size(), avgResizeFactor, avgResizeFactor, INTER_CUBIC);
+        resizedRGBs.append(resized);
+//        imshow("orig", rgbImg);
+//        imshow("resized", resized);
+    }
+
+    // 4) crop the rgb images
+    int nirw = origNirs.at(0).cols;
+    int nirh = origNirs.at(0).rows;
+    int rgbw = resizedRGBs.at(0).cols;
+    int rgbh = resizedRGBs.at(0).rows;
+    Rect cropRect( (rgbw-nirw)/2, (rgbh-nirh)/2, nirw, nirh );
+
+    foreach(Mat rgbImg, resizedRGBs)
+    {
+        Mat cropped;
+        rgbImg(cropRect).copyTo(cropped);
+        fittedRGBs.append(cropped);
+//        imshow("cropped", cropped);
+    }
+
+    RGB2NIR_resizeFactor = avgResizeFactor;
+    RGB2NIR_cropRect = cropRect;
+    RGB2NIR_fittingComputed = true;
+    return fittedRGBs;
 }
 
 void CameraCalibration::calibrateCamFromImages(QList<Mat> calibImgs, int channelIndex,

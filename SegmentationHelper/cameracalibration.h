@@ -60,6 +60,9 @@ public:
 	void calibrateStereoCameras(QList<Mat> calibImgsLeft, QList<Mat> calibImgsRight,
 								int chessboard_width, int chessboard_height, QString calibFileName = "");
 
+    void calibrateRGBNIRStereoCameras(QList<Mat> calibImgsNIR_L, QList<Mat> calibImgsRGB_R,
+                                int chessboard_width, int chessboard_height, QString calibFileName = "");
+
 	/*!
 	 * \brief Loads and distignuishes between calibration files for the three camera types:
 	 * single, goldeye and stereo cameras.
@@ -146,6 +149,15 @@ private:
 	void saveStereoCalibrationFile(QString calibFileName);
 	void makeRectifyMapsForStereo(Size leftImgSize, Size rightImgSize);
 
+    /*!
+     * \brief Fits the larger images of the RGB cam to the smaller NIR images by computing
+     * a resizing factor based on chessboard images and cropping the images.
+     * \param origNIR: the original NIR images used as references.
+     * \param origRGB: the original RGB images that must be resized and cropped..
+     * \return the resized and cropped RGB images.
+     */
+    QList<Mat> fitRGBimgs2NIRimgs(QList<Mat> origNirs, QList<Mat> origRGBs, int chessboard_width, int chessboard_height);
+
 	QWidget *parentWidget;
 	StereoBM sbm;
     StereoSGBM sgbm;
@@ -159,6 +171,10 @@ private:
 	QVector<Mat> camMatrices_goldeye;
 	QVector<Mat> distCoeffs_goldeye;
 	int nrOfNIRChannels;
+
+    double RGB2NIR_resizeFactor;
+    Rect RGB2NIR_cropRect;
+    bool RGB2NIR_fittingComputed;
 
 	Mat camMatrix_stereoL;
 	Mat camMatrix_stereoR;

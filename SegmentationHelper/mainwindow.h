@@ -74,6 +74,8 @@ private slots:
 
 	void on_btn_calibStereo_released();
 
+    void on_btn_calibStereoGRBNIR_released();
+
 	void on_btn_undistStereo_released();
 
 	void on_btn_stereoVision_released();

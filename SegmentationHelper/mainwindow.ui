@@ -282,6 +282,16 @@
         </widget>
        </item>
        <item>
+        <widget class="QPushButton" name="btn_calibStereoGRBNIR">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(160, 219, 140)</string>
+         </property>
+         <property name="text">
+          <string>RGBNIR</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QLabel" name="label_6">
          <property name="text">
           <string>board w,h:</string>
@@ -290,6 +300,12 @@
        </item>
        <item>
         <widget class="QLineEdit" name="lineEdit_calibSingleInfo">
+         <property name="maximumSize">
+          <size>
+           <width>40</width>
+           <height>16777215</height>
+          </size>
+         </property>
          <property name="text">
           <string>9,6</string>
          </property>

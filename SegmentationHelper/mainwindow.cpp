@@ -595,7 +595,7 @@ void MainWindow::on_btn_calibStereo_released()
 	QStringList fileNames_L = QFileDialog::getOpenFileNames(this, tr("Select LEFT camera files containing chessboard image"), lastDir);
 	if(fileNames_L.count() == 0) return;
 	lastDir =QFileInfo(fileNames_L.first()).path();
-	QStringList fileNames_R = QFileDialog::getOpenFileNames(this, tr("Select RIGHT camera files containing chessboard image"), lastDir);
+    QStringList fileNames_R = QFileDialog::getOpenFileNames(this, tr("Select RIGHT camera files containing chessboard image"), lastDir);
 	if(fileNames_R.count() == 0) return;
 	lastDir =QFileInfo(fileNames_R.first()).path();
 
@@ -610,6 +610,28 @@ void MainWindow::on_btn_calibStereo_released()
 
 	QStringList params = ui->lineEdit_calibSingleInfo->text().split(",");
 	camCalib.calibrateStereoCameras(calibImgsLeft, calibImgsRight, params.first().toInt(), params.last().toInt(), calibFileName);
+}
+
+void MainWindow::on_btn_calibStereoGRBNIR_released()
+{
+    QStringList fileNames_L = QFileDialog::getOpenFileNames(this, tr("Select NIR (left) camera files containing chessboard image"), lastDir);
+    if(fileNames_L.count() == 0) return;
+    lastDir =QFileInfo(fileNames_L.first()).path();
+    QStringList fileNames_R = QFileDialog::getOpenFileNames(this, tr("Select RGB (right) camera files containing chessboard image"), lastDir);
+    if(fileNames_R.count() == 0) return;
+    lastDir =QFileInfo(fileNames_R.first()).path();
+
+    //get calib images for left and right camera
+    QList<Mat> calibImgsNIR_L, calibImgsRGB_R;
+    foreach(QString file, fileNames_L){ calibImgsNIR_L.append(imread(file.toStdString().c_str())); }
+    foreach(QString file, fileNames_R){ calibImgsRGB_R.append(imread(file.toStdString().c_str())); }
+
+    //ask user where to store the calibration data and save
+    QString calibFileName = QFileDialog::getSaveFileName(this, "Select file to store NIR-RGB-stereo calibration file",
+                                                         QDir::homePath());
+
+    QStringList params = ui->lineEdit_calibSingleInfo->text().split(",");
+    camCalib.calibrateRGBNIRStereoCameras(calibImgsNIR_L, calibImgsRGB_R, params.first().toInt(), params.last().toInt(), calibFileName);
 }
 
 void MainWindow::on_btn_undistSingle_released()
@@ -985,3 +1007,4 @@ void MainWindow::on_pushButton_test_released()
     Helper::Print1ChMatrixToConsole(a);
     Helper::Print1ChMatrixToConsole(aStand);
 }
+
