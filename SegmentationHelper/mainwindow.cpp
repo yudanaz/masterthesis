@@ -669,48 +669,75 @@ void MainWindow::on_btn_undistStereo_released()
 		QMessageBox::information(this, "Error", "Stereo Cam Pair has not been calibrated", QMessageBox::Ok);
 		return;
 	}
+    undistortStereo(false);
+}
 
-	//get files
-	QStringList fileNames_L = QFileDialog::getOpenFileNames(this, tr("Select LEFT image file(s)"), lastDir, tr(IMGTYPES));
-	if(fileNames_L.length() == 0){ return; }
-	lastDir = QFileInfo(fileNames_L.first()).path();
-	QStringList fileNames_R = QFileDialog::getOpenFileNames(this, tr("Select RIGHT image file(s)"), lastDir, tr(IMGTYPES));
-	if(fileNames_R.length() == 0){ return; }
-	lastDir = QFileInfo(fileNames_R.first()).path();
 
-	QString nmLeft, nmRight;
+void MainWindow::on_btn_undistStereoRGBNIR_released()
+{
+    if(!camCalib.isCalibrated_stereo())
+    {
+        QMessageBox::information(this, "Error", "Stereo Cam Pair has not been calibrated", QMessageBox::Ok);
+        return;
+    }
+    if(!camCalib.isComputed_RGB2NIRfitting())
+    {
+        QMessageBox::information(this, "Error", "The RGB-to-NIR-fitting has not been computed", QMessageBox::Ok);
+        return;
+    }
+    undistortStereo(true);
+}
 
-	//make undistorted images for all stereo pairs
-	for(int i = 0; i < fileNames_L.length(); ++i)
-	{
-		QString fileName_L = fileNames_L.at(i);
-		QString fileName_R = fileNames_R.at(i);
+void MainWindow::undistortStereo(bool isRGB_NIR_Stereo)
+{
+    //get files
+    QStringList fileNames_L = QFileDialog::getOpenFileNames(this, tr("Select LEFT image file(s)"), lastDir, tr(IMGTYPES));
+    if(fileNames_L.length() == 0){ return; }
+    lastDir = QFileInfo(fileNames_L.first()).path();
+    QStringList fileNames_R = QFileDialog::getOpenFileNames(this, tr("Select RIGHT image file(s)"), lastDir, tr(IMGTYPES));
+    if(fileNames_R.length() == 0){ return; }
+    lastDir = QFileInfo(fileNames_R.first()).path();
 
-		//get images from files, do remapping, get disparity image and show it
-		Mat leftImage = imread(fileName_L.toStdString().c_str());
-		Mat rightImage = imread(fileName_R.toStdString().c_str());
-		if(fileName_L != "" && fileName_R != "")
-		{
-			Mat imgUL, imgUR;
-			camCalib.undistortAndRemapStereoImages(leftImage, rightImage, imgUL, imgUR);
+    QString nmLeft, nmRight;
 
-			//save images -> use left fileName as base name and append "L" and "R"
-			QString fileNameLeft = fileName_L;
-			QString fileNameRight = fileName_L;
-			nmLeft = (fileNameLeft.remove(".png").remove(".jpg")).append("_remap_L.png");
-			nmRight = (fileNameRight.remove(".png").remove(".jpg")).append("_remap_R.png");
-			imwrite(nmLeft.toStdString().c_str(), imgUL);
-			imwrite(nmRight.toStdString().c_str(), imgUR);
-		}
-	}
-	QMessageBox::information(this, "Save successful", "Remapped images have been saved", QMessageBox::Ok);
+    //make undistorted images for all stereo pairs
+    for(int i = 0; i < fileNames_L.length(); ++i)
+    {
+        QString fileName_L = fileNames_L.at(i);
+        QString fileName_R = fileNames_R.at(i);
 
-	//show and remmeber last image
+        //get images from files, do remapping, get disparity image and show it
+        Mat leftImage = imread(fileName_L.toStdString().c_str());
+        Mat rightImage = imread(fileName_R.toStdString().c_str());
+
+        //if this stereo image is made of RGB and NIR images, resize and crop the RGB image
+        if(isRGB_NIR_Stereo)
+        {
+            rightImage = camCalib.resizeAndCropRGBImg(rightImage);
+        }
+
+        if(fileName_L != "" && fileName_R != "")
+        {
+            Mat imgUL, imgUR;
+            camCalib.undistortAndRemapStereoImages(leftImage, rightImage, imgUL, imgUR);
+
+            //save images -> use left fileName as base name and append "L" and "R"
+            QString fileNameLeft = fileName_L;
+            QString fileNameRight = fileName_L;
+            nmLeft = (fileNameLeft.remove(".png").remove(".jpg")).append("_remap_L.png");
+            nmRight = (fileNameRight.remove(".png").remove(".jpg")).append("_remap_R.png");
+            imwrite(nmLeft.toStdString().c_str(), imgUL);
+            imwrite(nmRight.toStdString().c_str(), imgUR);
+        }
+    }
+    QMessageBox::information(this, "Save successful", "Remapped images have been saved", QMessageBox::Ok);
+
+    //show and remmeber last image
     lastStereoFileL = imread(nmLeft.toStdString().c_str(), CV_LOAD_IMAGE_COLOR);
     lastStereoFileR = imread(nmRight.toStdString().c_str(), CV_LOAD_IMAGE_COLOR);
     makeDisparityImage(lastStereoFileL, lastStereoFileR);
-	lastStereoFileNameL = nmLeft;
-	lastStereoFileNameR = nmRight;
+    lastStereoFileNameL = nmLeft;
+    lastStereoFileNameR = nmRight;
 }
 
 
@@ -742,7 +769,7 @@ void MainWindow::on_pushButton_stereoAgain_released()
 
 void MainWindow::on_btn_undistLOAD_released()
 {
-	QStringList fileNames = QFileDialog::getOpenFileNames(this, tr("Select calibration file(s)"), lastDir, tr("*.stereocal *.singlecal"));
+    QStringList fileNames = QFileDialog::getOpenFileNames(this, tr("Select calibration file(s)"), lastDir, tr("*.rgbnirstcal *.stereocal *.singlecal"));
 	if(fileNames.length() == 0){ return; }
 	lastDir =QFileInfo(fileNames.first()).path();
 
@@ -1007,4 +1034,5 @@ void MainWindow::on_pushButton_test_released()
     Helper::Print1ChMatrixToConsole(a);
     Helper::Print1ChMatrixToConsole(aStand);
 }
+
 

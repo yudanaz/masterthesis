@@ -63,13 +63,25 @@ public:
     void calibrateRGBNIRStereoCameras(QList<Mat> calibImgsNIR_L, QList<Mat> calibImgsRGB_R,
                                 int chessboard_width, int chessboard_height, QString calibFileName = "");
 
+    void doStereoCalibration(QList<Mat> calibImgsLeft, QList<Mat> calibImgsRight,
+                             int chessboard_width, int chessboard_height, QString calibFileName = "");
+
+    /*!
+     * \brief Resizes and crops an RGB image according to parameters defined previously by
+     * fitRGBimgs2NIRimgs(). The resulting image has the same object resolution and size as
+     * the NIR image.
+     * \param rgbImg: The RGB image.
+     * \return The resized and cropped image.
+     */
+    Mat resizeAndCropRGBImg(Mat rgbImg);
+
 	/*!
 	 * \brief Loads and distignuishes between calibration files for the three camera types:
 	 * single, goldeye and stereo cameras.
 	 * \param calibFiles: List containing the calibration files (goldeye needs separate single-camera
 	 * calibratedcalibration for each waveband).
 	 */
-	void loadCalibrationFile(QStringList calibFiles);
+    void loadCalibrationFile(QStringList calibFiles);
 
 	void undistortSingleImage(QString fileName);
 	void undistortGoldeyeMultiChImg(QStringList tarFileNames);
@@ -138,6 +150,7 @@ public:
 	bool isCalibrated_cam(){ return cameraCalibrated; }
 	bool isCalibrated_goldeye(){ return goldeyeCalibrated; }
 	bool isCalibrated_stereo(){ return stereoCalibrated; }
+    bool isComputed_RGB2NIRfitting(){ return RGB2NIR_fittingComputed; }
 
 private:
 	void calibrateCamFromImages(QList<Mat> calibImgs, int channelIndex,
@@ -146,7 +159,7 @@ private:
 								 vector<vector<Point3f> >& objectPoints, vector<vector<Point2f> >& imagePoints,
 								 bool isGrayScale = false);
 	void saveCalibrationFile(QString calibFileName, int channelIndex);
-	void saveStereoCalibrationFile(QString calibFileName);
+    void saveStereoCalibrationFile(QString calibFileName, bool isRGBNIR);
 	void makeRectifyMapsForStereo(Size leftImgSize, Size rightImgSize);
 
     /*!

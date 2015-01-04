@@ -78,6 +78,8 @@ private slots:
 
 	void on_btn_undistStereo_released();
 
+    void on_btn_undistStereoRGBNIR_released();
+
 	void on_btn_stereoVision_released();
 
 	void on_pushButton_stereoAgain_released();
@@ -116,6 +118,7 @@ private slots:
 
     void on_pushButton_test_released();
 
+
 private:
 	void makeLabelImages(QStringList fileNames);
 	void makeSeedsSuperpixels(QString fileName);
@@ -123,6 +126,7 @@ private:
 	void makeFelsenzwalbSuperpixels(QString fileName);
     void makeDisparityImage(Mat leftImgCol, Mat rightImgCol);
 	void makeSurfFeatures(QString fileName);
+    void undistortStereo(bool isRGB_NIR_Stereo);
 
 
 

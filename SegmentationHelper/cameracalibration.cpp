@@ -61,62 +61,10 @@ void CameraCalibration::calibrateGoldeyeMultiChannel(QList<QList<Mat> > calibImg
 void CameraCalibration::calibrateStereoCameras(QList<Mat> calibImgsLeft, QList<Mat> calibImgsRight,
 											   int chessboard_width, int chessboard_height, QString calibFileName)
 {
-	Size imgSize = calibImgsLeft.first().size();
-
-	//get object and image points
-	vector<Point3f> obj;
-	for (int j = 0; j < chessboard_width * chessboard_height; j++)
-	{
-		obj.push_back(Point3f(j / chessboard_width, j % chessboard_width, 0.0f));
-	}
-	vector<vector<Point3f> > objectPoints_L;
-	vector<vector<Point3f> > objectPoints_R;
-	vector<vector<Point2f> > imagePoints_L;
-	vector<vector<Point2f> > imagePoints_R;
-
-	getObjectAndImagePoints(calibImgsLeft, chessboard_width, chessboard_height, obj, objectPoints_L, imagePoints_L);
-	getObjectAndImagePoints(calibImgsRight, chessboard_width, chessboard_height, obj, objectPoints_R, imagePoints_R);
-
-	//check wether all points have been found for left and right images
-	if(imagePoints_L.size() != imagePoints_R.size())
-	{
-		QMessageBox::information(parentWidget, "Error", "Couldnt find all chessboard corners", QMessageBox::Ok);
-		return;
-	}
-
-	//start stereo calibration
-	Mat CM_L = Mat(3, 3, CV_64FC1);
-	Mat CM_R = Mat(3, 3, CV_64FC1);
-	Mat D_L, D_R;
-	Mat rotMat, translVec, E, F;
-
-    stereoCalibrate(objectPoints_L, imagePoints_L, imagePoints_R,
-					CM_L, D_L, CM_R, D_R, imgSize, rotMat, translVec, E, F,
-					cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 100, 1e-5),
-					CV_CALIB_SAME_FOCAL_LENGTH | CV_CALIB_ZERO_TANGENT_DIST);
-
-	//start stereo rectification and trigger making the rectify maps (in undist and remap method)
-	Mat R1, R2, P1, P2, Q;
-	stereoRectify(CM_L, D_L, CM_R, D_R, imgSize, rotMat, translVec, R1, R2, P1, P2, Q);
-	rectifyMapsCreated = false;
-
-	//store everythin in class members for later use
-	camMatrices_goldeye[0] = CM_L.clone();
-	camMatrices_goldeye[1] = CM_R.clone();
-	distCoeffs_goldeye[0] = D_L.clone();
-	distCoeffs_goldeye[1] = D_R.clone();
-	rotationMatrix = rotMat.clone();
-	translationVec = translVec.clone();
-	essentialMat = E.clone();
-	fundamentalMat = F.clone();
-	rectificTransf_L = R1.clone();
-	rectificTransf_R = R2.clone();
-	projectionMat_L = P1.clone();
-	projectionMat_R = P2.clone();
-	disparity2DepthMat = Q.clone();
+    doStereoCalibration(calibImgsLeft, calibImgsRight, chessboard_width, chessboard_height, calibFileName);
 
 	//save the calibration file
-	if(calibFileName != ""){ saveStereoCalibrationFile(calibFileName); }
+    if(calibFileName != ""){ saveStereoCalibrationFile(calibFileName, false); }
 
 	QMessageBox::information(parentWidget, "Calibration successful", "Stereo Camera Pair has been calibrated", QMessageBox::Ok);
 	goldeyeCalibrated = false;
@@ -130,7 +78,82 @@ void CameraCalibration::calibrateRGBNIRStereoCameras(QList<Mat> calibImgsNIR_L, 
     QList<Mat> calibImgsRGB_R_fitted = fitRGBimgs2NIRimgs(calibImgsNIR_L, calibImgsRGB_R, chessboard_width, chessboard_height);
 
     //calibrate stereo images
-    calibrateStereoCameras(calibImgsNIR_L, calibImgsRGB_R_fitted, chessboard_width, chessboard_height, calibFileName);
+    doStereoCalibration(calibImgsNIR_L, calibImgsRGB_R_fitted, chessboard_width, chessboard_height, calibFileName);
+
+    //save the calibration file
+    if(calibFileName != ""){ saveStereoCalibrationFile(calibFileName, true); }
+
+    QMessageBox::information(parentWidget, "Calibration successful", "RGN & NIR Stereo Pair has been calibrated", QMessageBox::Ok);
+    goldeyeCalibrated = false;
+    cameraCalibrated = false;
+    stereoCalibrated = true;
+}
+
+void CameraCalibration::doStereoCalibration(QList<Mat> calibImgsLeft, QList<Mat> calibImgsRight,
+                                            int chessboard_width, int chessboard_height, QString calibFileName)
+{
+    Size imgSize = calibImgsLeft.first().size();
+
+    //get object and image points
+    vector<Point3f> obj;
+    for (int j = 0; j < chessboard_width * chessboard_height; j++)
+    {
+        obj.push_back(Point3f(j / chessboard_width, j % chessboard_width, 0.0f));
+    }
+    vector<vector<Point3f> > objectPoints_L;
+    vector<vector<Point3f> > objectPoints_R;
+    vector<vector<Point2f> > imagePoints_L;
+    vector<vector<Point2f> > imagePoints_R;
+
+    getObjectAndImagePoints(calibImgsLeft, chessboard_width, chessboard_height, obj, objectPoints_L, imagePoints_L);
+    getObjectAndImagePoints(calibImgsRight, chessboard_width, chessboard_height, obj, objectPoints_R, imagePoints_R);
+
+    //check wether all points have been found for left and right images
+    if(imagePoints_L.size() != imagePoints_R.size())
+    {
+        QMessageBox::information(parentWidget, "Error", "Couldnt find all chessboard corners", QMessageBox::Ok);
+        return;
+    }
+
+    //start stereo calibration
+    Mat CM_L = Mat(3, 3, CV_64FC1);
+    Mat CM_R = Mat(3, 3, CV_64FC1);
+    Mat D_L, D_R;
+    Mat rotMat, translVec, E, F;
+
+    stereoCalibrate(objectPoints_L, imagePoints_L, imagePoints_R,
+                    CM_L, D_L, CM_R, D_R, imgSize, rotMat, translVec, E, F,
+                    cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 100, 1e-5),
+                    CV_CALIB_SAME_FOCAL_LENGTH | CV_CALIB_ZERO_TANGENT_DIST);
+
+    //start stereo rectification and trigger making the rectify maps (in undist and remap method)
+    Mat R1, R2, P1, P2, Q;
+    stereoRectify(CM_L, D_L, CM_R, D_R, imgSize, rotMat, translVec, R1, R2, P1, P2, Q);
+    rectifyMapsCreated = false;
+
+    //store everythin in class members for later use
+    camMatrices_goldeye[0] = CM_L.clone();
+    camMatrices_goldeye[1] = CM_R.clone();
+    distCoeffs_goldeye[0] = D_L.clone();
+    distCoeffs_goldeye[1] = D_R.clone();
+    rotationMatrix = rotMat.clone();
+    translationVec = translVec.clone();
+    essentialMat = E.clone();
+    fundamentalMat = F.clone();
+    rectificTransf_L = R1.clone();
+    rectificTransf_R = R2.clone();
+    projectionMat_L = P1.clone();
+    projectionMat_R = P2.clone();
+    disparity2DepthMat = Q.clone();
+}
+
+Mat CameraCalibration::resizeAndCropRGBImg(Mat rgbImg)
+{
+    Mat resized, cropped;
+    if(!RGB2NIR_fittingComputed){ return cropped; } //return empty
+    resize(rgbImg, resized, Size(), RGB2NIR_resizeFactor, RGB2NIR_resizeFactor, INTER_CUBIC);
+    resized(RGB2NIR_cropRect).copyTo(cropped);
+    return cropped;
 }
 
 QList<Mat> CameraCalibration::fitRGBimgs2NIRimgs(QList<Mat> origNirs, QList<Mat> origRGBs,
@@ -543,12 +566,21 @@ void CameraCalibration::saveCalibrationFile(QString calibFileName, int channelIn
 	}
 }
 
-void CameraCalibration::saveStereoCalibrationFile(QString calibFileName)
+void CameraCalibration::saveStereoCalibrationFile(QString calibFileName, bool isRGBNIR)
 {
 	if(calibFileName != "")
 	{
-		calibFileName = calibFileName.remove(".stereocal").append(".stereocal");
-		FileStorage fs(calibFileName.toStdString().c_str(), FileStorage::WRITE);
+        if(isRGBNIR)
+        {
+            calibFileName = calibFileName.remove(".rgbnirstcal").append(".rgbnirstcal");
+        }
+        else
+        {
+            calibFileName = calibFileName.remove(".stereocal").append(".stereocal");
+        }
+
+
+        FileStorage fs(calibFileName.toStdString().c_str(), FileStorage::WRITE);
 		fs << "CM_L" << camMatrices_goldeye[0];
 		fs << "CM_R" << camMatrices_goldeye[1];
 		fs << "D_L" << distCoeffs_goldeye[0];
@@ -562,6 +594,11 @@ void CameraCalibration::saveStereoCalibrationFile(QString calibFileName)
 		fs << "P_L" << projectionMat_L;
 		fs << "P_R" << projectionMat_R;
 		fs << "Q" << disparity2DepthMat;
+        if(isRGBNIR)
+        {
+            fs << "FAC" << RGB2NIR_resizeFactor;
+            fs << "REC" << RGB2NIR_cropRect;
+        }
 		fs.release();
 	}
 }
@@ -577,7 +614,7 @@ void CameraCalibration::loadCalibrationFile(QStringList calibFiles)
 		FileStorage fs(file.toStdString().c_str(), FileStorage::READ);
 
 		//if stereo calibration file, load and return
-		if(file.contains(".stereocal"))
+        if(file.contains(".stereocal") || file.contains(".rgbnirstcal"))
 		{
 			Mat CML, CMR, DL, DR;
 			fs["CM_L"] >> CML;
@@ -592,7 +629,7 @@ void CameraCalibration::loadCalibrationFile(QStringList calibFiles)
 			fs["R_R"] >> rectificTransf_R;
 			fs["P_L"] >> projectionMat_L;
 			fs["P_R"] >> projectionMat_R;
-			fs["Q"] >> disparity2DepthMat;
+            fs["Q"] >> disparity2DepthMat;
 
 			camMatrices_goldeye[0] = CML.clone();
 			camMatrices_goldeye[1] = CMR.clone();
@@ -602,6 +639,14 @@ void CameraCalibration::loadCalibrationFile(QStringList calibFiles)
 			stereoCalibrated = true;
 			rectifyMapsCreated = false; //trigger making the rectify maps once in stereo undist.&remap method
 			cameraCalibrated = goldeyeCalibrated = false;
+
+            if(file.contains(".rgbnirstcal"))
+            {
+                fs["FAC"] >> RGB2NIR_resizeFactor;
+                fs["REC"] >> RGB2NIR_cropRect;
+                RGB2NIR_fittingComputed = true;
+            }
+            fs.release();
 			return;
 		}
 
@@ -614,11 +659,12 @@ void CameraCalibration::loadCalibrationFile(QStringList calibFiles)
 		distCoeffs_goldeye[cnt] = D.clone();
 
 		cnt++;
+        fs.release();
 	}
 
 	cameraCalibrated = goldeyeCalibrated = stereoCalibrated = false;
 	if(cnt == 1){ cameraCalibrated = true; }
-	else if(cnt == nrOfNIRChannels){ goldeyeCalibrated = true; }
+    else if(cnt == nrOfNIRChannels){ goldeyeCalibrated = true; }
 }
 
 void CameraCalibration::makeAndSaveHomogeneityMatrices(QStringList calibImgTarFiles, QString folderURL)

@@ -19,7 +19,7 @@
      <rect>
       <x>20</x>
       <y>10</y>
-      <width>491</width>
+      <width>481</width>
       <height>379</height>
      </rect>
     </property>
@@ -362,6 +362,16 @@
          </property>
          <property name="text">
           <string>stereo</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btn_undistStereoRGBNIR">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(160, 219, 140)</string>
+         </property>
+         <property name="text">
+          <string>RGBNIR</string>
          </property>
         </widget>
        </item>
