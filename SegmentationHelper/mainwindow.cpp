@@ -706,18 +706,24 @@ void MainWindow::undistortStereo(bool isRGB_NIR_Stereo)
         QString fileName_L = fileNames_L.at(i);
         QString fileName_R = fileNames_R.at(i);
 
-        //get images from files, do remapping, get disparity image and show it
-        Mat leftImage = imread(fileName_L.toStdString().c_str());
-        Mat rightImage = imread(fileName_R.toStdString().c_str());
-
-        //if this stereo image is made of RGB and NIR images, resize and crop the RGB image
-        if(isRGB_NIR_Stereo)
-        {
-            rightImage = camCalib.resizeAndCropRGBImg(rightImage);
-        }
-
         if(fileName_L != "" && fileName_R != "")
         {
+
+            //get images from files, do remapping, get disparity image and show it
+            Mat leftImage = imread(fileName_L.toStdString().c_str());
+            Mat rightImage = imread(fileName_R.toStdString().c_str());
+
+            //if this stereo image is made of RGB and NIR images, resize and crop the RGB image
+            if(isRGB_NIR_Stereo)
+            {
+                rightImage = camCalib.resizeAndCropRGBImg(rightImage);
+
+                //also make sobel images and max contrst width
+//                Sobel(leftImage, leftImage, -1, 1, 1, 3);
+//                Sobel(rightImage, rightImage, -1, 1, 1, 3);
+            }
+
+
             Mat imgUL, imgUR;
             camCalib.undistortAndRemapStereoImages(leftImage, rightImage, imgUL, imgUR);
 
@@ -1020,19 +1026,79 @@ void MainWindow::on_checkBox_useSGBM_clicked()
 
 }
 
+
+/*****************************************************************************************
+ * JUST FOR TEST / DEBUGGING / ETC PURPOSES
+ *****************************************************************************************/
 void MainWindow::on_pushButton_test_released()
 {
-    //test standardization
-    qDebug() << "Testing matrix standardization";
-    uchar arr[16] = { 25,  50, 100, 150,
-                      50, 100, 150, 200,
-                     100, 150, 200, 150,
-                     150, 200, 150, 100};
-    Mat a(4, 4, CV_8UC1, &arr);
-    Mat aStand = Helper::Standardize(a);
+    //read downloaded ImageNet folders
+    QStringList allDirs, allFiles;
+    QDir dir(QFileDialog::getExistingDirectory(this, "Get Dir", lastDir));
+    QStringList dList = dir.entryList();
+    foreach(QString s, dList)
+    {
+        if(s.length() < 3) continue;
+        allDirs.append(dir.absoluteFilePath(s));
+    }
+    foreach(QString s, allDirs)
+    {
+        QDir dir2(s);
+        QStringList fList = dir2.entryList();
+        foreach(QString ss, fList)
+        {
+            QStringList l = dir2.absoluteFilePath(ss).split("/");
+            QString nm = l.at(l.length()-2) + "/" + l.last();
+            allFiles.append(nm);
+        }
+    }
 
-    Helper::Print1ChMatrixToConsole(a);
-    Helper::Print1ChMatrixToConsole(aStand);
+    QString origTxt = QFileDialog::getOpenFileName(this, "Select file", lastDir);
+    QFile f1(origTxt);
+    f1.open(QIODevice::ReadOnly);
+    QFile f2(origTxt.remove(".txt").append("2.txt"));
+    f2.open(QIODevice::WriteOnly);
+    QTextStream txtStreamIn(&f1);
+    QTextStream txtStreamOUT(&f2);
+    bool goOn = true;
+    int i = 0;
+    while(!txtStreamIn.atEnd() && goOn)
+    {
+        QString s = txtStreamIn.readLine();
+        QStringList temp = s.split(" ");
+
+
+        //search for file name and if found, write to out file with class number
+        int i = 0;
+        bool found = false;
+        foreach(QString file, allFiles)
+        {
+            if(file == temp.first())
+            {
+                txtStreamOUT << s << "\n";
+//                if(++i > 100) goOn = false;
+                found = true;
+                continue;
+            }
+            i++;
+        }
+
+//        if(found){ allFiles.removeAt(i); }
+    }
+    f1.close(); f2.close();
+
+
+//    //test standardization
+//    qDebug() << "Testing matrix standardization";
+//    uchar arr[16] = { 25,  50, 100, 150,
+//                      50, 100, 150, 200,
+//                     100, 150, 200, 150,
+//                     150, 200, 150, 100};
+//    Mat a(4, 4, CV_8UC1, &arr);
+//    Mat aStand = Helper::Standardize(a);
+
+//    Helper::Print1ChMatrixToConsole(a);
+//    Helper::Print1ChMatrixToConsole(aStand);
 }
 
 

@@ -23,6 +23,10 @@ LIBS += -L/opt/Vimba_1_3/VimbaCPP/DynamicLib/x86_64bit -lVimbaC -lVimbaCPP
 INCLUDEPATH += /opt/Vimba_1_3/AVTImageTransform/Include/
 LIBS += -L/opt/Vimba_1_3/AVTImageTransform/DynamicLib/x86_64bit -lAVTImageTransform
 
+### Open Kinect / Freenect
+INCLUDEPATH += /usr/include/libusb-1.0/
+LIBS += -lusb-1.0 -lfreenect
+
 SOURCES += \
 	vimbacammanager.cpp \
 	rgb_nir_depth_capture.cpp \
@@ -35,7 +39,8 @@ SOURCES += \
 	frameobserver.cpp \
 	prosilicavimba.cpp \
 	skincamlegacy/io/flashlightcontrol.cpp \
-    imgacquisitionworker.cpp
+    imgacquisitionworker.cpp \
+    myfreenectopencvdevice.cpp
 HEADERS += \
 	vimbacammanager.h \
 	rgb_nir_depth_capture.h \
@@ -49,7 +54,8 @@ HEADERS += \
 	frameobserver.h \
 	prosilicavimba.h \
 	skincamlegacy/io/flashlightcontrol.h \
-    imgacquisitionworker.h
+    imgacquisitionworker.h \
+    myfreenectopencvdevice.h
 
 DEFINES += AVT_VIMBA
 

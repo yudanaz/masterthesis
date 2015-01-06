@@ -13,13 +13,14 @@
 #include"skincamlegacy/io/flashlightcontrol.h"
 #include"skincamlegacy/io/imagesource.h"
 #include"prosilicavimba.h"
+#include"libfreenect.hpp"
 
 using namespace AVT::VmbAPI;
 using namespace cv;
 
 enum RGBDNIR_captureType
 {
-	RGB, Kinect_Depth, Kinect_RGB, NIR_Dark, NIR_935, NIR_1060, NIR_1300, NIR_1550
+    RGB, Kinect_Depth, Kinect_RGB, NIR_Dark, NIR_935, NIR_1060, NIR_1300, NIR_1550
 };
 typedef QMap<RGBDNIR_captureType, Mat> RGBDNIR_MAP;
 
@@ -67,7 +68,7 @@ public:
 	 * \brief Captures the images of all connected cameras and returns them in a list.
 	 * \return list of all images plus image type (RGB, NIR or Depth).
 	 */
-	RGBDNIR_MAP getCamImages();
+    void getCamImages(QMap<RGBDNIR_captureType, Mat> &camImgs);
 
 	/*!
 	 * \brief Returns a descriptive string of the RGBDNIR channel type.

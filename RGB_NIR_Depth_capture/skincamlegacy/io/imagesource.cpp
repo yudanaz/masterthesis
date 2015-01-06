@@ -171,7 +171,8 @@ void ImageSource::setWhiteReference(CvPoint refPos)
  * */
 void ImageSource::loadFPNReference()
 {
-	QProcess process;
+    return;
+    QProcess process;
 	QStringList arguments;
 	QDir imageDir;
 	QFileInfo archive;

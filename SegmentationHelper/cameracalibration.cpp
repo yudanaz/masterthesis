@@ -427,6 +427,8 @@ void CameraCalibration::setDisparityParameters(int minDisparity, int nrOfDispari
     sgbm.uniquenessRatio = uniquenessRatio;
     sgbm.speckleWindowSize = specklewindowSize;
     sgbm.speckleRange = speckleRange;
+
+    sgbm.fullDP = true;
 }
 
 Mat CameraCalibration::makeDisparityMap(Mat leftGrayImg, Mat rightGrayImg, bool useSGBM)
@@ -547,7 +549,10 @@ Mat CameraCalibration::alignImageByFeatures(Mat imageL, Mat imageRtoBeAligned)
 		matchedDescriptorsR.push_back(rightMatch);
 	}
 
-	//warp perspective of right image with homography matrix from descriptors
+    //if no descriptors found, return empty
+    if(matchedDescriptorsL.size() == 0 || matchedDescriptorsR.size() == 0){ return Mat(); }
+
+    //warp perspective of right image with homography matrix from descriptors
 	Mat homography = findHomography(matchedDescriptorsR, matchedDescriptorsL, CV_RANSAC);
 	Mat warpedImg;
 	warpPerspective(imageRtoBeAligned, warpedImg, homography, imageRtoBeAligned.size());

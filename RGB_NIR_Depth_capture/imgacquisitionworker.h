@@ -4,6 +4,8 @@
 #include <QObject>
 #include <QThread>
 #include"vimbacammanager.h"
+#include"libfreenect.hpp"
+#include"myfreenectopencvdevice.h"
 
 class ImgAcquisitionWorker : public QThread//public QObject
 {
@@ -35,6 +37,8 @@ public slots:
 
 private:
 	VimbaCamManager vimbaCamManager;
+    Freenect::Freenect freenect;
+    MyFreenectOpenCVDevice& freenectDevice;
 	bool acquiring;
 
 };

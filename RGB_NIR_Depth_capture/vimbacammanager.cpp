@@ -139,9 +139,8 @@ void VimbaCamManager::stopFlashlight()
 //	}
 }
 
-RGBDNIR_MAP VimbaCamManager::getCamImages()
+void VimbaCamManager::getCamImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 {
-	QMap<RGBDNIR_captureType, Mat> camImgs;
 	Mat img;
 	quint8 i;
 	quint8 errorCnt = 0;
@@ -265,10 +264,7 @@ RGBDNIR_MAP VimbaCamManager::getCamImages()
 			QMessageBox::information(NULL, "Goldeye: Unknown error",
 									 "Unknown error during frame acquisition", QMessageBox::Ok);
 		}
-	}
-
-//	usleep(FramePause);
-	return camImgs;
+    }
 }
 
 void VimbaCamManager::closeCameras()
