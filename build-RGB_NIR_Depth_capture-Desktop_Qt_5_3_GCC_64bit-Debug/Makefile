@@ -58,6 +58,7 @@ SOURCES       = ../RGB_NIR_Depth_capture/vimbacammanager.cpp \
 		../RGB_NIR_Depth_capture/skincamlegacy/io/flashlightcontrol.cpp \
 		../RGB_NIR_Depth_capture/imgacquisitionworker.cpp \
 		../RGB_NIR_Depth_capture/myfreenectopencvdevice.cpp \
+		../RGB_NIR_Depth_capture/kinectcammanager.cpp \
 		../RGB_NIR_Depth_capture/main.cpp moc_rgb_nir_depth_capture.cpp \
 		moc_imgacquisitionworker.cpp
 OBJECTS       = vimbacammanager.o \
@@ -73,6 +74,7 @@ OBJECTS       = vimbacammanager.o \
 		flashlightcontrol.o \
 		imgacquisitionworker.o \
 		myfreenectopencvdevice.o \
+		kinectcammanager.o \
 		main.o \
 		moc_rgb_nir_depth_capture.o \
 		moc_imgacquisitionworker.o
@@ -196,6 +198,7 @@ DIST          = ../../../Qt5.3.2/5.3/gcc_64/mkspecs/features/spec_pre.prf \
 		../RGB_NIR_Depth_capture/skincamlegacy/io/flashlightcontrol.cpp \
 		../RGB_NIR_Depth_capture/imgacquisitionworker.cpp \
 		../RGB_NIR_Depth_capture/myfreenectopencvdevice.cpp \
+		../RGB_NIR_Depth_capture/kinectcammanager.cpp \
 		../RGB_NIR_Depth_capture/main.cpp
 QMAKE_TARGET  = RGB_NIR_Depth_capture
 DESTDIR       = #avoid trailing-slash linebreak
@@ -459,7 +462,7 @@ qmake_all: FORCE
 
 dist: 
 	@test -d .tmp/RGB_NIR_Depth_capture1.0.0 || mkdir -p .tmp/RGB_NIR_Depth_capture1.0.0
-	$(COPY_FILE) --parents $(DIST) .tmp/RGB_NIR_Depth_capture1.0.0/ && $(COPY_FILE) --parents ../RGB_NIR_Depth_capture/vimbacammanager.h ../RGB_NIR_Depth_capture/rgb_nir_depth_capture.h ../RGB_NIR_Depth_capture/skincamlegacy/core/multispectralimage.h ../RGB_NIR_Depth_capture/skincamlegacy/core/skincamconfig.h ../RGB_NIR_Depth_capture/skincamlegacy/core/skincamexception.h ../RGB_NIR_Depth_capture/skincamlegacy/io/camerainterface.h ../RGB_NIR_Depth_capture/skincamlegacy/io/camerasystemconfig.h ../RGB_NIR_Depth_capture/skincamlegacy/io/goldeyeVimba.h ../RGB_NIR_Depth_capture/skincamlegacy/io/imagesource.h ../RGB_NIR_Depth_capture/frameobserver.h ../RGB_NIR_Depth_capture/prosilicavimba.h ../RGB_NIR_Depth_capture/skincamlegacy/io/flashlightcontrol.h ../RGB_NIR_Depth_capture/imgacquisitionworker.h ../RGB_NIR_Depth_capture/myfreenectopencvdevice.h .tmp/RGB_NIR_Depth_capture1.0.0/ && $(COPY_FILE) --parents ../RGB_NIR_Depth_capture/vimbacammanager.cpp ../RGB_NIR_Depth_capture/rgb_nir_depth_capture.cpp ../RGB_NIR_Depth_capture/skincamlegacy/core/multispectralimage.cpp ../RGB_NIR_Depth_capture/skincamlegacy/core/skincamconfig.cpp ../RGB_NIR_Depth_capture/skincamlegacy/io/camerainterface.cpp ../RGB_NIR_Depth_capture/skincamlegacy/io/camerasystemconfig.cpp ../RGB_NIR_Depth_capture/skincamlegacy/io/goldeyeVimba.cpp ../RGB_NIR_Depth_capture/skincamlegacy/io/imagesource.cpp ../RGB_NIR_Depth_capture/frameobserver.cpp ../RGB_NIR_Depth_capture/prosilicavimba.cpp ../RGB_NIR_Depth_capture/skincamlegacy/io/flashlightcontrol.cpp ../RGB_NIR_Depth_capture/imgacquisitionworker.cpp ../RGB_NIR_Depth_capture/myfreenectopencvdevice.cpp ../RGB_NIR_Depth_capture/main.cpp .tmp/RGB_NIR_Depth_capture1.0.0/ && $(COPY_FILE) --parents ../RGB_NIR_Depth_capture/rgbnird_mainwindow.ui .tmp/RGB_NIR_Depth_capture1.0.0/ && (cd `dirname .tmp/RGB_NIR_Depth_capture1.0.0` && $(TAR) RGB_NIR_Depth_capture1.0.0.tar RGB_NIR_Depth_capture1.0.0 && $(COMPRESS) RGB_NIR_Depth_capture1.0.0.tar) && $(MOVE) `dirname .tmp/RGB_NIR_Depth_capture1.0.0`/RGB_NIR_Depth_capture1.0.0.tar.gz . && $(DEL_FILE) -r .tmp/RGB_NIR_Depth_capture1.0.0
+	$(COPY_FILE) --parents $(DIST) .tmp/RGB_NIR_Depth_capture1.0.0/ && $(COPY_FILE) --parents ../RGB_NIR_Depth_capture/vimbacammanager.h ../RGB_NIR_Depth_capture/rgb_nir_depth_capture.h ../RGB_NIR_Depth_capture/skincamlegacy/core/multispectralimage.h ../RGB_NIR_Depth_capture/skincamlegacy/core/skincamconfig.h ../RGB_NIR_Depth_capture/skincamlegacy/core/skincamexception.h ../RGB_NIR_Depth_capture/skincamlegacy/io/camerainterface.h ../RGB_NIR_Depth_capture/skincamlegacy/io/camerasystemconfig.h ../RGB_NIR_Depth_capture/skincamlegacy/io/goldeyeVimba.h ../RGB_NIR_Depth_capture/skincamlegacy/io/imagesource.h ../RGB_NIR_Depth_capture/frameobserver.h ../RGB_NIR_Depth_capture/prosilicavimba.h ../RGB_NIR_Depth_capture/skincamlegacy/io/flashlightcontrol.h ../RGB_NIR_Depth_capture/imgacquisitionworker.h ../RGB_NIR_Depth_capture/myfreenectopencvdevice.h ../RGB_NIR_Depth_capture/cammanager.h ../RGB_NIR_Depth_capture/kinectcammanager.h .tmp/RGB_NIR_Depth_capture1.0.0/ && $(COPY_FILE) --parents ../RGB_NIR_Depth_capture/vimbacammanager.cpp ../RGB_NIR_Depth_capture/rgb_nir_depth_capture.cpp ../RGB_NIR_Depth_capture/skincamlegacy/core/multispectralimage.cpp ../RGB_NIR_Depth_capture/skincamlegacy/core/skincamconfig.cpp ../RGB_NIR_Depth_capture/skincamlegacy/io/camerainterface.cpp ../RGB_NIR_Depth_capture/skincamlegacy/io/camerasystemconfig.cpp ../RGB_NIR_Depth_capture/skincamlegacy/io/goldeyeVimba.cpp ../RGB_NIR_Depth_capture/skincamlegacy/io/imagesource.cpp ../RGB_NIR_Depth_capture/frameobserver.cpp ../RGB_NIR_Depth_capture/prosilicavimba.cpp ../RGB_NIR_Depth_capture/skincamlegacy/io/flashlightcontrol.cpp ../RGB_NIR_Depth_capture/imgacquisitionworker.cpp ../RGB_NIR_Depth_capture/myfreenectopencvdevice.cpp ../RGB_NIR_Depth_capture/kinectcammanager.cpp ../RGB_NIR_Depth_capture/main.cpp .tmp/RGB_NIR_Depth_capture1.0.0/ && $(COPY_FILE) --parents ../RGB_NIR_Depth_capture/rgbnird_mainwindow.ui .tmp/RGB_NIR_Depth_capture1.0.0/ && (cd `dirname .tmp/RGB_NIR_Depth_capture1.0.0` && $(TAR) RGB_NIR_Depth_capture1.0.0.tar RGB_NIR_Depth_capture1.0.0 && $(COMPRESS) RGB_NIR_Depth_capture1.0.0.tar) && $(MOVE) `dirname .tmp/RGB_NIR_Depth_capture1.0.0`/RGB_NIR_Depth_capture1.0.0.tar.gz . && $(DEL_FILE) -r .tmp/RGB_NIR_Depth_capture1.0.0
 
 
 clean:compiler_clean 
@@ -633,9 +636,10 @@ moc_rgb_nir_depth_capture.cpp: ../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/QMa
 		/opt/Vimba_1_3/VimbaCPP/Include/ICameraListObserver.h \
 		/opt/Vimba_1_3/VimbaCPP/Include/IInterfaceListObserver.h \
 		/opt/Vimba_1_3/VimbaCPP/Include/VimbaSystem.hpp \
+		../RGB_NIR_Depth_capture/cammanager.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QMap \
 		../RGB_NIR_Depth_capture/skincamlegacy/io/goldeyeVimba.h \
 		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QtDebug \
-		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QMap \
 		../RGB_NIR_Depth_capture/skincamlegacy/io/camerainterface.h \
 		../RGB_NIR_Depth_capture/skincamlegacy/core/skincamconfig.h \
 		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QDir \
@@ -665,6 +669,8 @@ moc_rgb_nir_depth_capture.cpp: ../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/QMa
 		../../../Qt5.3.2/5.3/gcc_64/include/QtSerialPort/qserialportglobal.h \
 		../RGB_NIR_Depth_capture/prosilicavimba.h \
 		../../../Qt5.3.2/5.3/gcc_64/include/QtGui/QImage \
+		../RGB_NIR_Depth_capture/kinectcammanager.h \
+		../RGB_NIR_Depth_capture/myfreenectopencvdevice.h \
 		../RGB_NIR_Depth_capture/rgb_nir_depth_capture.h
 	/home/maurice/Qt5.3.2/5.3/gcc_64/bin/moc $(DEFINES) -I/home/maurice/Qt5.3.2/5.3/gcc_64/mkspecs/linux-g++ -I/home/maurice/QtProjects/Masterthesis_REP/RGB_NIR_Depth_capture -I/opt/Vimba_1_3 -I/opt/Vimba_1_3/AVTImageTransform/Include -I/usr/include/libusb-1.0 -I/home/maurice/Qt5.3.2/5.3/gcc_64/include -I/home/maurice/Qt5.3.2/5.3/gcc_64/include/QtWidgets -I/home/maurice/Qt5.3.2/5.3/gcc_64/include/QtGui -I/home/maurice/Qt5.3.2/5.3/gcc_64/include/QtCore -I. ../RGB_NIR_Depth_capture/rgb_nir_depth_capture.h -o moc_rgb_nir_depth_capture.cpp
 
@@ -811,9 +817,10 @@ moc_imgacquisitionworker.cpp: ../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QObject
 		/opt/Vimba_1_3/VimbaCPP/Include/ICameraListObserver.h \
 		/opt/Vimba_1_3/VimbaCPP/Include/IInterfaceListObserver.h \
 		/opt/Vimba_1_3/VimbaCPP/Include/VimbaSystem.hpp \
+		../RGB_NIR_Depth_capture/cammanager.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QMap \
 		../RGB_NIR_Depth_capture/skincamlegacy/io/goldeyeVimba.h \
 		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QtDebug \
-		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QMap \
 		../RGB_NIR_Depth_capture/skincamlegacy/io/camerainterface.h \
 		../RGB_NIR_Depth_capture/skincamlegacy/core/skincamconfig.h \
 		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QDir \
@@ -843,6 +850,8 @@ moc_imgacquisitionworker.cpp: ../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QObject
 		../../../Qt5.3.2/5.3/gcc_64/include/QtSerialPort/qserialportglobal.h \
 		../RGB_NIR_Depth_capture/prosilicavimba.h \
 		../../../Qt5.3.2/5.3/gcc_64/include/QtGui/QImage \
+		../RGB_NIR_Depth_capture/kinectcammanager.h \
+		../RGB_NIR_Depth_capture/myfreenectopencvdevice.h \
 		../RGB_NIR_Depth_capture/imgacquisitionworker.h
 	/home/maurice/Qt5.3.2/5.3/gcc_64/bin/moc $(DEFINES) -I/home/maurice/Qt5.3.2/5.3/gcc_64/mkspecs/linux-g++ -I/home/maurice/QtProjects/Masterthesis_REP/RGB_NIR_Depth_capture -I/opt/Vimba_1_3 -I/opt/Vimba_1_3/AVTImageTransform/Include -I/usr/include/libusb-1.0 -I/home/maurice/Qt5.3.2/5.3/gcc_64/include -I/home/maurice/Qt5.3.2/5.3/gcc_64/include/QtWidgets -I/home/maurice/Qt5.3.2/5.3/gcc_64/include/QtGui -I/home/maurice/Qt5.3.2/5.3/gcc_64/include/QtCore -I. ../RGB_NIR_Depth_capture/imgacquisitionworker.h -o moc_imgacquisitionworker.cpp
 
@@ -1004,9 +1013,10 @@ vimbacammanager.o: ../RGB_NIR_Depth_capture/vimbacammanager.cpp ../RGB_NIR_Depth
 		/opt/Vimba_1_3/VimbaCPP/Include/ICameraListObserver.h \
 		/opt/Vimba_1_3/VimbaCPP/Include/IInterfaceListObserver.h \
 		/opt/Vimba_1_3/VimbaCPP/Include/VimbaSystem.hpp \
+		../RGB_NIR_Depth_capture/cammanager.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QMap \
 		../RGB_NIR_Depth_capture/skincamlegacy/io/goldeyeVimba.h \
 		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QtDebug \
-		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QMap \
 		../RGB_NIR_Depth_capture/skincamlegacy/io/camerainterface.h \
 		../RGB_NIR_Depth_capture/skincamlegacy/core/skincamconfig.h \
 		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QDir \
@@ -1192,9 +1202,10 @@ rgb_nir_depth_capture.o: ../RGB_NIR_Depth_capture/rgb_nir_depth_capture.cpp ../.
 		/opt/Vimba_1_3/VimbaCPP/Include/ICameraListObserver.h \
 		/opt/Vimba_1_3/VimbaCPP/Include/IInterfaceListObserver.h \
 		/opt/Vimba_1_3/VimbaCPP/Include/VimbaSystem.hpp \
+		../RGB_NIR_Depth_capture/cammanager.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QMap \
 		../RGB_NIR_Depth_capture/skincamlegacy/io/goldeyeVimba.h \
 		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QtDebug \
-		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QMap \
 		../RGB_NIR_Depth_capture/skincamlegacy/io/camerainterface.h \
 		../RGB_NIR_Depth_capture/skincamlegacy/core/skincamconfig.h \
 		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QFile \
@@ -1219,7 +1230,64 @@ rgb_nir_depth_capture.o: ../RGB_NIR_Depth_capture/rgb_nir_depth_capture.cpp ../.
 		../../../Qt5.3.2/5.3/gcc_64/include/QtSerialPort/qserialportglobal.h \
 		../RGB_NIR_Depth_capture/prosilicavimba.h \
 		../../../Qt5.3.2/5.3/gcc_64/include/QtGui/QImage \
-		ui_rgbnird_mainwindow.h
+		../RGB_NIR_Depth_capture/kinectcammanager.h \
+		../RGB_NIR_Depth_capture/myfreenectopencvdevice.h \
+		ui_rgbnird_mainwindow.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QVariant \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/QAction \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qaction.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qactiongroup.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/QApplication \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qapplication.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/qcoreapplication.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/qeventloop.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qdesktopwidget.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtGui/qguiapplication.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtGui/qinputmethod.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/QButtonGroup \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qbuttongroup.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/QCheckBox \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qcheckbox.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qabstractbutton.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/QGraphicsView \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qgraphicsview.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtGui/qpainter.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtGui/qtextoption.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtGui/qpen.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qscrollarea.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qabstractscrollarea.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qframe.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qgraphicsscene.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/QHBoxLayout \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qboxlayout.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qlayout.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qlayoutitem.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qgridlayout.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/QHeaderView \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qheaderview.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qabstractitemview.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/qabstractitemmodel.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/qitemselectionmodel.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qabstractitemdelegate.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qstyleoption.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qabstractspinbox.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtGui/qvalidator.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/qregularexpression.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qslider.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qabstractslider.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qstyle.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qtabbar.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qrubberband.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/QMenuBar \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qmenubar.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qmenu.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/QPushButton \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qpushbutton.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/QStatusBar \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qstatusbar.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/QToolBar \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qtoolbar.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/QWidget
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o rgb_nir_depth_capture.o ../RGB_NIR_Depth_capture/rgb_nir_depth_capture.cpp
 
 multispectralimage.o: ../RGB_NIR_Depth_capture/skincamlegacy/core/multispectralimage.cpp ../RGB_NIR_Depth_capture/skincamlegacy/core/multispectralimage.h \
@@ -2274,9 +2342,10 @@ imgacquisitionworker.o: ../RGB_NIR_Depth_capture/imgacquisitionworker.cpp ../RGB
 		/opt/Vimba_1_3/VimbaCPP/Include/ICameraListObserver.h \
 		/opt/Vimba_1_3/VimbaCPP/Include/IInterfaceListObserver.h \
 		/opt/Vimba_1_3/VimbaCPP/Include/VimbaSystem.hpp \
+		../RGB_NIR_Depth_capture/cammanager.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QMap \
 		../RGB_NIR_Depth_capture/skincamlegacy/io/goldeyeVimba.h \
 		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QtDebug \
-		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QMap \
 		../RGB_NIR_Depth_capture/skincamlegacy/io/camerainterface.h \
 		../RGB_NIR_Depth_capture/skincamlegacy/core/skincamconfig.h \
 		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QDir \
@@ -2305,11 +2374,16 @@ imgacquisitionworker.o: ../RGB_NIR_Depth_capture/imgacquisitionworker.cpp ../RGB
 		../../../Qt5.3.2/5.3/gcc_64/include/QtSerialPort/qserialport.h \
 		../../../Qt5.3.2/5.3/gcc_64/include/QtSerialPort/qserialportglobal.h \
 		../RGB_NIR_Depth_capture/prosilicavimba.h \
-		../../../Qt5.3.2/5.3/gcc_64/include/QtGui/QImage
+		../../../Qt5.3.2/5.3/gcc_64/include/QtGui/QImage \
+		../RGB_NIR_Depth_capture/kinectcammanager.h \
+		../RGB_NIR_Depth_capture/myfreenectopencvdevice.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o imgacquisitionworker.o ../RGB_NIR_Depth_capture/imgacquisitionworker.cpp
 
 myfreenectopencvdevice.o: ../RGB_NIR_Depth_capture/myfreenectopencvdevice.cpp ../RGB_NIR_Depth_capture/myfreenectopencvdevice.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o myfreenectopencvdevice.o ../RGB_NIR_Depth_capture/myfreenectopencvdevice.cpp
+
+kinectcammanager.o: ../RGB_NIR_Depth_capture/kinectcammanager.cpp ../RGB_NIR_Depth_capture/kinectcammanager.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o kinectcammanager.o ../RGB_NIR_Depth_capture/kinectcammanager.cpp
 
 main.o: ../RGB_NIR_Depth_capture/main.cpp ../RGB_NIR_Depth_capture/rgb_nir_depth_capture.h \
 		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/QMainWindow \
@@ -2460,9 +2534,10 @@ main.o: ../RGB_NIR_Depth_capture/main.cpp ../RGB_NIR_Depth_capture/rgb_nir_depth
 		/opt/Vimba_1_3/VimbaCPP/Include/ICameraListObserver.h \
 		/opt/Vimba_1_3/VimbaCPP/Include/IInterfaceListObserver.h \
 		/opt/Vimba_1_3/VimbaCPP/Include/VimbaSystem.hpp \
+		../RGB_NIR_Depth_capture/cammanager.h \
+		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QMap \
 		../RGB_NIR_Depth_capture/skincamlegacy/io/goldeyeVimba.h \
 		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QtDebug \
-		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QMap \
 		../RGB_NIR_Depth_capture/skincamlegacy/io/camerainterface.h \
 		../RGB_NIR_Depth_capture/skincamlegacy/core/skincamconfig.h \
 		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/QDir \
@@ -2492,6 +2567,8 @@ main.o: ../RGB_NIR_Depth_capture/main.cpp ../RGB_NIR_Depth_capture/rgb_nir_depth
 		../../../Qt5.3.2/5.3/gcc_64/include/QtSerialPort/qserialportglobal.h \
 		../RGB_NIR_Depth_capture/prosilicavimba.h \
 		../../../Qt5.3.2/5.3/gcc_64/include/QtGui/QImage \
+		../RGB_NIR_Depth_capture/kinectcammanager.h \
+		../RGB_NIR_Depth_capture/myfreenectopencvdevice.h \
 		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/QApplication \
 		../../../Qt5.3.2/5.3/gcc_64/include/QtWidgets/qapplication.h \
 		../../../Qt5.3.2/5.3/gcc_64/include/QtCore/qcoreapplication.h \

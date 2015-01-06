@@ -4,8 +4,7 @@
 #include <QObject>
 #include <QThread>
 #include"vimbacammanager.h"
-#include"libfreenect.hpp"
-#include"myfreenectopencvdevice.h"
+#include"kinectcammanager.h"
 
 class ImgAcquisitionWorker : public QThread//public QObject
 {
@@ -13,6 +12,8 @@ class ImgAcquisitionWorker : public QThread//public QObject
 //	QThread workerThread;
 public:
 	explicit ImgAcquisitionWorker(QObject *parent = 0);
+
+    ~ImgAcquisitionWorker();
 
 	/*!
 	 * \brief Sets the status of the acquisiton - used to start and stop acquisition
@@ -37,8 +38,7 @@ public slots:
 
 private:
 	VimbaCamManager vimbaCamManager;
-    Freenect::Freenect freenect;
-    MyFreenectOpenCVDevice& freenectDevice;
+    KinectCamManager kinectCamManager;
 	bool acquiring;
 
 };

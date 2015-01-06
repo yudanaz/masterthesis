@@ -36,14 +36,7 @@ public:
 
 
         // Do not call directly even in child
-        void VideoCallback(void* _rgb, uint32_t timestamp) {
-            std::cout << "RGB callback" << std::endl;
-            m_rgb_mutex.lock();
-            uint8_t* rgb = static_cast<uint8_t*>(_rgb);
-            rgbMat.data = rgb;
-            m_new_rgb_frame = true;
-            m_rgb_mutex.unlock();
-        };
+        void VideoCallback(void* _rgb, uint32_t timestamp);
 
         // Do not call directly even in child
         void DepthCallback(void* _depth, uint32_t timestamp);

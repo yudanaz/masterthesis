@@ -31,7 +31,7 @@ VimbaCamManager::VimbaCamManager():
 
 VimbaCamManager::~VimbaCamManager()
 {
-	closeCameras();
+    //closeCameras();
 	vimbaSystem.Shutdown();
 }
 
@@ -65,6 +65,7 @@ void VimbaCamManager::connectCameras()
 		{
 			flashlight->connect("/dev/ttyUSB1");
 			connected_flashlight = true;
+//            startFlashlight();
 
 			/****************************************************************************************************
 			 *  The next section is an altered version of the setConfig() / configureFlashlight() and calcWavebandsValue()
@@ -114,32 +115,32 @@ void VimbaCamManager::connectCameras()
 		{
 			QMessageBox::information(NULL, "Prosilica: Camera Exception", e.getMessage(), QMessageBox::Ok);
 		}
-	}
+    }
 }
 
 void VimbaCamManager::startFlashlight()
 {
-//	if(!connected_flashlight){ return; }
-//	if(!flashLightRunning)
-//	{
-//		flashlight->run();
-//		flashLightRunning = true;
-//		goldeye->reset();
-//	}
+    if(!connected_flashlight){ return; }
+	if(!flashLightRunning)
+	{
+		flashlight->run();
+		flashLightRunning = true;
+		goldeye->reset();
+	}
 }
 
 void VimbaCamManager::stopFlashlight()
 {
-//	if(!connected_flashlight){ return; }
-//	if(flashLightRunning)
-//	{
-//		flashlight->halt();
-//		flashLightRunning = false;
-//		goldeye->reset();
-//	}
+    if(!connected_flashlight){ return; }
+    if(flashLightRunning)
+    {
+        flashlight->halt();
+        flashLightRunning = false;
+        goldeye->reset();
+    }
 }
 
-void VimbaCamManager::getCamImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
+void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 {
 	Mat img;
 	quint8 i;
@@ -270,6 +271,7 @@ void VimbaCamManager::getCamImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 void VimbaCamManager::closeCameras()
 {
 	if(goldeye->isConnected()){ goldeye->disconnect(); }
+    if(flashLightRunning){ stopFlashlight(); }
 	if(prosilica->isConnected()){ prosilica->disconnect(); }
 }
 

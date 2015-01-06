@@ -1,12 +1,17 @@
-#include<unistd.h>
 #include "imgacquisitionworker.h"
 
 ImgAcquisitionWorker::ImgAcquisitionWorker(QObject *parent) :
-	QThread(parent),
-    freenectDevice(freenect.createDevice<MyFreenectOpenCVDevice>(0)),
+    QThread(parent),
 	acquiring(false)
 {
-	vimbaCamManager.connectCameras();
+	vimbaCamManager.connectCameras();    
+    kinectCamManager.connectCameras();
+}
+
+ImgAcquisitionWorker::~ImgAcquisitionWorker()
+{
+    vimbaCamManager.closeCameras();
+    kinectCamManager.closeCameras();
 }
 
 void ImgAcquisitionWorker::setStatus(bool acquiring)
@@ -16,33 +21,18 @@ void ImgAcquisitionWorker::setStatus(bool acquiring)
 
 void ImgAcquisitionWorker::startAcquisition()
 {
-	vimbaCamManager.startFlashlight();
-
-    freenectDevice.startDepth();
-    freenectDevice.startVideo();
+    RGBDNIR_MAP images;
 
     do
 	{
         //get RGB and NIR images from vimba cameras
-        RGBDNIR_MAP images;
-        vimbaCamManager.getCamImages(images);
+        vimbaCamManager.getImages(images);
 
-        //add Kinect Images
-        Mat depthMat(Size(640,480),CV_16UC1);
-        Mat depthMap8bit (Size(640,480),CV_8UC1);
-        Mat rgbMat(Size(640,480),CV_8UC3,Scalar(0));
-        //freenectDevice.getDepth(depthMat);
-        freenectDevice.getVideo(rgbMat);
-        //depthMat.convertTo(depthMap8bit, CV_8UC1, 255.0/2048.0);
-        images[Kinect_RGB] = rgbMat;
-        //images[Kinect_Depth] = depthMap8bit;
+        //get RGB image and depth map from Kinect
+        kinectCamManager.getImages(images);
 
         //forward images to main thread
         emit imagesReady(images);
-//		usleep(100000);
 	}
-	while(acquiring);
-	vimbaCamManager.stopFlashlight();
-    freenectDevice.stopDepth();
-    freenectDevice.stopVideo();
+    while(acquiring);
 }

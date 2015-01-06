@@ -83,14 +83,14 @@ public:
         graphicsView_RGB->setGeometry(QRect(10, 60, 500, 500));
         graphicsView_NIR = new QGraphicsView(centralWidget);
         graphicsView_NIR->setObjectName(QStringLiteral("graphicsView_NIR"));
-        graphicsView_NIR->setGeometry(QRect(530, 60, 240, 240));
+        graphicsView_NIR->setGeometry(QRect(530, 60, 300, 240));
         graphicsView_Depth = new QGraphicsView(centralWidget);
         graphicsView_Depth->setObjectName(QStringLiteral("graphicsView_Depth"));
-        graphicsView_Depth->setGeometry(QRect(530, 320, 240, 240));
+        graphicsView_Depth->setGeometry(QRect(530, 320, 300, 240));
         RGBNIRD_MainWindow->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(RGBNIRD_MainWindow);
         menuBar->setObjectName(QStringLiteral("menuBar"));
-        menuBar->setGeometry(QRect(0, 0, 910, 20));
+        menuBar->setGeometry(QRect(0, 0, 910, 25));
         RGBNIRD_MainWindow->setMenuBar(menuBar);
         mainToolBar = new QToolBar(RGBNIRD_MainWindow);
         mainToolBar->setObjectName(QStringLiteral("mainToolBar"));

@@ -86,14 +86,14 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP images)
 		}
 		else if(type == Kinect_Depth)
 		{
-//            //make a resized copy of the image according to graphic widget size
-//            cv::resize(img, imgSmall, Size(width_depth,height_depth));
-//            cvtColor(imgSmall, imgSmall, CV_GRAY2RGB);
+            //make a resized copy of the image according to graphic widget size
+            cv::resize(img, imgSmall, Size(width_depth,height_depth));
+            cvtColor(imgSmall, imgSmall, CV_GRAY2RGB);
 
-//            //show in widget width inverted channels (because Mat is BGR and QImage is RGB)
-//            QImage qimg(imgSmall.data, imgSmall.cols, imgSmall.rows, imgSmall.step, QImage::Format_RGB888);
-//            scene->addPixmap(QPixmap::fromImage(qimg));
-//            ui->graphicsView_Depth->setScene(scene);
+            //show in widget width inverted channels (because Mat is BGR and QImage is RGB)
+            QImage qimg(imgSmall.data, imgSmall.cols, imgSmall.rows, imgSmall.step, QImage::Format_RGB888);
+            scene->addPixmap(QPixmap::fromImage(qimg));
+            ui->graphicsView_Depth->setScene(scene);
 		}
 
 		//show all channels in extra windows if user wants that

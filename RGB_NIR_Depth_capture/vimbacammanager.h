@@ -8,6 +8,7 @@
 #include<QMessageBox>
 #include<VimbaCPP/Include/VimbaCPP.h>
 #include<opencv2/opencv.hpp>
+#include"cammanager.h"
 #include"skincamlegacy/io/goldeyeVimba.h"
 #include"skincamlegacy/io/camerasystemconfig.h"
 #include"skincamlegacy/io/flashlightcontrol.h"
@@ -17,12 +18,6 @@
 
 using namespace AVT::VmbAPI;
 using namespace cv;
-
-enum RGBDNIR_captureType
-{
-    RGB, Kinect_Depth, Kinect_RGB, NIR_Dark, NIR_935, NIR_1060, NIR_1300, NIR_1550
-};
-typedef QMap<RGBDNIR_captureType, Mat> RGBDNIR_MAP;
 
 
 /*!
@@ -41,34 +36,28 @@ public:
 	void doWhiteCalib(Mat m, int index);
 };
 
-class VimbaCamManager
+class VimbaCamManager : public CamManager
 {
 public:
 	VimbaCamManager();
 	~VimbaCamManager();
 
-	/**
-	 * @brief Returns a list of names of detected VIMBA cameras and saves cams in a
-	 * private pointer list and opens them.
-	 * @param repeatDetection should be set to true in order to repeat the detection process.
-	 * @return a list of names of detected VIMBA cameras
-	 */
+    /*!
+     * \brief connects to goldeye and prosilica cameras, if present
+     */
 	void connectCameras();
 
-	/**
-	 * @brief closes cameras that have been detected and open before.
+    /*!
+     * \brief closes cameras that have been detected and opened before.
 	 */
 	void closeCameras();
 
-
-	void startFlashlight();
-	void stopFlashlight();
 
 	/*!
 	 * \brief Captures the images of all connected cameras and returns them in a list.
 	 * \return list of all images plus image type (RGB, NIR or Depth).
 	 */
-    void getCamImages(QMap<RGBDNIR_captureType, Mat> &camImgs);
+    void getImages(QMap<RGBDNIR_captureType, Mat> &camImgs);
 
 	/*!
 	 * \brief Returns a descriptive string of the RGBDNIR channel type.
@@ -78,7 +67,9 @@ public:
 	static QString getRGBDNIR_captureTypeString(RGBDNIR_captureType i);
 
 private:
-	void startVimbaAPI();
+    void startVimbaAPI();
+    void startFlashlight();
+    void stopFlashlight();
 
 	VimbaSystem &vimbaSystem;
 	bool APIrunning;
