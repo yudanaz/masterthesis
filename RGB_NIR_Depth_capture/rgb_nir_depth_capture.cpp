@@ -7,7 +7,10 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::RGBNIRD_MainWindow),
 	triggerSave(false),
-	imgCnt(0)
+	imgCnt(0),
+	ptr_RGBScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene)),
+	ptr_NIRScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene)),
+	ptr_depthScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene))
 {
 	ui->setupUi(this);
 
@@ -18,6 +21,7 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	connect(&workerThread, SIGNAL(finished()), myImgAcqWorker, SLOT(deleteLater()));
 	connect(this, SIGNAL(startImgAcquisition()), myImgAcqWorker, SLOT(startAcquisition()));
 	connect(myImgAcqWorker, SIGNAL(imagesReady(RGBDNIR_MAP)), this, SLOT(imagesReady(RGBDNIR_MAP)));
+	connect(&workerThread, SIGNAL(finished()), &workerThread, SLOT(deleteLater()));
 	workerThread.start();
 
 	//get image widget sizes for display (-2 because of widget borders)
@@ -29,11 +33,25 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	height_depth = ui->graphicsView_Depth->height()-2;
 }
 
+void RGB_NIR_Depth_Capture::closeEvent(QCloseEvent *)
+{
+	if(myImgAcqWorker->isAcquiring())
+	{
+		qDebug() << "is still acquiring";
+		myImgAcqWorker->setAcquiring(false);
+		usleep(500000);//wait a little before killing thread
+	}
+}
+
 RGB_NIR_Depth_Capture::~RGB_NIR_Depth_Capture()
 {
-	myImgAcqWorker->setStatus(false);
 	workerThread.quit();
-	workerThread.wait();
+	if(!workerThread.wait(500)) //wait 0.5 sec, if not finished, force termination of thread
+	{
+		qDebug() << "trying to force terminate";
+		workerThread.terminate();
+		workerThread.wait();
+	}
 	destroyAllWindows();
 	delete ui;
 }
@@ -53,7 +71,6 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP images)
 
 		//show the "most important" images in the GUI
 		Mat imgSmall;
-		QGraphicsScene *scene = new QGraphicsScene();
 
 		if(type == RGB)
 		{
@@ -62,8 +79,9 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP images)
 
 			//show in widget width inverted channels (because Mat is BGR and QImage is RGB)
 			QImage qimg(imgSmall.data, imgSmall.cols, imgSmall.rows, imgSmall.step, QImage::Format_RGB888);
-			scene->addPixmap(QPixmap::fromImage(qimg.rgbSwapped()));
-			ui->graphicsView_RGB->setScene(scene);
+			ptr_RGBScene = QSharedPointer<QGraphicsScene>(new QGraphicsScene);//drop last pointer to free memory
+			ptr_RGBScene->addPixmap(QPixmap::fromImage(qimg.rgbSwapped()));
+			ui->graphicsView_RGB->setScene(ptr_RGBScene.data());
 		}
 		else if(type == NIR_1300)
 		{
@@ -81,19 +99,21 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP images)
 
 			//show in widget width inverted channels (because Mat is BGR and QImage is RGB)
 			QImage qimg(imgRGB8.data, imgRGB8.cols, imgRGB8.rows, imgRGB8.step, QImage::Format_RGB888);
-			scene->addPixmap(QPixmap::fromImage(qimg));
-			ui->graphicsView_NIR->setScene(scene);
+			ptr_NIRScene = QSharedPointer<QGraphicsScene>(new QGraphicsScene);//drop last pointer to free memory
+			ptr_NIRScene->addPixmap(QPixmap::fromImage(qimg));
+			ui->graphicsView_NIR->setScene(ptr_NIRScene.data());
 		}
 		else if(type == Kinect_Depth)
 		{
-            //make a resized copy of the image according to graphic widget size
-            cv::resize(img, imgSmall, Size(width_depth,height_depth));
-            cvtColor(imgSmall, imgSmall, CV_GRAY2RGB);
+			//make a resized copy of the image according to graphic widget size
+			cv::resize(img, imgSmall, Size(width_depth,height_depth));
+			cvtColor(imgSmall, imgSmall, CV_GRAY2RGB);
 
-            //show in widget width inverted channels (because Mat is BGR and QImage is RGB)
-            QImage qimg(imgSmall.data, imgSmall.cols, imgSmall.rows, imgSmall.step, QImage::Format_RGB888);
-            scene->addPixmap(QPixmap::fromImage(qimg));
-            ui->graphicsView_Depth->setScene(scene);
+			//show in widget width inverted channels (because Mat is BGR and QImage is RGB)
+			QImage qimg(imgSmall.data, imgSmall.cols, imgSmall.rows, imgSmall.step, QImage::Format_RGB888);
+			ptr_depthScene = QSharedPointer<QGraphicsScene>(new QGraphicsScene);//drop last pointer to free memory
+			ptr_depthScene->addPixmap(QPixmap::fromImage(qimg));
+			ui->graphicsView_Depth->setScene(ptr_depthScene.data());
 		}
 
 		//show all channels in extra windows if user wants that
@@ -131,7 +151,7 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP images)
 ************************************************/
 void RGB_NIR_Depth_Capture::on_btn_startAcquisition_released()
 {
-	myImgAcqWorker->setStatus(true);
+	myImgAcqWorker->setAcquiring(true);
 	emit startImgAcquisition();
 }
 
@@ -142,7 +162,7 @@ void RGB_NIR_Depth_Capture::on_btn_saveImgs_released()
 
 void RGB_NIR_Depth_Capture::on_btn_stopAcquisition_released()
 {
-	myImgAcqWorker->setStatus(false);
+	myImgAcqWorker->setAcquiring(false);
 //	emit stopImgAcquisition();
 }
 

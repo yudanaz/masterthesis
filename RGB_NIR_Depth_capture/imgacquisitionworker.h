@@ -13,14 +13,15 @@ class ImgAcquisitionWorker : public QThread//public QObject
 public:
 	explicit ImgAcquisitionWorker(QObject *parent = 0);
 
-    ~ImgAcquisitionWorker();
+	~ImgAcquisitionWorker();
 
 	/*!
 	 * \brief Sets the status of the acquisiton - used to start and stop acquisition
 	 * in a while loop
 	 * \param acquiring: The acquisition status.
 	 */
-	void setStatus(bool acquiring);
+	void setAcquiring(bool acquiring);
+	bool isAcquiring();
 
 signals:
 	/*!
@@ -38,7 +39,7 @@ public slots:
 
 private:
 	VimbaCamManager vimbaCamManager;
-    KinectCamManager kinectCamManager;
+	KinectCamManager kinectCamManager;
 	bool acquiring;
 
 };

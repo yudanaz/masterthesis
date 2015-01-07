@@ -201,13 +201,13 @@ void ProsilicaVimba::configure(double exposureTime, quint8 bufferSize)
 	StartContinuousImageAcquisition - feature software command, or through a trigger.
 	Software trigger doesn't seem to work
 	*/
-//	res = pProsilica->GetFeatureByName("TriggerSource", pFeature);
-//	if(res == VmbErrorSuccess){ res = pFeature->SetValue(5); } //5 = software trigger
-//	if(res != VmbErrorSuccess)
-//	{
-//		throw CameraException(QString("Can't set TriggerSource! Code: %1")
-//							  .arg(convErrToMsg(res)));
-//	}
+	res = pProsilica->GetFeatureByName("TriggerSource", pFeature);
+	if(res == VmbErrorSuccess){ res = pFeature->SetValue(2); } //4 = software trigger
+	if(res != VmbErrorSuccess)
+	{
+		throw CameraException(QString("Can't set TriggerSource! Code: %1")
+							  .arg(convErrToMsg(res)));
+	}
 
 	//set pixel format and image height, width and offset
 	res = pProsilica->GetFeatureByName("PixelFormat", pFeature);
@@ -261,6 +261,13 @@ void ProsilicaVimba::configure(double exposureTime, quint8 bufferSize)
 
 //	//set default NUC correction:
 //	setCorrectionDataset(exposureTime);
+
+	res = pProsilica->StartContinuousImageAcquisition(myBufferSize, myFrameObserver);
+	if ( res != VmbErrorSuccess )
+	{
+		throw CameraException(QString("Can't start acquisition! Code: %1")
+							  .arg(convErrToMsg(res)));
+	}
 
 	configured = true;
 }
@@ -332,12 +339,12 @@ Mat ProsilicaVimba::getCVFrame()
 	Software trigger doesn't seem to work
 	*/
 	//start image acquisition
-	res = pProsilica->StartContinuousImageAcquisition(myBufferSize, myFrameObserver);
-	if ( res != VmbErrorSuccess )
-	{
-		throw CameraException(QString("Can't start acquisition! Code: %1")
-							  .arg(convErrToMsg(res)));
-	}
+//	res = pProsilica->StartContinuousImageAcquisition(myBufferSize, myFrameObserver);
+//	if ( res != VmbErrorSuccess )
+//	{
+//		throw CameraException(QString("Can't start acquisition! Code: %1")
+//							  .arg(convErrToMsg(res)));
+//	}
 
 	//wait for frame
 	quint16 count = 0;
@@ -363,7 +370,7 @@ Mat ProsilicaVimba::getCVFrame()
 			convertImageFormat(pBuffer, newMat);
 
 			//scale the input mat to output
-			out = newMat.clone();
+			out = newMat;
 		}
 		pProsilica->QueueFrame(frame);
 	}
@@ -375,7 +382,7 @@ Mat ProsilicaVimba::getCVFrame()
 	}
 
 	//stop image aquisition
-	res = pProsilica->StopContinuousImageAcquisition();
+//	res = pProsilica->StopContinuousImageAcquisition();
 	if ( res != VmbErrorSuccess )
 	{
 		throw CameraException(QString("Can't stop acquisition! Code: %1")

@@ -5,6 +5,7 @@
 #include<QDebug>
 #include<QList>
 #include<QThread>
+#include<QGraphicsScene>
 #include<opencv2/opencv.hpp>
 #include"imgacquisitionworker.h"
 #include"vimbacammanager.h"
@@ -42,6 +43,9 @@ private slots:
 
 	void on_checkBox_showAllChannels_clicked();
 
+protected:
+	void closeEvent(QCloseEvent *event);
+
 private:
 	Ui::RGBNIRD_MainWindow *ui;
 	QThread workerThread;
@@ -49,6 +53,10 @@ private:
 	ImgAcquisitionWorker *myImgAcqWorker;
 
 	int imgCnt;
+
+	QSharedPointer<QGraphicsScene> ptr_RGBScene;
+	QSharedPointer<QGraphicsScene> ptr_NIRScene;
+	QSharedPointer<QGraphicsScene> ptr_depthScene;
 
 
 	int width_rgb, height_rgb, width_nir, height_nir, width_depth, height_depth;
