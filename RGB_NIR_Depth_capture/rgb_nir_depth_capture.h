@@ -43,9 +43,6 @@ private slots:
 
 	void on_checkBox_showAllChannels_clicked();
 
-protected:
-	void closeEvent(QCloseEvent *event);
-
 private:
 	Ui::RGBNIRD_MainWindow *ui;
 	QThread workerThread;

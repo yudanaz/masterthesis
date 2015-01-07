@@ -1,8 +1,8 @@
 #include "imgacquisitionworker.h"
 
-ImgAcquisitionWorker::ImgAcquisitionWorker(QObject *parent) :
-	QThread(parent),
-	acquiring(false)
+ImgAcquisitionWorker::ImgAcquisitionWorker() :
+	acquiring(false),
+	stopped(true)
 {
 	vimbaCamManager.connectCameras();
 	kinectCamManager.connectCameras();
@@ -10,6 +10,7 @@ ImgAcquisitionWorker::ImgAcquisitionWorker(QObject *parent) :
 
 ImgAcquisitionWorker::~ImgAcquisitionWorker()
 {
+
 	vimbaCamManager.closeCameras();
 	kinectCamManager.closeCameras();
 }
@@ -24,10 +25,23 @@ bool ImgAcquisitionWorker::isAcquiring()
 	return this->acquiring;
 }
 
+void ImgAcquisitionWorker::stop()
+{
+
+}
+
+bool ImgAcquisitionWorker::isStopped()
+{
+	return stopped;
+}
+
 void ImgAcquisitionWorker::startAcquisition()
 {
 	RGBDNIR_MAP images;
 
+	lock.lockForRead();
+
+	stopped = false;
 	do
 	{
 		//get RGB and NIR images from vimba cameras
@@ -40,4 +54,7 @@ void ImgAcquisitionWorker::startAcquisition()
 		emit imagesReady(images);
 	}
 	while(acquiring);
+	stopped = true;
+
+	lock.unlock();
 }

@@ -33,25 +33,27 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	height_depth = ui->graphicsView_Depth->height()-2;
 }
 
-void RGB_NIR_Depth_Capture::closeEvent(QCloseEvent *)
-{
-	if(myImgAcqWorker->isAcquiring())
-	{
-		qDebug() << "is still acquiring";
-		myImgAcqWorker->setAcquiring(false);
-		usleep(500000);//wait a little before killing thread
-	}
-}
 
 RGB_NIR_Depth_Capture::~RGB_NIR_Depth_Capture()
 {
-	workerThread.quit();
-	if(!workerThread.wait(500)) //wait 0.5 sec, if not finished, force termination of thread
+	while(!myImgAcqWorker->isStopped())
 	{
-		qDebug() << "trying to force terminate";
-		workerThread.terminate();
-		workerThread.wait();
+		myImgAcqWorker->setAcquiring(false);
+		qDebug() << "waiting for acquire loop to end";
+		usleep(100000);
 	}
+
+	delete myImgAcqWorker;
+
+	workerThread.quit();
+	while(!workerThread.wait(100))
+	{
+		workerThread.quit();
+		qDebug() << "waiting for thread to quit";
+		usleep(100000);
+	}
+
+
 	destroyAllWindows();
 	delete ui;
 }
@@ -163,7 +165,6 @@ void RGB_NIR_Depth_Capture::on_btn_saveImgs_released()
 void RGB_NIR_Depth_Capture::on_btn_stopAcquisition_released()
 {
 	myImgAcqWorker->setAcquiring(false);
-//	emit stopImgAcquisition();
 }
 
 void RGB_NIR_Depth_Capture::on_checkBox_showAllChannels_clicked()

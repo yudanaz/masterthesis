@@ -3,15 +3,16 @@
 
 #include <QObject>
 #include <QThread>
+#include <QReadWriteLock>
 #include"vimbacammanager.h"
 #include"kinectcammanager.h"
 
-class ImgAcquisitionWorker : public QThread//public QObject
+class ImgAcquisitionWorker : public QObject
 {
 	Q_OBJECT
 //	QThread workerThread;
 public:
-	explicit ImgAcquisitionWorker(QObject *parent = 0);
+	explicit ImgAcquisitionWorker();
 
 	~ImgAcquisitionWorker();
 
@@ -22,6 +23,8 @@ public:
 	 */
 	void setAcquiring(bool acquiring);
 	bool isAcquiring();
+	void stop();
+	bool isStopped();
 
 signals:
 	/*!
@@ -41,6 +44,9 @@ private:
 	VimbaCamManager vimbaCamManager;
 	KinectCamManager kinectCamManager;
 	bool acquiring;
+	bool stopped;
+
+	QReadWriteLock lock;
 
 };
 
