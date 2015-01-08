@@ -6,6 +6,7 @@
 #include<QList>
 #include<QThread>
 #include<QGraphicsScene>
+#include<QMutex>
 #include<opencv2/opencv.hpp>
 #include"imgacquisitionworker.h"
 #include"vimbacammanager.h"
@@ -29,7 +30,7 @@ public:
 	~RGB_NIR_Depth_Capture();
 
 public slots:
-	void imagesReady(RGBDNIR_MAP images);
+	void imagesReady(RGBDNIR_MAP capturedImgs);
 
 signals:
 	void startImgAcquisition();
@@ -44,10 +45,16 @@ private slots:
 	void on_checkBox_showAllChannels_clicked();
 
 private:
+
+	RGBDNIR_MAP allCapturesImgs;
+
 	Ui::RGBNIRD_MainWindow *ui;
-	QThread workerThread;
 	bool triggerSave;
-	ImgAcquisitionWorker *myImgAcqWorker;
+	QThread workerThread1;
+	QThread workerThread2;
+	ImgAcquisitionWorker *myImgAcqWorker1;
+	ImgAcquisitionWorker *myImgAcqWorker2;
+	QMutex threadLock;
 
 	int imgCnt;
 

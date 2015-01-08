@@ -2,6 +2,8 @@
 #include <QTime>
 #include "rgb_nir_depth_capture.h"
 #include "ui_rgbnird_mainwindow.h"
+#include "prosilicaworker.h"
+#include "goldeyeworker.h"
 
 RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	QMainWindow(parent),
@@ -14,15 +16,23 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 {
 	ui->setupUi(this);
 
-	//start the worker thread and connect signals
+	//start the worker threads and connect signals
 	qRegisterMetaType<RGBDNIR_MAP>();
-	myImgAcqWorker = new ImgAcquisitionWorker();
-	myImgAcqWorker->moveToThread(&workerThread);
-	connect(&workerThread, SIGNAL(finished()), myImgAcqWorker, SLOT(deleteLater()));
-	connect(this, SIGNAL(startImgAcquisition()), myImgAcqWorker, SLOT(startAcquisition()));
-	connect(myImgAcqWorker, SIGNAL(imagesReady(RGBDNIR_MAP)), this, SLOT(imagesReady(RGBDNIR_MAP)));
-	connect(&workerThread, SIGNAL(finished()), &workerThread, SLOT(deleteLater()));
-	workerThread.start(QThread::HighPriority);
+	myImgAcqWorker1 = new ProsilicaWorker();
+	myImgAcqWorker1->moveToThread(&workerThread1);
+	connect(&workerThread1, SIGNAL(finished()), myImgAcqWorker1, SLOT(deleteLater()));
+	connect(this, SIGNAL(startImgAcquisition()), myImgAcqWorker1, SLOT(startAcquisition()));
+	connect(myImgAcqWorker1, SIGNAL(imagesReady(RGBDNIR_MAP)), this, SLOT(imagesReady(RGBDNIR_MAP)));
+	connect(&workerThread1, SIGNAL(finished()), &workerThread1, SLOT(deleteLater()));
+	workerThread1.start(QThread::HighPriority);
+
+	myImgAcqWorker2 = new GoldeyeWorker();
+	myImgAcqWorker2->moveToThread(&workerThread2);
+	connect(&workerThread2, SIGNAL(finished()), myImgAcqWorker2, SLOT(deleteLater()));
+	connect(this, SIGNAL(startImgAcquisition()), myImgAcqWorker2, SLOT(startAcquisition()));
+	connect(myImgAcqWorker2, SIGNAL(imagesReady(RGBDNIR_MAP)), this, SLOT(imagesReady(RGBDNIR_MAP)));
+	connect(&workerThread2, SIGNAL(finished()), &workerThread2, SLOT(deleteLater()));
+	workerThread2.start(QThread::HighPriority);
 
 	//get image widget sizes for display (-2 because of widget borders)
 	width_rgb = ui->graphicsView_RGB->width()-2;
@@ -36,24 +46,19 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 
 RGB_NIR_Depth_Capture::~RGB_NIR_Depth_Capture()
 {
-	while(!myImgAcqWorker->isStopped())
+	while(!myImgAcqWorker1->isStopped() || !myImgAcqWorker2->isStopped())
 	{
-		myImgAcqWorker->setAcquiring(false);
+		myImgAcqWorker1->setAcquiring(false);
+		myImgAcqWorker2->setAcquiring(false);
 		qDebug() << "waiting for acquire loop to end";
 		usleep(100000);
 	}
 	destroyAllWindows();
-	delete myImgAcqWorker;
+	delete myImgAcqWorker1;
+	delete myImgAcqWorker2;
 
-	workerThread.quit();
-	while(!workerThread.wait(100))
-	{
-		workerThread.quit();
-		qDebug() << "waiting for thread to quit";
-		usleep(100000);
-	}
-
-
+	workerThread1.quit();
+	workerThread2.quit();
 
 	delete ui;
 }
@@ -61,9 +66,22 @@ RGB_NIR_Depth_Capture::~RGB_NIR_Depth_Capture()
 /***********************************************
 ** PUBLIC SLOTS:
 ************************************************/
-void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP images)
+void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 {
-	QMapIterator<RGBDNIR_captureType, Mat> i(images);
+	threadLock.lock();
+
+	//first join the images from sent by the thread to this slot with all images (by all threads)
+	if(capturedImgs.contains(RGB)){ allCapturesImgs[RGB] = capturedImgs[RGB]; }
+	if(capturedImgs.contains(Kinect_Depth)){ allCapturesImgs[Kinect_Depth] = capturedImgs[Kinect_Depth]; }
+	if(capturedImgs.contains(Kinect_RGB)){ allCapturesImgs[Kinect_RGB] = capturedImgs[Kinect_RGB]; }
+	if(capturedImgs.contains(NIR_Dark)){ allCapturesImgs[NIR_Dark] = capturedImgs[NIR_Dark]; }
+	if(capturedImgs.contains(NIR_935)){ allCapturesImgs[NIR_935] = capturedImgs[NIR_935]; }
+	if(capturedImgs.contains(NIR_1060)){ allCapturesImgs[NIR_1060] = capturedImgs[NIR_1060]; }
+	if(capturedImgs.contains(NIR_1300)){ allCapturesImgs[NIR_1300] = capturedImgs[NIR_1300]; }
+	if(capturedImgs.contains(NIR_1550)){ allCapturesImgs[NIR_1550] = capturedImgs[NIR_1550]; }
+
+
+	QMapIterator<RGBDNIR_captureType, Mat> i(allCapturesImgs);
 	while(i.hasNext())
 	{
 		i.next();
@@ -145,6 +163,8 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP images)
 		triggerSave = false;
 		imgCnt++;
 	}
+
+	threadLock.unlock();
 }
 
 
@@ -153,7 +173,8 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP images)
 ************************************************/
 void RGB_NIR_Depth_Capture::on_btn_startAcquisition_released()
 {
-	myImgAcqWorker->setAcquiring(true);
+	myImgAcqWorker1->setAcquiring(true);
+	myImgAcqWorker2->setAcquiring(true);
 	emit startImgAcquisition();
 }
 
@@ -164,7 +185,8 @@ void RGB_NIR_Depth_Capture::on_btn_saveImgs_released()
 
 void RGB_NIR_Depth_Capture::on_btn_stopAcquisition_released()
 {
-	myImgAcqWorker->setAcquiring(false);
+	myImgAcqWorker1->setAcquiring(false);
+	myImgAcqWorker2->setAcquiring(false);
 }
 
 void RGB_NIR_Depth_Capture::on_checkBox_showAllChannels_clicked()

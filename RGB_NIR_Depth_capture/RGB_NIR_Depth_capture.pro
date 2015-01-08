@@ -41,7 +41,9 @@ SOURCES += \
 	skincamlegacy/io/flashlightcontrol.cpp \
     imgacquisitionworker.cpp \
     myfreenectopencvdevice.cpp \
-    kinectcammanager.cpp
+    kinectcammanager.cpp \
+    prosilicaworker.cpp \
+    goldeyeworker.cpp
 HEADERS += \
 	vimbacammanager.h \
 	rgb_nir_depth_capture.h \
@@ -58,7 +60,9 @@ HEADERS += \
     imgacquisitionworker.h \
     myfreenectopencvdevice.h \
     cammanager.h \
-    kinectcammanager.h
+    kinectcammanager.h \
+    prosilicaworker.h \
+    goldeyeworker.h
 
 DEFINES += AVT_VIMBA
 

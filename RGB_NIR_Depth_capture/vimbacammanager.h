@@ -36,19 +36,21 @@ public:
 	void doWhiteCalib(Mat m, int index);
 };
 
+enum VimbaCamType { Vimba_Goldeye, Vimba_Prosilica };
+
 class VimbaCamManager : public CamManager
 {
 public:
-	VimbaCamManager();
+	VimbaCamManager(VimbaCamType camType);
 	~VimbaCamManager();
 
-    /*!
-     * \brief connects to goldeye and prosilica cameras, if present
-     */
+	/*!
+	 * \brief connects to goldeye and prosilica cameras, if present
+	 */
 	void connectCameras();
 
-    /*!
-     * \brief closes cameras that have been detected and opened before.
+	/*!
+	 * \brief closes cameras that have been detected and opened before.
 	 */
 	void closeCameras();
 
@@ -57,7 +59,7 @@ public:
 	 * \brief Captures the images of all connected cameras and returns them in a list.
 	 * \return list of all images plus image type (RGB, NIR or Depth).
 	 */
-    void getImages(QMap<RGBDNIR_captureType, Mat> &camImgs);
+	void getImages(QMap<RGBDNIR_captureType, Mat> &camImgs);
 
 	/*!
 	 * \brief Returns a descriptive string of the RGBDNIR channel type.
@@ -67,9 +69,11 @@ public:
 	static QString getRGBDNIR_captureTypeString(RGBDNIR_captureType i);
 
 private:
-    void startVimbaAPI();
-    void startFlashlight();
-    void stopFlashlight();
+	VimbaCamType myCamType;
+
+	void startVimbaAPI();
+	void startFlashlight();
+	void stopFlashlight();
 
 	VimbaSystem &vimbaSystem;
 	bool APIrunning;
@@ -81,6 +85,8 @@ private:
 	CameraInterface *goldeye;
 	CameraInterface *prosilica;
 
+	int nrOfWavebands;
+
 	bool connected_prosilica;
 	bool connected_goldeye;
 	bool connected_flashlight;
@@ -88,7 +94,6 @@ private:
 	MyImageSource myImageSource;
 
 	quint16 maxFPS;
-	long FramePause;
 };
 
 #endif // VIMBACAMMANAGER_H

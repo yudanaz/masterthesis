@@ -12,8 +12,7 @@ class ImgAcquisitionWorker : public QObject
 	Q_OBJECT
 //	QThread workerThread;
 public:
-	explicit ImgAcquisitionWorker();
-
+	ImgAcquisitionWorker();
 	~ImgAcquisitionWorker();
 
 	/*!
@@ -38,11 +37,9 @@ public slots:
 	/*!
 	 * \brief initiates the image acquisition
 	 */
-	void startAcquisition();
+	virtual void startAcquisition() = 0;
 
-private:
-	VimbaCamManager vimbaCamManager;
-	KinectCamManager kinectCamManager;
+protected:
 	bool acquiring;
 	bool stopped;
 

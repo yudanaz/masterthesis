@@ -14,24 +14,32 @@ void MyImageSource::doWhiteCalib(Mat m, int index)
 	m = temp.clone();
 }
 
-VimbaCamManager::VimbaCamManager():
+VimbaCamManager::VimbaCamManager(VimbaCamType camType):
 	vimbaSystem(VimbaSystem::GetInstance()),
 	APIrunning(false),
 	connected_prosilica(false),
 	connected_goldeye(false),
 	connected_flashlight(false),
 	flashLightRunning(false),
-	maxFPS(30), FramePause(33333)
+	maxFPS(30), nrOfWavebands(4)
 {
+	myCamType = camType;
+
 	startVimbaAPI();
 	flashlight = new FlashlightControl();
 
-	myImageSource.loadFPNRef();
+	try
+	{
+		myImageSource.loadFPNRef();
+	}
+	catch(ImageSourceException e)
+	{
+		std::cerr << "Image Source Exception caught: " << e.getMessage().toStdString().c_str();
+	}
 }
 
 VimbaCamManager::~VimbaCamManager()
 {
-	//closeCameras();
 	vimbaSystem.Shutdown();
 }
 
@@ -43,7 +51,7 @@ void VimbaCamManager::startVimbaAPI()
 void VimbaCamManager::connectCameras()
 {
 	//connect to prosilica
-	if(!connected_prosilica)
+	if(myCamType == Vimba_Prosilica && !connected_prosilica)
 	{
 		prosilica = new ProsilicaVimba();
 		try
@@ -65,7 +73,7 @@ void VimbaCamManager::connectCameras()
 	}
 
 	//connect to goldeye
-	if(!connected_goldeye)
+	if(myCamType == Vimba_Goldeye && !connected_goldeye)
 	{
 		goldeye = new GoldeyeVimba();
 		try
@@ -100,19 +108,18 @@ void VimbaCamManager::connectCameras()
 			flashlight->sendCommand(QString("P%1;").arg(intVal), true); //integration time
 			goldeye->setExposureTime(integrationTime);
 
-			maxFPS = 25;//goldeye->getMaxFPS();
-			FramePause = 1000000 / maxFPS; //1Mio us / fps
+			maxFPS = goldeye->getMaxFPS();
 			flashlight->sendCommand(QString("F%1;").arg(maxFPS), true); //frequency
-			qDebug() << "fps for Goldeye: " << maxFPS << "overall fps: " << (maxFPS/4);
+			qDebug() << "fps for Goldeye: " << maxFPS << "overall fps: " << (nrOfWavebands > 0 ? maxFPS / (nrOfWavebands +1) : maxFPS);
 
 			quint8 value = 0;
 			//calculate waveband value: binary representation, 1 = enabled, from left
 			QList<bool> bands;// = myConfig.wavebands.config.values();
 			bands << true << true << true << true;
-			for (quint8 i = 0; i < 4 /*myConfig.wavebands.totalNumber*/; i++)
+			for (quint8 i = 0; i < nrOfWavebands; i++)
 			{
 				if(bands.at(i))
-					value |= 1<<(4 /*myConfig.wavebands.totalNumber*/ - (i+1));
+					value |= 1<<(nrOfWavebands - (i+1));
 			}
 			flashlight->sendCommand(QString("W%1;").arg(value), true);
 			/*** endof hardcoded section ************************************************************************/
@@ -154,7 +161,7 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 	quint8 i;
 	quint8 errorCnt = 0;
 
-	if(connected_prosilica)
+	if(myCamType == Vimba_Prosilica && connected_prosilica)
 	{
 		try
 		{
@@ -170,29 +177,24 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 
 	}
 
-	if(connected_goldeye & connected_flashlight)
+	if(myCamType == Vimba_Goldeye && connected_goldeye & connected_flashlight)
 	{
 		//get lock on flashlight usage:
-		QMutexLocker locker(&flashlightLock);
+//		QMutexLocker locker(&flashlightLock);
 
 		try
 		{
-			//trigger flashlight
-//			flashlight->triggerSeries();
-
 			bool darkImageSaved = false;
 
 			//get waveband images from camera (plus dark)
-			for(i = 0; i < 5; i++)
+			for(i = 0; i < nrOfWavebands + 1; i++)
 			{
 				//get current channel - this waits for the flashlight!
-//				flashlight->triggerBand(i);
 				quint8 key = flashlight->getFrameKey();
-
-//				qDebug() << "index: " << i << "frameKey: " << key;
+				//qDebug() << "index: " << i << "frameKey: " << key;
 
 				//acknowledge flashlight when last waveband is reached
-				if(i == 4)
+				if(i == nrOfWavebands)
 				{
 					flashlight->sendAck();
 				}
@@ -208,7 +210,6 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 
 				//if waveband, subtract dark image to get "pure" waveband image
 				//and do white calibration
-
 				if(key == 0){ darkImageSaved = true; }
 				else
 				{
