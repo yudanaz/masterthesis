@@ -22,7 +22,7 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	connect(this, SIGNAL(startImgAcquisition()), myImgAcqWorker, SLOT(startAcquisition()));
 	connect(myImgAcqWorker, SIGNAL(imagesReady(RGBDNIR_MAP)), this, SLOT(imagesReady(RGBDNIR_MAP)));
 	connect(&workerThread, SIGNAL(finished()), &workerThread, SLOT(deleteLater()));
-	workerThread.start();
+	workerThread.start(QThread::HighPriority);
 
 	//get image widget sizes for display (-2 because of widget borders)
 	width_rgb = ui->graphicsView_RGB->width()-2;
@@ -42,7 +42,7 @@ RGB_NIR_Depth_Capture::~RGB_NIR_Depth_Capture()
 		qDebug() << "waiting for acquire loop to end";
 		usleep(100000);
 	}
-
+	destroyAllWindows();
 	delete myImgAcqWorker;
 
 	workerThread.quit();
@@ -54,7 +54,7 @@ RGB_NIR_Depth_Capture::~RGB_NIR_Depth_Capture()
 	}
 
 
-	destroyAllWindows();
+
 	delete ui;
 }
 

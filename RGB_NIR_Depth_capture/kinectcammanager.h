@@ -8,15 +8,16 @@
 class KinectCamManager : public CamManager
 {
 public:
-    KinectCamManager();
+	KinectCamManager();
 
-    void connectCameras();
-    void closeCameras();
-    void getImages(QMap<RGBDNIR_captureType, Mat> &camImgs);
+	void connectCameras();
+	void closeCameras();
+	void getImages(QMap<RGBDNIR_captureType, Mat> &camImgs);
 
 private:
-    Freenect::Freenect freenect;
-    MyFreenectOpenCVDevice& freenectDevice;
+	Freenect::Freenect freenect;
+	MyFreenectOpenCVDevice *freenectDevice;
+	bool connected;
 };
 
 #endif // KINECTCAMMANAGER_H

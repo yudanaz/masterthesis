@@ -42,6 +42,28 @@ void VimbaCamManager::startVimbaAPI()
 
 void VimbaCamManager::connectCameras()
 {
+	//connect to prosilica
+	if(!connected_prosilica)
+	{
+		prosilica = new ProsilicaVimba();
+		try
+		{
+			prosilica->connect();
+			prosilica->configure();
+			/*The following is a workaround neccessary to ensure that Prosilica delivers correct images
+			 * on first power on - Sincerily, no idea why this does the trick...*/
+			prosilica->disconnect();
+			prosilica->connect();
+			prosilica->configure();
+			/*endof Workaround*/
+			connected_prosilica = prosilica->isConnected() && prosilica->isConfigured();
+		}
+		catch(CameraException e)
+		{
+			QMessageBox::information(NULL, "Prosilica: Camera Exception", e.getMessage(), QMessageBox::Ok);
+		}
+	}
+
 	//connect to goldeye
 	if(!connected_goldeye)
 	{
@@ -100,22 +122,6 @@ void VimbaCamManager::connectCameras()
 		catch(FlashlightException e)
 		{
 			QMessageBox::information(NULL, "Goldeye: Flashlight Exception", e.getMessage(), QMessageBox::Ok);
-		}
-	}
-
-	//connect to prosilica
-	if(!connected_prosilica)
-	{
-		prosilica = new ProsilicaVimba();
-		try
-		{
-			prosilica->connect();
-			prosilica->configure();
-			connected_prosilica = prosilica->isConnected() && prosilica->isConfigured();
-		}
-		catch(CameraException e)
-		{
-			QMessageBox::information(NULL, "Prosilica: Camera Exception", e.getMessage(), QMessageBox::Ok);
 		}
 	}
 }

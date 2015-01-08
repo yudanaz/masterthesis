@@ -202,7 +202,7 @@ void ProsilicaVimba::configure(double exposureTime, quint8 bufferSize)
 	Software trigger doesn't seem to work
 	*/
 	res = pProsilica->GetFeatureByName("TriggerSource", pFeature);
-	if(res == VmbErrorSuccess){ res = pFeature->SetValue(2); } //4 = software trigger
+	if(res == VmbErrorSuccess){ res = pFeature->SetValue(2); } //4 = software trigger, but 2 also works...
 	if(res != VmbErrorSuccess)
 	{
 		throw CameraException(QString("Can't set TriggerSource! Code: %1")
