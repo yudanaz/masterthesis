@@ -7,6 +7,8 @@
 #include<QThread>
 #include<QGraphicsScene>
 #include<QMutex>
+#include<QTime>
+#include<QSound>
 #include<opencv2/opencv.hpp>
 #include"imgacquisitionworker.h"
 #include"vimbacammanager.h"
@@ -44,7 +46,21 @@ private slots:
 
 	void on_checkBox_showAllChannels_clicked();
 
+	void on_pushButton_saveSeries_released();
+
 private:
+
+	void captureSeries();
+	bool capturingSeries;
+	bool countingDown;
+	QTime myTimer;
+	QTime myBeepTimer;
+	int countdownTime;
+	int seriesCnt;
+	int seriesMax;
+	int seriesInterval;
+	QSound sound_click;
+	QSound sound_beep;
 
 	RGBDNIR_MAP allCapturesImgs;
 

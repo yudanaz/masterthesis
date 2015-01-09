@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui multimedia
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -39,12 +39,12 @@ SOURCES += \
 	frameobserver.cpp \
 	prosilicavimba.cpp \
 	skincamlegacy/io/flashlightcontrol.cpp \
-    imgacquisitionworker.cpp \
-    myfreenectopencvdevice.cpp \
-    kinectcammanager.cpp \
-    prosilicaworker.cpp \
-    goldeyeworker.cpp \
-    kinectworker.cpp
+	imgacquisitionworker.cpp \
+	myfreenectopencvdevice.cpp \
+	kinectcammanager.cpp \
+	prosilicaworker.cpp \
+	goldeyeworker.cpp \
+	kinectworker.cpp
 HEADERS += \
 	vimbacammanager.h \
 	rgb_nir_depth_capture.h \
@@ -58,13 +58,13 @@ HEADERS += \
 	frameobserver.h \
 	prosilicavimba.h \
 	skincamlegacy/io/flashlightcontrol.h \
-    imgacquisitionworker.h \
-    myfreenectopencvdevice.h \
-    cammanager.h \
-    kinectcammanager.h \
-    prosilicaworker.h \
-    goldeyeworker.h \
-    kinectworker.h
+	imgacquisitionworker.h \
+	myfreenectopencvdevice.h \
+	cammanager.h \
+	kinectcammanager.h \
+	prosilicaworker.h \
+	goldeyeworker.h \
+	kinectworker.h
 
 DEFINES += AVT_VIMBA
 

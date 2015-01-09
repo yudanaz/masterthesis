@@ -13,7 +13,9 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	imgCnt(0),
 	ptr_RGBScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene)),
 	ptr_NIRScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene)),
-	ptr_depthScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene))
+	ptr_depthScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene)),
+	capturingSeries(false), countingDown(false), countdownTime(0), seriesCnt(0), seriesMax(0), seriesInterval(0),
+	sound_beep("beep.wav"), sound_click("cameraClick.wav")
 {
 	ui->setupUi(this);
 
@@ -156,9 +158,14 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 		}
 	}
 
+	//if set, capture a series of images.
+	if(capturingSeries){ captureSeries(); }
+
 	//save current image list if save button is clicked
 	if(triggerSave)
 	{
+		sound_click.play();
+
 		QDir dir;
 		if(!dir.exists(QDir::currentPath()+"/out")){ dir.mkdir(QDir::currentPath()+"/out"); }
 		i.toFront();
@@ -177,6 +184,45 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 	}
 
 	threadLock.unlock();
+}
+
+
+
+void RGB_NIR_Depth_Capture::captureSeries()
+{
+	//beep every second
+	if(countingDown && myBeepTimer.elapsed() > 1000)
+	{
+		sound_beep.play();
+		myBeepTimer.restart();
+	}
+
+	//check if coundown is over
+	if(countingDown &&  myTimer.elapsed() > countdownTime)
+	{
+		countingDown = false;
+		triggerSave = true; //first image
+		seriesCnt++;
+		myTimer.restart();
+	}
+
+	//if all pictures have been taken, stop
+	if(seriesCnt >= seriesMax)
+	{
+		capturingSeries = false;
+		return;
+	}
+
+	//after countdown capture n images every x milliseconds
+	if(!countingDown)
+	{
+		if(myTimer.elapsed() > seriesInterval)
+		{
+			triggerSave = true;
+			seriesCnt++;
+			myTimer.restart();
+		}
+	}
 }
 
 
@@ -210,4 +256,17 @@ void RGB_NIR_Depth_Capture::on_checkBox_showAllChannels_clicked()
 	{
 		destroyAllWindows();
 	}
+}
+
+void RGB_NIR_Depth_Capture::on_pushButton_saveSeries_released()
+{
+	capturingSeries = true;
+	countingDown = true;
+	countdownTime = ui->lineEdit_countdown->text().toInt() * 1000;
+	seriesCnt = 0;
+	seriesMax = ui->lineEdit_amount->text().toInt();
+	seriesInterval = ui->lineEdit_interval->text().toDouble() * 1000.0;
+	myTimer.start();
+	myBeepTimer.start();
+	sound_beep.play();
 }
