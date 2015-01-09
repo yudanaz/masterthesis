@@ -43,7 +43,8 @@ SOURCES += \
     myfreenectopencvdevice.cpp \
     kinectcammanager.cpp \
     prosilicaworker.cpp \
-    goldeyeworker.cpp
+    goldeyeworker.cpp \
+    kinectworker.cpp
 HEADERS += \
 	vimbacammanager.h \
 	rgb_nir_depth_capture.h \
@@ -62,7 +63,8 @@ HEADERS += \
     cammanager.h \
     kinectcammanager.h \
     prosilicaworker.h \
-    goldeyeworker.h
+    goldeyeworker.h \
+    kinectworker.h
 
 DEFINES += AVT_VIMBA
 

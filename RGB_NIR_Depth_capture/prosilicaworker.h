@@ -13,7 +13,6 @@ public slots:
 
 private:
 	VimbaCamManager vimbaCamManager;
-	KinectCamManager kinectCamManager;
 };
 
 #endif // PROSILICAWORKER_H

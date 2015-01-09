@@ -124,7 +124,7 @@ void VimbaCamManager::connectCameras()
 			flashlight->sendCommand(QString("W%1;").arg(value), true);
 			/*** endof hardcoded section ************************************************************************/
 
-			startFlashlight();
+//			startFlashlight();
 		}
 		catch(FlashlightException e)
 		{
@@ -189,6 +189,8 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 			//get waveband images from camera (plus dark)
 			for(i = 0; i < nrOfWavebands + 1; i++)
 			{
+
+				flashlight->triggerBand(i);
 				//get current channel - this waits for the flashlight!
 				quint8 key = flashlight->getFrameKey();
 				//qDebug() << "index: " << i << "frameKey: " << key;
@@ -279,9 +281,15 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 
 void VimbaCamManager::closeCameras()
 {
-	if(goldeye->isConnected()){ goldeye->disconnect(); }
-	if(flashLightRunning){ stopFlashlight(); }
-	if(prosilica->isConnected()){ prosilica->disconnect(); }
+	if(myCamType == Vimba_Goldeye)
+	{
+		if(goldeye->isConnected()){ goldeye->disconnect(); }
+		if(flashLightRunning){ stopFlashlight(); }
+	}
+	else
+	{
+		if(prosilica->isConnected()){ prosilica->disconnect(); }
+	}
 }
 
 QString VimbaCamManager::getRGBDNIR_captureTypeString(RGBDNIR_captureType i)
@@ -298,4 +306,15 @@ QString VimbaCamManager::getRGBDNIR_captureTypeString(RGBDNIR_captureType i)
 		default:
 			break;
 	}
+}
+
+
+bool VimbaCamManager::goldeyeIsConnected()
+{
+	return connected_goldeye && connected_flashlight;
+}
+
+bool VimbaCamManager::prosilicaIsConnected()
+{
+	return connected_prosilica;
 }

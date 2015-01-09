@@ -4,6 +4,7 @@
 #include "ui_rgbnird_mainwindow.h"
 #include "prosilicaworker.h"
 #include "goldeyeworker.h"
+#include "kinectworker.h"
 
 RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	QMainWindow(parent),
@@ -16,8 +17,10 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 {
 	ui->setupUi(this);
 
-	//start the worker threads and connect signals
+	//start the worker threads and connect signals:
 	qRegisterMetaType<RGBDNIR_MAP>();
+
+	//Prosilica worker
 	myImgAcqWorker1 = new ProsilicaWorker();
 	myImgAcqWorker1->moveToThread(&workerThread1);
 	connect(&workerThread1, SIGNAL(finished()), myImgAcqWorker1, SLOT(deleteLater()));
@@ -26,6 +29,7 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	connect(&workerThread1, SIGNAL(finished()), &workerThread1, SLOT(deleteLater()));
 	workerThread1.start(QThread::HighPriority);
 
+	//Goldeye worker
 	myImgAcqWorker2 = new GoldeyeWorker();
 	myImgAcqWorker2->moveToThread(&workerThread2);
 	connect(&workerThread2, SIGNAL(finished()), myImgAcqWorker2, SLOT(deleteLater()));
@@ -33,6 +37,15 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	connect(myImgAcqWorker2, SIGNAL(imagesReady(RGBDNIR_MAP)), this, SLOT(imagesReady(RGBDNIR_MAP)));
 	connect(&workerThread2, SIGNAL(finished()), &workerThread2, SLOT(deleteLater()));
 	workerThread2.start(QThread::HighPriority);
+
+	//Kinect worker
+	myImgAcqWorker3 = new KinectWorker();
+	myImgAcqWorker3->moveToThread(&workerThread3);
+	connect(&workerThread3, SIGNAL(finished()), myImgAcqWorker3, SLOT(deleteLater()));
+	connect(this, SIGNAL(startImgAcquisition()), myImgAcqWorker3, SLOT(startAcquisition()));
+	connect(myImgAcqWorker3, SIGNAL(imagesReady(RGBDNIR_MAP)), this, SLOT(imagesReady(RGBDNIR_MAP)));
+	connect(&workerThread3, SIGNAL(finished()), &workerThread3, SLOT(deleteLater()));
+	workerThread3.start(QThread::HighPriority);
 
 	//get image widget sizes for display (-2 because of widget borders)
 	width_rgb = ui->graphicsView_RGB->width()-2;
@@ -48,12 +61,16 @@ RGB_NIR_Depth_Capture::~RGB_NIR_Depth_Capture()
 {
 	if(!myImgAcqWorker1->isStopped()){ myImgAcqWorker1->setAcquiring(false); }
 	if(!myImgAcqWorker2->isStopped()){ myImgAcqWorker2->setAcquiring(false); }
+	if(!myImgAcqWorker3->isStopped()){ myImgAcqWorker3->setAcquiring(false); }
 
 	workerThread1.quit();
 	workerThread1.wait();
 
-	workerThread1.quit();
+	workerThread2.quit();
 	workerThread2.wait();
+
+	workerThread3.quit();
+	workerThread3.wait();
 
 	delete ui;
 }
@@ -170,6 +187,7 @@ void RGB_NIR_Depth_Capture::on_btn_startAcquisition_released()
 {
 	myImgAcqWorker1->setAcquiring(true);
 	myImgAcqWorker2->setAcquiring(true);
+	myImgAcqWorker3->setAcquiring(true);
 	emit startImgAcquisition();
 }
 
@@ -182,6 +200,7 @@ void RGB_NIR_Depth_Capture::on_btn_stopAcquisition_released()
 {
 	myImgAcqWorker1->setAcquiring(false);
 	myImgAcqWorker2->setAcquiring(false);
+	myImgAcqWorker3->setAcquiring(false);
 }
 
 void RGB_NIR_Depth_Capture::on_checkBox_showAllChannels_clicked()

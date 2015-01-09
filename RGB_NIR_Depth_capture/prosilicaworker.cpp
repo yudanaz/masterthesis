@@ -5,35 +5,33 @@ ProsilicaWorker::ProsilicaWorker() :
 	vimbaCamManager(Vimba_Prosilica)
 {
 	vimbaCamManager.connectCameras();
-	kinectCamManager.connectCameras();
 }
 
 ProsilicaWorker::~ProsilicaWorker()
 {
 	vimbaCamManager.closeCameras();
-	kinectCamManager.closeCameras();
 }
 
 void ProsilicaWorker::startAcquisition()
 {
-	RGBDNIR_MAP images;
-
-	lock.lockForRead();
-
-	stopped = false;
-	do
+	if(vimbaCamManager.prosilicaIsConnected())
 	{
-		//get RGB and NIR images from vimba cameras
-		vimbaCamManager.getImages(images);
+		RGBDNIR_MAP images;
 
-		//get RGB image and depth map from Kinect
-		kinectCamManager.getImages(images);
+		lock.lockForRead();
 
-		//forward images to main thread
-		emit imagesReady(images);
+		stopped = false;
+		do
+		{
+			//get RGB and NIR images from vimba cameras
+			vimbaCamManager.getImages(images);
+
+			//forward images to main thread
+			emit imagesReady(images);
+		}
+		while(acquiring);
+		stopped = true;
+
+		lock.unlock();
 	}
-	while(acquiring);
-	stopped = true;
-
-	lock.unlock();
 }

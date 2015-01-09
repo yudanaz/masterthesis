@@ -52,8 +52,10 @@ private:
 	bool triggerSave;
 	QThread workerThread1;
 	QThread workerThread2;
+	QThread workerThread3;
 	ImgAcquisitionWorker *myImgAcqWorker1;
 	ImgAcquisitionWorker *myImgAcqWorker2;
+	ImgAcquisitionWorker *myImgAcqWorker3;
 	QMutex threadLock;
 
 	int imgCnt;

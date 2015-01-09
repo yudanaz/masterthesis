@@ -14,6 +14,8 @@ public:
 	void closeCameras();
 	void getImages(QMap<RGBDNIR_captureType, Mat> &camImgs);
 
+	bool isConnected();
+
 private:
 	Freenect::Freenect freenect;
 	MyFreenectOpenCVDevice *freenectDevice;

@@ -57,19 +57,22 @@ void KinectCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 
 	try
 	{
-		bool success = freenectDevice->getDepth(depthMat);
-		if(success)
+		//try getting depth and rgb images until successful
+
+		bool success =  freenectDevice->getDepth(depthMat);
+		while(!success)
 		{
-			depthMat.convertTo(depthMap8bit, CV_8UC1, 255.0/2048.0);
-			camImgs[Kinect_Depth] = depthMap8bit;
+			success = freenectDevice->getDepth(depthMat);
 		}
+		depthMat.convertTo(depthMap8bit, CV_8UC1, 255.0/2048.0);
+		camImgs[Kinect_Depth] = depthMap8bit;
 
 		success = freenectDevice->getVideo(rgbMat);
-		if(success)
+		while(!success)
 		{
-			//cvReleaseImage( camImgs[Kinect_RGB].data ); //free memory
-			camImgs[Kinect_RGB] = rgbMat;
+			success = freenectDevice->getVideo(rgbMat);
 		}
+		camImgs[Kinect_RGB] = rgbMat;
 	}
 	catch(std::runtime_error e)
 	{
@@ -78,4 +81,9 @@ void KinectCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 
 	//sleep 5 milliseconds in order not to overpower kinect
 	usleep(5000);//33333);
+}
+
+bool KinectCamManager::isConnected()
+{
+	return connected;
 }

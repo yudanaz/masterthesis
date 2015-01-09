@@ -68,6 +68,9 @@ public:
 	 */
 	static QString getRGBDNIR_captureTypeString(RGBDNIR_captureType i);
 
+	bool goldeyeIsConnected();
+	bool prosilicaIsConnected();
+
 private:
 	VimbaCamType myCamType;
 
