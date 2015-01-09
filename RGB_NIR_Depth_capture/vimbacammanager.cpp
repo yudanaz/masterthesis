@@ -177,7 +177,7 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 
 	}
 
-	if(myCamType == Vimba_Goldeye && connected_goldeye & connected_flashlight)
+	if(myCamType == Vimba_Goldeye && connected_goldeye && connected_flashlight)
 	{
 		//get lock on flashlight usage:
 //		QMutexLocker locker(&flashlightLock);

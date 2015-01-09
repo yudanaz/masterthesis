@@ -46,19 +46,14 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 
 RGB_NIR_Depth_Capture::~RGB_NIR_Depth_Capture()
 {
-	while(!myImgAcqWorker1->isStopped() || !myImgAcqWorker2->isStopped())
-	{
-		myImgAcqWorker1->setAcquiring(false);
-		myImgAcqWorker2->setAcquiring(false);
-		qDebug() << "waiting for acquire loop to end";
-		usleep(100000);
-	}
-	destroyAllWindows();
-	delete myImgAcqWorker1;
-	delete myImgAcqWorker2;
+	if(!myImgAcqWorker1->isStopped()){ myImgAcqWorker1->setAcquiring(false); }
+	if(!myImgAcqWorker2->isStopped()){ myImgAcqWorker2->setAcquiring(false); }
 
 	workerThread1.quit();
-	workerThread2.quit();
+	workerThread1.wait();
+
+	workerThread1.quit();
+	workerThread2.wait();
 
 	delete ui;
 }
