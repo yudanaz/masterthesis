@@ -1032,73 +1032,77 @@ void MainWindow::on_checkBox_useSGBM_clicked()
  *****************************************************************************************/
 void MainWindow::on_pushButton_test_released()
 {
-    //read downloaded ImageNet folders
-    QStringList allDirs, allFiles;
-    QDir dir(QFileDialog::getExistingDirectory(this, "Get Dir", lastDir));
-    QStringList dList = dir.entryList();
-    foreach(QString s, dList)
-    {
-        if(s.length() < 3) continue;
-        allDirs.append(dir.absoluteFilePath(s));
-    }
-    foreach(QString s, allDirs)
-    {
-        QDir dir2(s);
-        QStringList fList = dir2.entryList();
-        foreach(QString ss, fList)
-        {
-            QStringList l = dir2.absoluteFilePath(ss).split("/");
-            QString nm = l.at(l.length()-2) + "/" + l.last();
-            allFiles.append(nm);
-        }
-    }
+//    //read downloaded ImageNet folders
+//    QStringList allDirs, allFiles;
+//    QDir dir(QFileDialog::getExistingDirectory(this, "Get Dir", lastDir));
+//    QStringList dList = dir.entryList();
+//    foreach(QString s, dList)
+//    {
+//        if(s.length() < 3) continue;
+//        allDirs.append(dir.absoluteFilePath(s));
+//    }
+//    foreach(QString s, allDirs)
+//    {
+//        QDir dir2(s);
+//        QStringList fList = dir2.entryList();
+//        foreach(QString ss, fList)
+//        {
+//            QStringList l = dir2.absoluteFilePath(ss).split("/");
+//            QString nm = l.at(l.length()-2) + "/" + l.last();
+//            allFiles.append(nm);
+//        }
+//    }
 
-    QString origTxt = QFileDialog::getOpenFileName(this, "Select file", lastDir);
-    QFile f1(origTxt);
-    f1.open(QIODevice::ReadOnly);
-    QFile f2(origTxt.remove(".txt").append("2.txt"));
-    f2.open(QIODevice::WriteOnly);
-    QTextStream txtStreamIn(&f1);
-    QTextStream txtStreamOUT(&f2);
-    bool goOn = true;
-    int i = 0;
-    while(!txtStreamIn.atEnd() && goOn)
-    {
-        QString s = txtStreamIn.readLine();
-        QStringList temp = s.split(" ");
-
-
-        //search for file name and if found, write to out file with class number
-        int i = 0;
-        bool found = false;
-        foreach(QString file, allFiles)
-        {
-            if(file == temp.first())
-            {
-                txtStreamOUT << s << "\n";
-//                if(++i > 100) goOn = false;
-                found = true;
-                continue;
-            }
-            i++;
-        }
-
-//        if(found){ allFiles.removeAt(i); }
-    }
-    f1.close(); f2.close();
+//    QString origTxt = QFileDialog::getOpenFileName(this, "Select file", lastDir);
+//    QFile f1(origTxt);
+//    f1.open(QIODevice::ReadOnly);
+//    QFile f2(origTxt.remove(".txt").append("2.txt"));
+//    f2.open(QIODevice::WriteOnly);
+//    QTextStream txtStreamIn(&f1);
+//    QTextStream txtStreamOUT(&f2);
+//    bool goOn = true;
+//    int i = 0;
+//    while(!txtStreamIn.atEnd() && goOn)
+//    {
+//        QString s = txtStreamIn.readLine();
+//        QStringList temp = s.split(" ");
 
 
-//    //test standardization
-//    qDebug() << "Testing matrix standardization";
-//    uchar arr[16] = { 25,  50, 100, 150,
-//                      50, 100, 150, 200,
-//                     100, 150, 200, 150,
-//                     150, 200, 150, 100};
-//    Mat a(4, 4, CV_8UC1, &arr);
-//    Mat aStand = Helper::Standardize(a);
+//        //search for file name and if found, write to out file with class number
+//        int i = 0;
+//        bool found = false;
+//        foreach(QString file, allFiles)
+//        {
+//            if(file == temp.first())
+//            {
+//                txtStreamOUT << s << "\n";
+////                if(++i > 100) goOn = false;
+//                found = true;
+//                continue;
+//            }
+//            i++;
+//        }
 
-//    Helper::Print1ChMatrixToConsole(a);
-//    Helper::Print1ChMatrixToConsole(aStand);
+////        if(found){ allFiles.removeAt(i); }
+//    }
+//    f1.close(); f2.close();
+
+
+    //test local normalization
+    QString fileName = QFileDialog::getOpenFileName(this, "Select File", lastDir, IMGTYPES);
+    if(fileName == ""){ return; }
+    lastDir = QFileInfo(fileName).path();
+
+    Mat a = imread(fileName.toStdString().c_str());
+    Mat aGray;
+    cvtColor(a, aGray, CV_BGR2GRAY);
+
+    Mat aNorm = Helper::NormalizeLocally(aGray, 15);
+
+    //normalize to [0,1] in order to display
+    cv::normalize(aNorm, aNorm, 0, 1, NORM_MINMAX);
+    imshow("original image", a);
+    imshow("normalized image", aNorm);
 }
 
 

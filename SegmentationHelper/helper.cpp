@@ -4,18 +4,21 @@ Helper::Helper()
 {
 }
 
-Mat Helper::Standardize(Mat image1Channel)
+
+Mat Helper::NormalizeLocally(Mat image1Channel, int neighborhoodSize)
 {
-    Mat out, mean, stdDev;
-    meanStdDev(image1Channel, mean, stdDev);
+    Mat floatImg, mean, stdDev, out;
 
-    //convert to floating point
-    image1Channel.convertTo(out, CV_32F);
+    //convert to float image
+    image1Channel.convertTo(floatImg, CV_32F, 0.00390625); // 1/256 = 0.00390625
 
-    //make zero mean
-    out = out - mean;
+    //estimate image mean with gaussian blur
+    GaussianBlur(floatImg, mean, Size(neighborhoodSize, neighborhoodSize), 0);
+    out = floatImg - mean;
 
-    //make unit variance
+    //estimate standard deviation with gaussian blur by doing sqrt( gauss_blur(img²) )
+    GaussianBlur(out.mul(out), mean, Size(neighborhoodSize, neighborhoodSize), 0); //re-use mean matrix
+    cv::pow(mean, 0.5, stdDev);
     out = out / stdDev;
 
     return out;
