@@ -33,7 +33,8 @@ SOURCES += main.cpp\
 	segmentfelsenzwalb/segmentation.cpp \
     cameracalibration.cpp \
     inout.cpp \
-    helper.cpp
+    helper.cpp \
+    imagepreprocessor.cpp
 
 HEADERS  += mainwindow.h \
 	seeds/seeds2.h \
@@ -52,7 +53,8 @@ HEADERS  += mainwindow.h \
 	segmentfelsenzwalb/segmentation.h \
     cameracalibration.h \
     inout.h \
-    helper.h
+    helper.h \
+    imagepreprocessor.h
 
 FORMS    += mainwindow.ui
 

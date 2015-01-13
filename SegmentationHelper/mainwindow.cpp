@@ -5,6 +5,7 @@
 #include "slic/slic.h"
 #include "segmentfelsenzwalb/segmentation.h"
 #include "helper.h"
+#include "imagepreprocessor.h"
 
 #define WHITE Scalar(255, 255, 255)
 #define PINK Scalar(255, 51, 153)
@@ -20,8 +21,8 @@ MainWindow::MainWindow(QWidget *parent) :
 {
 	ui->setupUi(this);
 
-	//read color map from app dir
-	QFile colorfin(QDir::currentPath() + "/VOCcolormap.txt");
+    //read color map from app dir
+    QFile colorfin(QDir::currentPath() + "/VOCcolormap.txt");
 	colorfin.open(QFile::ReadOnly | QFile::Text);
 	QTextStream colorIn(&colorfin);
 	int count = 0;
@@ -190,13 +191,13 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 			xml.readNext();
 		}
 
-		//save images to disk
+        //save images to disk
 		imwrite( colorFileName.toStdString().c_str(), colorImg, imageSettings);
 		imwrite( grayFileName.toStdString().c_str(), grayImg, imageSettings);
 
 		//show progress in progress bar
 		progress.setValue(++progressCnt);
-		if(progress.wasCanceled()) { return; }
+        if(progress.wasCanceled()) { return; }
 	}
 	progress.setValue(fileNames.length());
 }
@@ -1088,21 +1089,66 @@ void MainWindow::on_pushButton_test_released()
 //    f1.close(); f2.close();
 
 
-    //test local normalization
     QString fileName = QFileDialog::getOpenFileName(this, "Select File", lastDir, IMGTYPES);
     if(fileName == ""){ return; }
     lastDir = QFileInfo(fileName).path();
-
+    ImagePreprocessor preproc;
     Mat a = imread(fileName.toStdString().c_str());
-    Mat aGray;
-    cvtColor(a, aGray, CV_BGR2GRAY);
 
-    Mat aNorm = Helper::NormalizeLocally(aGray, 15);
+    //////////////////////////////////////////////////////////////
+    // TEST MAKE IMAGE PATCHES
+    //////////////////////////////////////////////////////////////
+    Mat labelImg; //TODO!!
+    QStringList labels; //TODO!!
+    QString outDir = lastDir+"/test_patches";
+    QDir dir;
+    dir.mkdir(outDir);
+    preproc.makeImagePatches(a, labelImg, labels, 15, 46, "test", outDir);
 
-    //normalize to [0,1] in order to display
-    cv::normalize(aNorm, aNorm, 0, 1, NORM_MINMAX);
-    imshow("original image", a);
-    imshow("normalized image", aNorm);
+    //////////////////////////////////////////////////////////////
+    // endof TEST MAKE IMAGE PATCHES
+    //////////////////////////////////////////////////////////////
+
+
+//    //////////////////////////////////////////////////////////////
+//    // TEST LOCAL NORMALIZATION
+//    //////////////////////////////////////////////////////////////
+//    //split image in its channels
+//    vector<Mat> channels(a.channels());
+//    cv::split(a, channels);
+
+//    //normalize channels separately
+//    vector<Mat> channelsNorm;
+//    foreach(Mat img, channels)
+//    {
+//        Mat aNorm = preproc.NormalizeLocally(img, 15);
+//        channelsNorm.push_back(aNorm);
+//    }
+
+//    //merge channels and do normalization on multichannel image for comparison
+//    Mat aNorm, aNorm2;
+//    cv::merge(channelsNorm, aNorm);
+//    aNorm2 = preproc.NormalizeLocally(a, 15);
+
+
+//    //normalize to [0,1] in order to display
+//    cv::normalize(aNorm, aNorm, 0, 1, NORM_MINMAX);
+//    cv::normalize(aNorm2, aNorm2, 0, 1, NORM_MINMAX);
+
+//    imshow("original image", a);
+//    imshow("normalized image (separate channels)", aNorm);
+//    imshow("normalized image (multichannel)", aNorm2);
+
+//    //save to disk in order to compare images in GIMP to see if separate channel normalization
+//    //and multichannel normalization do exactly the same thing.
+//    Mat aNorm_8bit, aNorm2_8bit;
+//    aNorm.convertTo(aNorm_8bit, CV_8U, 255);
+//    aNorm2.convertTo(aNorm2_8bit, CV_8U, 255);
+//    imwrite("test1.png", aNorm_8bit);
+//    imwrite("test2.png", aNorm2_8bit);
+//    //////////////////////////////////////////////////////////////
+//    // endof TEST LOCAL NORMALIZATION
+//    //////////////////////////////////////////////////////////////
 }
 
 

@@ -4,27 +4,6 @@ Helper::Helper()
 {
 }
 
-
-Mat Helper::NormalizeLocally(Mat image1Channel, int neighborhoodSize)
-{
-    Mat floatImg, mean, stdDev, out;
-
-    //convert to float image
-    image1Channel.convertTo(floatImg, CV_32F, 0.00390625); // 1/256 = 0.00390625
-
-    //estimate image mean with gaussian blur
-    GaussianBlur(floatImg, mean, Size(neighborhoodSize, neighborhoodSize), 0);
-    out = floatImg - mean;
-
-    //estimate standard deviation with gaussian blur by doing sqrt( gauss_blur(img²) )
-    GaussianBlur(out.mul(out), mean, Size(neighborhoodSize, neighborhoodSize), 0); //re-use mean matrix
-    cv::pow(mean, 0.5, stdDev);
-    out = out / stdDev;
-
-    return out;
-}
-
-
 void Helper::Print1ChMatrixToConsole(Mat mat)
 {
     QString s;
