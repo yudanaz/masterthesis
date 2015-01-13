@@ -32,7 +32,7 @@ public:
      * the normalization is performed. MUST BE ODD!
      * \return the standardized image as a float matrix.
      */
-    Mat NormalizeLocally(Mat img, int neighborhoodSize);
+    Mat NormalizeLocally(Mat img, int neighborhoodSize, bool outputAs8bit = true);
 
     void makeImagePatches(Mat img, Mat labelImg, QStringList labels, int localNeighborhood, int patchSize, QString outName, QString outFolder);
 };

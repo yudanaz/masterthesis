@@ -1104,7 +1104,6 @@ void MainWindow::on_pushButton_test_released()
     QDir dir;
     dir.mkdir(outDir);
     preproc.makeImagePatches(a, labelImg, labels, 15, 46, "test", outDir);
-
     //////////////////////////////////////////////////////////////
     // endof TEST MAKE IMAGE PATCHES
     //////////////////////////////////////////////////////////////
@@ -1114,38 +1113,43 @@ void MainWindow::on_pushButton_test_released()
 //    // TEST LOCAL NORMALIZATION
 //    //////////////////////////////////////////////////////////////
 //    //split image in its channels
-//    vector<Mat> channels(a.channels());
-//    cv::split(a, channels);
+////    vector<Mat> channels(a.channels());
+////    cv::split(a, channels);
 
-//    //normalize channels separately
-//    vector<Mat> channelsNorm;
-//    foreach(Mat img, channels)
-//    {
-//        Mat aNorm = preproc.NormalizeLocally(img, 15);
-//        channelsNorm.push_back(aNorm);
-//    }
+////    //normalize channels separately
+////    vector<Mat> channelsNorm;
+////    foreach(Mat img, channels)
+////    {
+////        Mat aNorm = preproc.NormalizeLocally(img, 15);
+////        channelsNorm.push_back(aNorm);
+////    }
 
-//    //merge channels and do normalization on multichannel image for comparison
-//    Mat aNorm, aNorm2;
-//    cv::merge(channelsNorm, aNorm);
-//    aNorm2 = preproc.NormalizeLocally(a, 15);
+////    //merge channels and do normalization on multichannel image for comparison
+////    Mat aNorm;
+////    cv::merge(channelsNorm, aNorm);
+//    Mat aNorm2 = preproc.NormalizeLocally(a, 15);
 
 
 //    //normalize to [0,1] in order to display
-//    cv::normalize(aNorm, aNorm, 0, 1, NORM_MINMAX);
-//    cv::normalize(aNorm2, aNorm2, 0, 1, NORM_MINMAX);
+////    cv::normalize(aNorm, aNorm, 0, 1, NORM_MINMAX);
+////    cv::normalize(aNorm2, aNorm2, 0, 1, NORM_MINMAX);
+
+//    //print one channel to console - because of normalization, everything should be close to 128
+//    vector<Mat> temp(a.channels());
+//    cv::split(aNorm2, temp);
+//    Helper::Print1ChMatrixToConsole(temp.at(0));
 
 //    imshow("original image", a);
-//    imshow("normalized image (separate channels)", aNorm);
+////    imshow("normalized image (separate channels)", aNorm);
 //    imshow("normalized image (multichannel)", aNorm2);
 
 //    //save to disk in order to compare images in GIMP to see if separate channel normalization
 //    //and multichannel normalization do exactly the same thing.
-//    Mat aNorm_8bit, aNorm2_8bit;
-//    aNorm.convertTo(aNorm_8bit, CV_8U, 255);
-//    aNorm2.convertTo(aNorm2_8bit, CV_8U, 255);
-//    imwrite("test1.png", aNorm_8bit);
-//    imwrite("test2.png", aNorm2_8bit);
+////    Mat aNorm_8bit, aNorm2_8bit;
+////    aNorm.convertTo(aNorm_8bit, CV_8U, 255);
+////    aNorm2.convertTo(aNorm2_8bit, CV_8U, 255);
+////    imwrite("test1.png", aNorm_8bit);
+////    imwrite("test2.png", aNorm2_8bit);
 //    //////////////////////////////////////////////////////////////
 //    // endof TEST LOCAL NORMALIZATION
 //    //////////////////////////////////////////////////////////////
