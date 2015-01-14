@@ -40,38 +40,22 @@ Mat ImagePreprocessor::NormalizeLocally(Mat img, int neighborhoodSize, bool outp
 }
 
 
-void ImagePreprocessor::makeImagePatches(Mat img, Mat labelImg, int localNeighborhood,
+void ImagePreprocessor::makeImagePatches(QList<Mat> rgbdnir, Mat labelImg, int localNeighborhood,
                                          int patchSize, QString outName, QString outFolder)
 {
-    int nrOfChannels = img.channels();
-
     //set image compression
-//    vector<int> jpgParams;
-//    jpgParams.push_back(CV_IMWRITE_JPEG_QUALITY);
-//    jpgParams.push_back(50);
     vector<int> pngParams;
     pngParams.push_back(CV_IMWRITE_PNG_COMPRESSION);
-    pngParams.push_back(9);
+    pngParams.push_back(8);
 
     //make progress dialog
-    int maxCnt = img.cols * img.rows;
+    int maxCnt = rgbdnir.first().cols * rgbdnir.first().rows;
     int cnt = 0;
     QProgressDialog progress("Making patches...", "cancel", 0, maxCnt);
     progress.setValue(0);
     progress.setMinimumWidth(450);
     progress.setMinimumDuration(100);
     progress.setWindowModality(Qt::WindowModal);
-
-    //apply local normalization for neigborhodd twice the size of convolution kernel
-    //each channel of the input image is normalized separately, see NormalizeLocally()
-    Mat imgNorm = NormalizeLocally(img, localNeighborhood);
-
-    //make padding (borders) according to convolution kernel size
-    //!NOTE! that the patch size must always be even, due to the nature of the ConvNet because
-    //of subsampling (reducing size/2 between layer) for ex kernelsize 7 => borders = 6: 46 conv-> 40 subs-> 20 conv-> 14 subs-> 7 conv-> 1
-    int border = patchSize/2;
-    Mat imgPadded;
-    copyMakeBorder(imgNorm, imgPadded, border, border-1, border, border-1, BORDER_CONSTANT, Scalar(0)); //black border
 
     //make temporary folder to store images before compressing into tar
     QDir dir;
@@ -82,33 +66,64 @@ void ImagePreprocessor::makeImagePatches(Mat img, Mat labelImg, int localNeighbo
     outFile.open(QFile::WriteOnly);
     QTextStream txtOut(&outFile);
 
+    //for all imgs in list
+    vector<Mat> channels;
+    int border = patchSize/2;
+    foreach(Mat img, rgbdnir)
+    {
+        //apply local normalization for neigborhodd twice the size of convolution kernel
+        //each channel of the input image is normalized separately, see NormalizeLocally()
+        Mat imgNorm = NormalizeLocally(img, localNeighborhood);
+
+        //make padding (borders) according to convolution kernel size
+        //!NOTE! that the patch size must always be even, due to the nature of the ConvNet because
+        //of subsampling (reducing size/2 between layer) for ex kernelsize 7 => borders = 6: 46 conv-> 40 subs-> 20 conv-> 14 subs-> 7 conv-> 1
+        Mat imgPadded;
+        copyMakeBorder(imgNorm, imgPadded, border, border-1, border, border-1, BORDER_CONSTANT, Scalar(0)); //black border
+
+        //separate channels in multichannel images
+        quint8 ch = imgPadded.channels();
+        if(ch > 1)
+        {
+            vector<Mat> img_channels(ch);
+            cv::split(imgPadded, img_channels);
+            channels.insert(channels.end(), img_channels.begin(), img_channels.end());
+        }
+        else
+        {
+            channels.push_back(imgPadded);
+        }
+    }
+    quint8 nrOfChannels = channels.size();
+
     //for every pixel (except border/padding pixels)
-    int w = imgPadded.cols;
-    int h = imgPadded.rows;
+    int w = channels[0].cols;
+    int h = channels[0].rows;
 
     for (int y = border; y < h-border+1; ++y)
     {
         for (int x = border; x < w-border+1; ++x)
         {
-            //make patch ROI and copy to output list
-            //!NOTE! that because of the even patch size, pixel is not exactly in the middle of patch!
-            Mat patch;
-            cv::Rect roi(x-border, y-border, patchSize, patchSize);
-            imgPadded(roi).copyTo(patch);
-
             //save in temporary folder: each channel of the image as separate file, in order to use compression and minimize file size
             //!NOTE! that we use PNG with highest compression, because it gives us the smallest file size for such small images (here 46x46)
             QString relativeUrlNm = outName + "/" + outName + "_p" + QString::number(x-border) + "x" + QString::number(y-border);
             QString nm = outFolder + "/" + relativeUrlNm;
-            vector<Mat> patch_channels(nrOfChannels);
-            cv::split(patch, patch_channels);
+
+            Mat concat(patchSize, patchSize * nrOfChannels, CV_8UC1);
+
+            //concatenate all channels in one image in order to make saving faster and use less disk space
             for (int ch = 0; ch < nrOfChannels; ++ch)
             {
-//                imwrite((nm + QString::number(ch) + "a.jpg").toStdString(), patch_channels.at(ch));
-//                imwrite((nm + QString::number(ch) + "b.jpg").toStdString(), patch_channels.at(ch), jpgParams);
-//                imwrite((nm + QString::number(ch) + "a.png").toStdString(), patch_channels.at(ch));
-                imwrite((nm + "_ch" + QString::number(ch) + ".png").toStdString(), patch_channels.at(ch), pngParams);
+                //make patch ROI and copy to output list
+                //!NOTE! that because of the even patch size, pixel is not exactly in the middle of patch!
+                Mat patch;
+                cv::Rect roi(x-border, y-border, patchSize, patchSize);
+                channels[ch](roi).copyTo(patch);
+
+//              imwrite((nm + "_ch" + QString::number(ch) + ".png").toStdString(), patch_channels.at(ch), pngParams);
+                patch.copyTo(concat(Rect(ch * patchSize, 0, patchSize, patchSize)));
             }
+            imwrite((nm + ".png").toStdString(), concat, pngParams);
 
             //get label and write name and label to file (only the  relative URL to a patch name is printed,
             //the separate channels ("_ch1 .. _chN") have to be merged later when read in a Mat object)
@@ -125,30 +140,30 @@ void ImagePreprocessor::makeImagePatches(Mat img, Mat labelImg, int localNeighbo
     outFile.close();
     progress.setValue(maxCnt);
 
-    //pack as TAR or ZIP file in order to minimize space. a 46x46 PNG file will have ~0.6K but will need 4K on disk because of block size
-    QProcess tarProc;
-    tarProc.setWorkingDirectory(outFolder);
-    tarProc.start("tar", QStringList() << "-cvf" << outName + ".tar" << outName ); // "tar -cvf <tarName> <dirName>"
+//    //pack as TAR or ZIP file in order to minimize space. a 46x46 PNG file will have ~0.6K but will need 4K on disk because of block size
+//    QProcess tarProc;
+//    tarProc.setWorkingDirectory(outFolder);
+//    tarProc.start("tar", QStringList() << "-cvf" << outName + ".tar" << outName ); // "tar -cvf <tarName> <dirName>"
 
-    maxCnt = 500;
-    cnt = 0;
-    QProgressDialog progress2("Compressing to TAR file...", "cancel", 0, maxCnt);
-    progress2.setValue(0);
-    progress2.setMinimumWidth(450);
-    progress2.setMinimumDuration(100);
-    progress2.setWindowModality(Qt::WindowModal);
-    while(!tarProc.waitForFinished(250))
-    {
-        cnt = cnt < maxCnt ? cnt : 0;
-        progress2.setValue(cnt);
-        cnt += 25;
-        if(progress2.wasCanceled()){ return; }
-    }
-    progress2.setValue(maxCnt);
+//    maxCnt = 500;
+//    cnt = 0;
+//    QProgressDialog progress2("Compressing to TAR file...", "cancel", 0, maxCnt);
+//    progress2.setValue(0);
+//    progress2.setMinimumWidth(450);
+//    progress2.setMinimumDuration(100);
+//    progress2.setWindowModality(Qt::WindowModal);
+//    while(!tarProc.waitForFinished(250))
+//    {
+//        cnt = cnt < maxCnt ? cnt : 0;
+//        progress2.setValue(cnt);
+//        cnt += 25;
+//        if(progress2.wasCanceled()){ return; }
+//    }
+//    progress2.setValue(maxCnt);
 
-    //delete temporary folder
-    QProcess delDirProc;
-    delDirProc.setWorkingDirectory(outFolder);
-    delDirProc.start("rm -r " + outName);
-    delDirProc.waitForFinished();
+//    //delete temporary folder
+//    QProcess delDirProc;
+//    delDirProc.setWorkingDirectory(outFolder);
+//    delDirProc.start("rm -r " + outName);
+//    delDirProc.waitForFinished();
 }

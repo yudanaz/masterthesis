@@ -34,7 +34,7 @@ public:
      */
     Mat NormalizeLocally(Mat img, int neighborhoodSize, bool outputAs8bit = true);
 
-    void makeImagePatches(Mat img, Mat labelImg, int localNeighborhood, int patchSize, QString outName, QString outFolder);
+    void makeImagePatches(QList<Mat> img, Mat labelImg, int localNeighborhood, int patchSize, QString outName, QString outFolder);
 };
 
 #endif // IMAGEPREPROCESSOR_H

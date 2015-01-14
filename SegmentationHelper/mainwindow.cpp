@@ -1041,11 +1041,29 @@ void MainWindow::on_btn_makeImgPatches_released()
 
     foreach(QString fileName, fileNames)
     {
-        //if a label file, jump to next
-        if(fileName.contains("_labels")){ continue; }
+        //if a label file or nir file, jump to next
+        if(fileName.contains("_labels") || fileName.contains("_nir"))
+        {
+            continue;
+        }
 
-        Mat img = imread(fileName.toStdString().c_str());
-        QString labelFileName = (fileName.remove(QRegExp(".png|.jpg")) + "_labels.png");
+        //read all images (rgb + nir + depth) and add to list
+        QList<Mat> imgs;
+        QString fileNameNoExtension = fileName;
+        fileNameNoExtension.remove(QRegExp(".png|.jpg"));
+        imgs.append( imread(fileName.toStdString().c_str()) );
+
+        if(QFile::exists(fileNameNoExtension + "_nir.jpg"))
+        {
+            imgs.append( imread((fileNameNoExtension + "_nir.jpg").toStdString().c_str()) );
+        }
+        else if(QFile::exists(fileNameNoExtension + "_nir.png"))
+        {
+            imgs.append( imread((fileNameNoExtension + "_nir.png").toStdString().c_str()) );
+        }
+
+        //read lable image
+        QString labelFileName = (fileNameNoExtension + "_labels.png");
         Mat labelImg = imread(labelFileName.toStdString().c_str());
 
         if(labelImg.empty())
@@ -1055,11 +1073,11 @@ void MainWindow::on_btn_makeImgPatches_released()
             return;
         }
 
-        QString onlyFileName = fileName.split("/").last();
+        QString onlyFileName = fileNameNoExtension.split("/").last();
         QTime timer;
         timer.start();
-        preproc.makeImagePatches(img, labelImg, 15, 46, onlyFileName, outDir);
-    //    qDebug() << timer.elapsed();
+        preproc.makeImagePatches(imgs, labelImg, 15, 46, onlyFileName, outDir);
+        qDebug() << timer.elapsed();
     }
 
 }
