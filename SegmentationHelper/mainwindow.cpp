@@ -1033,6 +1033,121 @@ void MainWindow::on_checkBox_useSGBM_clicked()
  *****************************************************************************************/
 void MainWindow::on_pushButton_test_released()
 {
+//    //////////////////////////////////////////////////////////////
+//    // TRANSFORM STANFORD BACKGROUND DATASET LABELS INTO PNG
+//    //////////////////////////////////////////////////////////////
+//    QString fileName = QFileDialog::getOpenFileName(this, "Select File", lastDir, "horizons.txt");
+//    if(fileName == ""){ return; }
+//    lastDir = QFileInfo(fileName).path();
+
+//    QFile f(fileName);
+//    f.open(QFile::ReadOnly);
+//    QTextStream in(&f);
+
+//    QDir dir;
+//    dir.mkdir(lastDir + "/labelsImgs");
+
+//    while(!in.atEnd())
+//    {
+//        QStringList sl = in.readLine().split(" ");
+//        QString nm = sl.at(0);
+//        int w = sl.at(1).toInt();
+//        int h = sl.at(2).toInt();
+
+//        Mat img(h, w, CV_8UC1);
+
+//        QFile lblf(lastDir + "/labels/" + nm + ".regions.txt");
+//        lblf.open(QFile::ReadOnly);
+//        QTextStream lblin(&lblf);
+
+//        for (int y = 0; y < h; ++y)
+//        {
+//            QStringList line = lblin.readLine().split(" ");
+//            for (int x = 0; x < w; ++x)
+//            {
+//                img.at<uchar>(y,x) = line.at(x).toInt() + 1; //in original, <0 is unknown, in our case 0 is unknown
+//            }
+//        }
+
+//        imwrite((lastDir + "/labelsImgs/" + nm + "_labels.png").toStdString(), img);
+//    }
+
+//    f.close();
+//    //////////////////////////////////////////////////////////////
+//    // endof TRANSFORM STANFORD BACKGROUND DATASET LABELS INTO PNG
+//    //////////////////////////////////////////////////////////////
+
+//    QString fileName = QFileDialog::getOpenFileName(this, "Select File", lastDir, IMGTYPES);
+//    if(fileName == ""){ return; }
+//    lastDir = QFileInfo(fileName).path();
+//    ImagePreprocessor preproc;
+//    Mat a = imread(fileName.toStdString().c_str());
+
+//    //////////////////////////////////////////////////////////////
+//    // TEST MAKE IMAGE PATCHES
+//    //////////////////////////////////////////////////////////////
+
+//    Mat labelImg; //fake label FOR NOW
+//    cvtColor(a, labelImg, CV_BGR2GRAY);
+
+//    QString outDir = lastDir+"/test_patches";
+//    QDir dir;
+//    dir.mkdir(outDir);
+//    preproc.makeImagePatches(a, labelImg, 15, 46, "test", outDir);
+//    //////////////////////////////////////////////////////////////
+//    // endof TEST MAKE IMAGE PATCHES
+//    //////////////////////////////////////////////////////////////
+
+
+//    //////////////////////////////////////////////////////////////
+//    // TEST LOCAL NORMALIZATION
+//    //////////////////////////////////////////////////////////////
+//    //split image in its channels
+////    vector<Mat> channels(a.channels());
+////    cv::split(a, channels);
+
+////    //normalize channels separately
+////    vector<Mat> channelsNorm;
+////    foreach(Mat img, channels)
+////    {
+////        Mat aNorm = preproc.NormalizeLocally(img, 15);
+////        channelsNorm.push_back(aNorm);
+////    }
+
+////    //merge channels and do normalization on multichannel image for comparison
+////    Mat aNorm;
+////    cv::merge(channelsNorm, aNorm);
+//    Mat aNorm2 = preproc.NormalizeLocally(a, 15);
+
+
+//    //normalize to [0,1] in order to display
+////    cv::normalize(aNorm, aNorm, 0, 1, NORM_MINMAX);
+////    cv::normalize(aNorm2, aNorm2, 0, 1, NORM_MINMAX);
+
+//    //print one channel to console - because of normalization, everything should be close to 128
+//    vector<Mat> temp(a.channels());
+//    cv::split(aNorm2, temp);
+//    Helper::Print1ChMatrixToConsole(temp.at(0));
+
+//    imshow("original image", a);
+////    imshow("normalized image (separate channels)", aNorm);
+//    imshow("normalized image (multichannel)", aNorm2);
+
+//    //save to disk in order to compare images in GIMP to see if separate channel normalization
+//    //and multichannel normalization do exactly the same thing.
+////    Mat aNorm_8bit, aNorm2_8bit;
+////    aNorm.convertTo(aNorm_8bit, CV_8U, 255);
+////    aNorm2.convertTo(aNorm2_8bit, CV_8U, 255);
+////    imwrite("test1.png", aNorm_8bit);
+////    imwrite("test2.png", aNorm2_8bit);
+//    //////////////////////////////////////////////////////////////
+//    // endof TEST LOCAL NORMALIZATION
+//    //////////////////////////////////////////////////////////////
+
+
+//    //////////////////////////////////////////////////////////////
+//    // ADAPT IMAGE NET LABEL DATA
+//    //////////////////////////////////////////////////////////////
 //    //read downloaded ImageNet folders
 //    QStringList allDirs, allFiles;
 //    QDir dir(QFileDialog::getExistingDirectory(this, "Get Dir", lastDir));
@@ -1087,73 +1202,8 @@ void MainWindow::on_pushButton_test_released()
 ////        if(found){ allFiles.removeAt(i); }
 //    }
 //    f1.close(); f2.close();
-
-
-    QString fileName = QFileDialog::getOpenFileName(this, "Select File", lastDir, IMGTYPES);
-    if(fileName == ""){ return; }
-    lastDir = QFileInfo(fileName).path();
-    ImagePreprocessor preproc;
-    Mat a = imread(fileName.toStdString().c_str());
-
-    //////////////////////////////////////////////////////////////
-    // TEST MAKE IMAGE PATCHES
-    //////////////////////////////////////////////////////////////
-
-    Mat labelImg; //fake label FOR NOW
-    cvtColor(a, labelImg, CV_BGR2GRAY);
-
-    QString outDir = lastDir+"/test_patches";
-    QDir dir;
-    dir.mkdir(outDir);
-    preproc.makeImagePatches(a, labelImg, 15, 46, "test", outDir);
-    //////////////////////////////////////////////////////////////
-    // endof TEST MAKE IMAGE PATCHES
-    //////////////////////////////////////////////////////////////
-
-
 //    //////////////////////////////////////////////////////////////
-//    // TEST LOCAL NORMALIZATION
-//    //////////////////////////////////////////////////////////////
-//    //split image in its channels
-////    vector<Mat> channels(a.channels());
-////    cv::split(a, channels);
-
-////    //normalize channels separately
-////    vector<Mat> channelsNorm;
-////    foreach(Mat img, channels)
-////    {
-////        Mat aNorm = preproc.NormalizeLocally(img, 15);
-////        channelsNorm.push_back(aNorm);
-////    }
-
-////    //merge channels and do normalization on multichannel image for comparison
-////    Mat aNorm;
-////    cv::merge(channelsNorm, aNorm);
-//    Mat aNorm2 = preproc.NormalizeLocally(a, 15);
-
-
-//    //normalize to [0,1] in order to display
-////    cv::normalize(aNorm, aNorm, 0, 1, NORM_MINMAX);
-////    cv::normalize(aNorm2, aNorm2, 0, 1, NORM_MINMAX);
-
-//    //print one channel to console - because of normalization, everything should be close to 128
-//    vector<Mat> temp(a.channels());
-//    cv::split(aNorm2, temp);
-//    Helper::Print1ChMatrixToConsole(temp.at(0));
-
-//    imshow("original image", a);
-////    imshow("normalized image (separate channels)", aNorm);
-//    imshow("normalized image (multichannel)", aNorm2);
-
-//    //save to disk in order to compare images in GIMP to see if separate channel normalization
-//    //and multichannel normalization do exactly the same thing.
-////    Mat aNorm_8bit, aNorm2_8bit;
-////    aNorm.convertTo(aNorm_8bit, CV_8U, 255);
-////    aNorm2.convertTo(aNorm2_8bit, CV_8U, 255);
-////    imwrite("test1.png", aNorm_8bit);
-////    imwrite("test2.png", aNorm2_8bit);
-//    //////////////////////////////////////////////////////////////
-//    // endof TEST LOCAL NORMALIZATION
+//    // endof ADAPT IMAGE NET LABEL DATA
 //    //////////////////////////////////////////////////////////////
 }
 
