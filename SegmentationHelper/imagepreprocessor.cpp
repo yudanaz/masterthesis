@@ -2,6 +2,8 @@
 #include <QProgressDialog>
 #include <QProcess>
 #include <QDir>
+#include <QFile>
+#include <QTextStream>
 
 ImagePreprocessor::ImagePreprocessor()
 {
@@ -38,7 +40,7 @@ Mat ImagePreprocessor::NormalizeLocally(Mat img, int neighborhoodSize, bool outp
 }
 
 
-void ImagePreprocessor::makeImagePatches(Mat img, Mat labelImg, QStringList labels, int localNeighborhood,
+void ImagePreprocessor::makeImagePatches(Mat img, Mat labelImg, int localNeighborhood,
                                          int patchSize, QString outName, QString outFolder)
 {
     int nrOfChannels = img.channels();
@@ -69,24 +71,25 @@ void ImagePreprocessor::makeImagePatches(Mat img, Mat labelImg, QStringList labe
     //of subsampling (reducing size/2 between layer) for ex kernelsize 7 => borders = 6: 46 conv-> 40 subs-> 20 conv-> 14 subs-> 7 conv-> 1
     int border = patchSize/2;
     Mat imgPadded;
-    copyMakeBorder(imgNorm, imgPadded, border, border-1, border, border-1, BORDER_REPLICATE);
+    copyMakeBorder(imgNorm, imgPadded, border, border-1, border, border-1, BORDER_CONSTANT, Scalar(0)); //black border
 
-    //make temporary folder
-    QString tempFolder = outFolder + "/temp_" + outName;
+    //make temporary folder to store images before compressing into tar
     QDir dir;
-    dir.mkdir(tempFolder);
+    dir.mkdir(outFolder + "/" + outName);
+
+    //prepare text stream for labels
+    QFile outFile(outFolder + "/" + outName + "_labels.txt");
+    outFile.open(QFile::WriteOnly);
+    QTextStream txtOut(&outFile);
 
     //for every pixel (except border/padding pixels)
     int w = imgPadded.cols;
     int h = imgPadded.rows;
-    QString nm_prefix = tempFolder + "/" + outName + "_p"; //used to name image files and later in tar process
 
-    for (int y = border; y < h-border-1; ++y)
+    for (int y = border; y < h-border+1; ++y)
     {
-        for (int x = border; x < w-border-1; ++x)
+        for (int x = border; x < w-border+1; ++x)
         {
-            //get label
-
             //make patch ROI and copy to output list
             //!NOTE! that because of the even patch size, pixel is not exactly in the middle of patch!
             Mat patch;
@@ -95,7 +98,8 @@ void ImagePreprocessor::makeImagePatches(Mat img, Mat labelImg, QStringList labe
 
             //save in temporary folder: each channel of the image as separate file, in order to use compression and minimize file size
             //!NOTE! that we use PNG with highest compression, because it gives us the smallest file size for such small images (here 46x46)
-            QString nm = nm_prefix + QString::number(x) + "x" + QString::number(y) + "_";
+            QString relativeUrlNm = outName + "/" + outName + "_p" + QString::number(x-border) + "x" + QString::number(y-border);
+            QString nm = outFolder + "/" + relativeUrlNm;
             vector<Mat> patch_channels(nrOfChannels);
             cv::split(patch, patch_channels);
             for (int ch = 0; ch < nrOfChannels; ++ch)
@@ -103,23 +107,28 @@ void ImagePreprocessor::makeImagePatches(Mat img, Mat labelImg, QStringList labe
 //                imwrite((nm + QString::number(ch) + "a.jpg").toStdString(), patch_channels.at(ch));
 //                imwrite((nm + QString::number(ch) + "b.jpg").toStdString(), patch_channels.at(ch), jpgParams);
 //                imwrite((nm + QString::number(ch) + "a.png").toStdString(), patch_channels.at(ch));
-                imwrite((nm + QString::number(ch) + "b.png").toStdString(), patch_channels.at(ch), pngParams);
+                imwrite((nm + "_ch" + QString::number(ch) + ".png").toStdString(), patch_channels.at(ch), pngParams);
             }
 
+            //get label and write name and label to file (only the  relative URL to a patch name is printed,
+            //the separate channels ("_ch1 .. _chN") have to be merged later when read in a Mat object)
+            uchar label = labelImg.at<uchar>(y-border, x-border);
+            txtOut << relativeUrlNm << " " << label << "\n";
+
+            //report progress
             progress.setValue(++cnt);
             if(progress.wasCanceled()){ return; }
         }
     }
+
+    txtOut.flush();
+    outFile.close();
     progress.setValue(maxCnt);
 
     //pack as TAR or ZIP file in order to minimize space. a 46x46 PNG file will have ~0.6K but will need 4K on disk because of block size
     QProcess tarProc;
     tarProc.setWorkingDirectory(outFolder);
-    QStringList args;
-    args << "-cvf";
-    args << outName + ".tar";
-    args << "temp_" + outName;
-    tarProc.start("tar", QStringList() << "-cvf" << outName + ".tar" << "temp_" + outName );
+    tarProc.start("tar", QStringList() << "-cvf" << outName + ".tar" << outName ); // "tar -cvf <tarName> <dirName>"
     tarProc.waitForFinished();
 //    QString outMsg(tarProc.readAllStandardOutput());
 //    qDebug() << outMsg;
@@ -127,6 +136,6 @@ void ImagePreprocessor::makeImagePatches(Mat img, Mat labelImg, QStringList labe
     //delete temporary folder
     QProcess delDirProc;
     delDirProc.setWorkingDirectory(outFolder);
-    delDirProc.start("rm -r temp_" + outName);
+    delDirProc.start("rm -r " + outName);
     delDirProc.waitForFinished();
 }

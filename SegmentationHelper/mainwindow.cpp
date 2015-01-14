@@ -1098,12 +1098,14 @@ void MainWindow::on_pushButton_test_released()
     //////////////////////////////////////////////////////////////
     // TEST MAKE IMAGE PATCHES
     //////////////////////////////////////////////////////////////
-    Mat labelImg; //TODO!!
-    QStringList labels; //TODO!!
+
+    Mat labelImg; //fake label FOR NOW
+    cvtColor(a, labelImg, CV_BGR2GRAY);
+
     QString outDir = lastDir+"/test_patches";
     QDir dir;
     dir.mkdir(outDir);
-    preproc.makeImagePatches(a, labelImg, labels, 15, 46, "test", outDir);
+    preproc.makeImagePatches(a, labelImg, 15, 46, "test", outDir);
     //////////////////////////////////////////////////////////////
     // endof TEST MAKE IMAGE PATCHES
     //////////////////////////////////////////////////////////////
