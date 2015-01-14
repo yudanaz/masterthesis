@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1008</width>
+    <width>1072</width>
     <height>511</height>
    </rect>
   </property>
@@ -19,23 +19,37 @@
      <rect>
       <x>20</x>
       <y>10</y>
-      <width>481</width>
-      <height>379</height>
+      <width>558</width>
+      <height>420</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout">
      <property name="sizeConstraint">
-      <enum>QLayout::SetMaximumSize</enum>
+      <enum>QLayout::SetFixedSize</enum>
      </property>
      <item>
-      <widget class="QPushButton" name="btn_makeLabelImgs">
-       <property name="styleSheet">
-        <string notr="true">background-color: rgb(244, 172, 172)</string>
-       </property>
-       <property name="text">
-        <string>Make Label Images From XML</string>
-       </property>
-      </widget>
+      <layout class="QHBoxLayout" name="horizontalLayout_23">
+       <item>
+        <widget class="QPushButton" name="btn_makeLabelImgs">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(244, 172, 172)</string>
+         </property>
+         <property name="text">
+          <string>Make Label Images From XML</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btn_makeImgPatches">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(244, 172, 172)</string>
+         </property>
+         <property name="text">
+          <string>Make Image Patches</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </item>
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -430,7 +444,7 @@ color: rgb(255, 255, 127);</string>
    <widget class="QWidget" name="verticalLayoutWidget_2">
     <property name="geometry">
      <rect>
-      <x>520</x>
+      <x>590</x>
       <y>10</y>
       <width>464</width>
       <height>354</height>
@@ -1100,7 +1114,7 @@ color: rgb(255, 255, 127);</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1008</width>
+     <width>1072</width>
      <height>25</height>
     </rect>
    </property>

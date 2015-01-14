@@ -56,7 +56,7 @@ void ImagePreprocessor::makeImagePatches(Mat img, Mat labelImg, int localNeighbo
     //make progress dialog
     int maxCnt = img.cols * img.rows;
     int cnt = 0;
-    QProgressDialog progress("making patches", "cancel", 0, maxCnt);
+    QProgressDialog progress("Making patches...", "cancel", 0, maxCnt);
     progress.setValue(0);
     progress.setMinimumWidth(450);
     progress.setMinimumDuration(100);
@@ -129,9 +129,22 @@ void ImagePreprocessor::makeImagePatches(Mat img, Mat labelImg, int localNeighbo
     QProcess tarProc;
     tarProc.setWorkingDirectory(outFolder);
     tarProc.start("tar", QStringList() << "-cvf" << outName + ".tar" << outName ); // "tar -cvf <tarName> <dirName>"
-    tarProc.waitForFinished();
-//    QString outMsg(tarProc.readAllStandardOutput());
-//    qDebug() << outMsg;
+
+    maxCnt = 500;
+    cnt = 0;
+    QProgressDialog progress2("Compressing to TAR file...", "cancel", 0, maxCnt);
+    progress2.setValue(0);
+    progress2.setMinimumWidth(450);
+    progress2.setMinimumDuration(100);
+    progress2.setWindowModality(Qt::WindowModal);
+    while(!tarProc.waitForFinished(250))
+    {
+        cnt = cnt < maxCnt ? cnt : 0;
+        progress2.setValue(cnt);
+        cnt += 25;
+        if(progress2.wasCanceled()){ return; }
+    }
+    progress2.setValue(maxCnt);
 
     //delete temporary folder
     QProcess delDirProc;

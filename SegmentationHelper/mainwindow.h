@@ -119,6 +119,8 @@ private slots:
     void on_pushButton_test_released();
 
 
+    void on_btn_makeImgPatches_released();
+
 private:
 	void makeLabelImages(QStringList fileNames);
 	void makeSeedsSuperpixels(QString fileName);

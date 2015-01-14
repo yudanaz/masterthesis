@@ -1027,6 +1027,43 @@ void MainWindow::on_checkBox_useSGBM_clicked()
 
 }
 
+void MainWindow::on_btn_makeImgPatches_released()
+{
+    QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select Files", lastDir, IMGTYPES);
+    if(fileNames.count() == 0){ return; }
+    lastDir = QFileInfo(fileNames.first()).path();
+
+    QString outDir = lastDir + "/patches";
+    QDir dir;
+    dir.mkdir(outDir);
+
+    ImagePreprocessor preproc;
+
+    foreach(QString fileName, fileNames)
+    {
+        //if a label file, jump to next
+        if(fileName.contains("_labels")){ continue; }
+
+        Mat img = imread(fileName.toStdString().c_str());
+        QString labelFileName = (fileName.remove(QRegExp(".png|.jpg")) + "_labels.png");
+        Mat labelImg = imread(labelFileName.toStdString().c_str());
+
+        if(labelImg.empty())
+        {
+            QMessageBox::information(this, "Label Image not in folder",
+                                     "Label image must have same name + _labels.png!", QMessageBox::Ok);
+            return;
+        }
+
+        QString onlyFileName = fileName.split("/").last();
+        QTime timer;
+        timer.start();
+        preproc.makeImagePatches(img, labelImg, 15, 46, onlyFileName, outDir);
+    //    qDebug() << timer.elapsed();
+    }
+
+}
+
 
 /*****************************************************************************************
  * JUST FOR TEST / DEBUGGING / ETC PURPOSES
