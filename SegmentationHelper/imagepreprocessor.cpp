@@ -29,7 +29,7 @@ Mat ImagePreprocessor::NormalizeLocally(Mat img, int meanKernel, int stdDevKerne
     if(outputAs8bit)
     {
         //cast back to [0, 255] interval, so it can be saved as a JPG image (or other lossy compression)
-        cv::normalize(floatImg, floatImg, 0, 1, NORM_MINMAX);
+        cv::normalize(floatImg, floatImg, 0, 1, NORM_MINMAX, -1);
         floatImg.convertTo(out, CV_8U, 255);
         return out;
     }
@@ -120,8 +120,10 @@ void ImagePreprocessor::makeImagePatches(QList<Mat> rgbdnir, Mat labelImg, int l
             {
                 //scale down, once for every scale step (thats what the for-loop is for)
                 Mat chDown;
-                pyrDown(channels[ch], chDown);
-                for(int ss = 1; ss < s; ++ss){ pyrDown(chDown, chDown); }
+//                pyrDown(channels[ch], chDown);
+//                for(int ss = 1; ss < s; ++ss){ pyrDown(chDown, chDown); }
+                cv::resize(channels[ch], chDown, Size(), 0.5, 0.5, INTER_AREA);
+                for(int ss = 1; ss < s; ++ss){ cv::resize(chDown, chDown, Size(), 0.5, 0.5, INTER_AREA); }
 
                 //make padding (border)
                 Mat chPadded;
@@ -132,10 +134,9 @@ void ImagePreprocessor::makeImagePatches(QList<Mat> rgbdnir, Mat labelImg, int l
 
             channelPyr.push_back(imgDown);
 
-            //downsize label image, once for every scale step
-            Mat labelDown;
-            pyrDown(labelImg, labelDown);
-            for(int ss = 1; ss < s; ++ss){ pyrDown(labelDown, labelDown); }
+            //downsize label image WITHOUT SMOOTHING so no interpolated wrong labels are created, once for every scale step
+            Mat labelDown = downSampleWithoutSmoothing(labelImg);
+            for(int ss = 1; ss < s; ++ss){ labelDown = downSampleWithoutSmoothing(labelDown); }
 
             labelPyr.push_back(labelDown);
         }
@@ -229,3 +230,25 @@ void ImagePreprocessor::makeImagePatches(QList<Mat> rgbdnir, Mat labelImg, int l
 //    delDirProc.start("rm -r " + outName);
 //    delDirProc.waitForFinished();
 }
+
+
+
+Mat ImagePreprocessor::downSampleWithoutSmoothing(Mat grayImg)
+{
+    int h = grayImg.rows;
+    int w = grayImg.cols;
+    Mat img2(h/2, w/2, CV_8UC1);
+
+    for (int y = 1; y < h; y += 2)
+    {
+        for (int x = 1; x < w; x += 2)
+        {
+            img2.at<uchar>(y/2, x/2) = grayImg.at<uchar>(y, x);
+        }
+    }
+    return img2;
+}
+
+
+
+

@@ -55,6 +55,8 @@ public:
      * \param imgTotal: Total amount of images (for progress bar).
      */
     void makeImagePatches(QList<Mat> img, Mat labelImg, int localNeighborhood, int patchSize, int scales, QString outName, QString outFolder, int imgIndex, int imgTotal);
+
+    Mat downSampleWithoutSmoothing(Mat grayImg);
 };
 
 #endif // IMAGEPREPROCESSOR_H

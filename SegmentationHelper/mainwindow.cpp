@@ -1096,7 +1096,7 @@ void MainWindow::on_btn_makeImgPatches_released()
 
         QTime timer;
         timer.start();
-        preproc.makeImagePatches(imgs, labelImg, 15, 46, 3, onlyFileName, outDir, ++imgIndex, imgTotal);
+        preproc.makeImagePatches(imgs, labelImg, 9, 46, 3, onlyFileName, outDir, ++imgIndex, imgTotal);
         qDebug() << timer.elapsed();
     }
 
@@ -1231,11 +1231,23 @@ void MainWindow::on_pushButton_test_released()
 //    // endof TRANSFORM STANFORD BACKGROUND DATASET LABELS INTO PNG
 //    //////////////////////////////////////////////////////////////
 
-    QString fileName = QFileDialog::getOpenFileName(this, "Select File", lastDir, IMGTYPES);
-    if(fileName == ""){ return; }
-    lastDir = QFileInfo(fileName).path();
-    ImagePreprocessor preproc;
-    Mat a = imread(fileName.toStdString().c_str());
+//    QString fileName = QFileDialog::getOpenFileName(this, "Select File", lastDir, IMGTYPES);
+//    if(fileName == ""){ return; }
+//    lastDir = QFileInfo(fileName).path();
+//    ImagePreprocessor preproc;
+//    Mat a = imread(fileName.toStdString().c_str());
+
+//    Mat agray;
+//    cvtColor(a, agray, CV_BGR2GRAY);
+//    Mat asmall = preproc.downSampleWithoutSmoothing(agray);
+//    Mat asmall2;
+//    Mat asmall3;
+//    pyrDown(agray, asmall2);
+//    cv::resize(agray, asmall3, Size(), 0.5, 0.5, INTER_AREA);
+//    imwrite("orig.png", agray);
+//    imwrite("down1.png", asmall);
+//    imwrite("down2.png", asmall2);
+//    imwrite("down3.png", asmall3);
 
 //    //////////////////////////////////////////////////////////////
 //    // TEST MAKE IMAGE PATCHES
@@ -1271,28 +1283,28 @@ void MainWindow::on_pushButton_test_released()
 //    //merge channels and do normalization on multichannel image for comparison
 //    Mat aNorm;
 //    cv::merge(channelsNorm, aNorm);
-    vector<Mat> anorms;
-    anorms.push_back(preproc.NormalizeLocally(a, 15, 45));
-    anorms.push_back(preproc.NormalizeLocally(a, 15, 91));
-    anorms.push_back(preproc.NormalizeLocally(a, 15, 121));
-    anorms.push_back(preproc.NormalizeLocally(a, 15, 151));
+//    vector<Mat> anorms;
+//    anorms.push_back(preproc.NormalizeLocally(a, 15, 45));
+//    anorms.push_back(preproc.NormalizeLocally(a, 15, 91));
+//    anorms.push_back(preproc.NormalizeLocally(a, 15, 121));
+//    anorms.push_back(preproc.NormalizeLocally(a, 15, 151));
 
-    anorms.push_back(preproc.NormalizeLocally(a, 9, 45));
-    anorms.push_back(preproc.NormalizeLocally(a, 9, 91));
-    anorms.push_back(preproc.NormalizeLocally(a, 9, 121));
-    anorms.push_back(preproc.NormalizeLocally(a, 9, 151));
+//    anorms.push_back(preproc.NormalizeLocally(a, 9, 45));
+//    anorms.push_back(preproc.NormalizeLocally(a, 9, 91));
+//    anorms.push_back(preproc.NormalizeLocally(a, 9, 121));
+//    anorms.push_back(preproc.NormalizeLocally(a, 9, 151));
 
-    anorms.push_back(preproc.NormalizeLocally(a, 9, 27));
-    anorms.push_back(preproc.NormalizeLocally(a, 9, 55));
-    anorms.push_back(preproc.NormalizeLocally(a, 9, 73));
-    anorms.push_back(preproc.NormalizeLocally(a, 9, 91));
+//    anorms.push_back(preproc.NormalizeLocally(a, 9, 27));
+//    anorms.push_back(preproc.NormalizeLocally(a, 9, 55));
+//    anorms.push_back(preproc.NormalizeLocally(a, 9, 73));
+//    anorms.push_back(preproc.NormalizeLocally(a, 9, 91));
 
-    int cnt = 0;
-    foreach(Mat a, anorms)
-    {
-        QString s = "TestNorm_" + QString::number(cnt++) + ".png";
-        imwrite(s.toStdString().c_str() , a);
-    }
+//    int cnt = 0;
+//    foreach(Mat a, anorms)
+//    {
+//        QString s = "TestNorm_" + QString::number(cnt++) + ".png";
+//        imwrite(s.toStdString().c_str() , a);
+//    }
 
     //normalize to [0,1] in order to display
 //    cv::normalize(aNorm, aNorm, 0, 1, NORM_MINMAX);
