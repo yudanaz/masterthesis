@@ -1051,7 +1051,7 @@ void MainWindow::on_btn_makeImgPatches_released()
     foreach(QString fileName, fileNames)
     {
         //if a label file or nir file, jump to next
-        if(fileName.contains("_labels") || fileName.contains("_nir"))
+        if(fileName.contains("_labels") || fileName.contains("_nir") || fileName.contains("_depth"))
         {
             continue;
         }
@@ -1060,6 +1060,7 @@ void MainWindow::on_btn_makeImgPatches_released()
         QList<Mat> imgs;
         QString fileNameNoExtension = fileName;
         fileNameNoExtension.remove(QRegExp(".png|.jpg"));
+        QString onlyFileName = fileNameNoExtension.split("/").last();
         imgs.append( imread(fileName.toStdString().c_str()) );
 
         //NIR
@@ -1075,11 +1076,11 @@ void MainWindow::on_btn_makeImgPatches_released()
         //Depth
         if(QFile::exists(fileNameNoExtension + "_depth.jpg"))
         {
-            imgs.append( imread((fileNameNoExtension + "_depth.jpg").toStdString().c_str()) );
+            imgs.append( imread((fileNameNoExtension + "_depth.jpg").toStdString().c_str(), CV_LOAD_IMAGE_GRAYSCALE) );
         }
         else if(QFile::exists(fileNameNoExtension + "_depth.png"))
         {
-            imgs.append( imread((fileNameNoExtension + "_depth.png").toStdString().c_str()) );
+            imgs.append( imread((fileNameNoExtension + "_depth.png").toStdString().c_str(), CV_LOAD_IMAGE_GRAYSCALE) );
         }
 
         //read lable image
@@ -1088,15 +1089,14 @@ void MainWindow::on_btn_makeImgPatches_released()
 
         if(labelImg.empty())
         {
-            QMessageBox::information(this, "Label Image not in folder",
+            QMessageBox::information(this, "Label Image for" + fileNameNoExtension + " not in folder",
                                      "Label image must have same name + _labels.png!", QMessageBox::Ok);
             return;
         }
 
-        QString onlyFileName = fileNameNoExtension.split("/").last();
         QTime timer;
         timer.start();
-        preproc.makeImagePatches(imgs, labelImg, 15, 46, onlyFileName, outDir, imgIndex++, imgTotal);
+        preproc.makeImagePatches(imgs, labelImg, 15, 46, 3, onlyFileName, outDir, ++imgIndex, imgTotal);
         qDebug() << timer.elapsed();
     }
 
@@ -1231,11 +1231,11 @@ void MainWindow::on_pushButton_test_released()
 //    // endof TRANSFORM STANFORD BACKGROUND DATASET LABELS INTO PNG
 //    //////////////////////////////////////////////////////////////
 
-//    QString fileName = QFileDialog::getOpenFileName(this, "Select File", lastDir, IMGTYPES);
-//    if(fileName == ""){ return; }
-//    lastDir = QFileInfo(fileName).path();
-//    ImagePreprocessor preproc;
-//    Mat a = imread(fileName.toStdString().c_str());
+    QString fileName = QFileDialog::getOpenFileName(this, "Select File", lastDir, IMGTYPES);
+    if(fileName == ""){ return; }
+    lastDir = QFileInfo(fileName).path();
+    ImagePreprocessor preproc;
+    Mat a = imread(fileName.toStdString().c_str());
 
 //    //////////////////////////////////////////////////////////////
 //    // TEST MAKE IMAGE PATCHES
@@ -1253,50 +1253,67 @@ void MainWindow::on_pushButton_test_released()
 //    //////////////////////////////////////////////////////////////
 
 
-//    //////////////////////////////////////////////////////////////
-//    // TEST LOCAL NORMALIZATION
-//    //////////////////////////////////////////////////////////////
-//    //split image in its channels
-////    vector<Mat> channels(a.channels());
-////    cv::split(a, channels);
+    //////////////////////////////////////////////////////////////
+    // TEST LOCAL NORMALIZATION
+    //////////////////////////////////////////////////////////////
+    //split image in its channels
+//    vector<Mat> channels(a.channels());
+//    cv::split(a, channels);
 
-////    //normalize channels separately
-////    vector<Mat> channelsNorm;
-////    foreach(Mat img, channels)
-////    {
-////        Mat aNorm = preproc.NormalizeLocally(img, 15);
-////        channelsNorm.push_back(aNorm);
-////    }
+//    //normalize channels separately
+//    vector<Mat> channelsNorm;
+//    foreach(Mat img, channels)
+//    {
+//        Mat aNorm = preproc.NormalizeLocally(img, 15);
+//        channelsNorm.push_back(aNorm);
+//    }
 
-////    //merge channels and do normalization on multichannel image for comparison
-////    Mat aNorm;
-////    cv::merge(channelsNorm, aNorm);
-//    Mat aNorm2 = preproc.NormalizeLocally(a, 15);
+//    //merge channels and do normalization on multichannel image for comparison
+//    Mat aNorm;
+//    cv::merge(channelsNorm, aNorm);
+    vector<Mat> anorms;
+    anorms.push_back(preproc.NormalizeLocally(a, 15, 45));
+    anorms.push_back(preproc.NormalizeLocally(a, 15, 91));
+    anorms.push_back(preproc.NormalizeLocally(a, 15, 121));
+    anorms.push_back(preproc.NormalizeLocally(a, 15, 151));
 
+    anorms.push_back(preproc.NormalizeLocally(a, 9, 45));
+    anorms.push_back(preproc.NormalizeLocally(a, 9, 91));
+    anorms.push_back(preproc.NormalizeLocally(a, 9, 121));
+    anorms.push_back(preproc.NormalizeLocally(a, 9, 151));
 
-//    //normalize to [0,1] in order to display
-////    cv::normalize(aNorm, aNorm, 0, 1, NORM_MINMAX);
-////    cv::normalize(aNorm2, aNorm2, 0, 1, NORM_MINMAX);
+    anorms.push_back(preproc.NormalizeLocally(a, 9, 27));
+    anorms.push_back(preproc.NormalizeLocally(a, 9, 55));
+    anorms.push_back(preproc.NormalizeLocally(a, 9, 73));
+    anorms.push_back(preproc.NormalizeLocally(a, 9, 91));
 
-//    //print one channel to console - because of normalization, everything should be close to 128
+    int cnt = 0;
+    foreach(Mat a, anorms)
+    {
+        QString s = "TestNorm_" + QString::number(cnt++) + ".png";
+        imwrite(s.toStdString().c_str() , a);
+    }
+
+    //normalize to [0,1] in order to display
+//    cv::normalize(aNorm, aNorm, 0, 1, NORM_MINMAX);
+//    cv::normalize(aNorm2, aNorm2, 0, 1, NORM_MINMAX);
+
+    //print one channel to console - because of normalization, everything should be close to 128
 //    vector<Mat> temp(a.channels());
 //    cv::split(aNorm2, temp);
 //    Helper::Print1ChMatrixToConsole(temp.at(0));
 
-//    imshow("original image", a);
-////    imshow("normalized image (separate channels)", aNorm);
-//    imshow("normalized image (multichannel)", aNorm2);
 
-//    //save to disk in order to compare images in GIMP to see if separate channel normalization
-//    //and multichannel normalization do exactly the same thing.
-////    Mat aNorm_8bit, aNorm2_8bit;
-////    aNorm.convertTo(aNorm_8bit, CV_8U, 255);
-////    aNorm2.convertTo(aNorm2_8bit, CV_8U, 255);
-////    imwrite("test1.png", aNorm_8bit);
-////    imwrite("test2.png", aNorm2_8bit);
-//    //////////////////////////////////////////////////////////////
-//    // endof TEST LOCAL NORMALIZATION
-//    //////////////////////////////////////////////////////////////
+    //save to disk in order to compare images in GIMP to see if separate channel normalization
+    //and multichannel normalization do exactly the same thing.
+//    Mat aNorm_8bit, aNorm2_8bit;
+//    aNorm.convertTo(aNorm_8bit, CV_8U, 255);
+//    aNorm2.convertTo(aNorm2_8bit, CV_8U, 255);
+//    imwrite("test1.png", aNorm_8bit);
+//    imwrite("test2.png", aNorm2_8bit);
+    //////////////////////////////////////////////////////////////
+    // endof TEST LOCAL NORMALIZATION
+    //////////////////////////////////////////////////////////////
 
 
 //    //////////////////////////////////////////////////////////////
