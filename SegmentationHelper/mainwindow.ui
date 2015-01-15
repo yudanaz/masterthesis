@@ -49,6 +49,16 @@
          </property>
         </widget>
        </item>
+       <item>
+        <widget class="QPushButton" name="btn_makeTrainVal">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(244, 172, 172)</string>
+         </property>
+         <property name="text">
+          <string>Make Train/Val</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </item>
      <item>

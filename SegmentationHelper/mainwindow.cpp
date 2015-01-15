@@ -1039,6 +1039,15 @@ void MainWindow::on_btn_makeImgPatches_released()
 
     ImagePreprocessor preproc;
 
+    int imgIndex = 0;
+    int imgTotal = fileNames.count();
+    foreach(QString fileName, fileNames)
+    {
+        if(fileName.contains("_nir")){ imgTotal--; }
+        else if(fileName.contains("_label")){ imgTotal--; }
+        else if(fileName.contains("_depth")){ imgTotal--; }
+    }
+
     foreach(QString fileName, fileNames)
     {
         //if a label file or nir file, jump to next
@@ -1053,6 +1062,7 @@ void MainWindow::on_btn_makeImgPatches_released()
         fileNameNoExtension.remove(QRegExp(".png|.jpg"));
         imgs.append( imread(fileName.toStdString().c_str()) );
 
+        //NIR
         if(QFile::exists(fileNameNoExtension + "_nir.jpg"))
         {
             imgs.append( imread((fileNameNoExtension + "_nir.jpg").toStdString().c_str()) );
@@ -1060,6 +1070,16 @@ void MainWindow::on_btn_makeImgPatches_released()
         else if(QFile::exists(fileNameNoExtension + "_nir.png"))
         {
             imgs.append( imread((fileNameNoExtension + "_nir.png").toStdString().c_str()) );
+        }
+
+        //Depth
+        if(QFile::exists(fileNameNoExtension + "_depth.jpg"))
+        {
+            imgs.append( imread((fileNameNoExtension + "_depth.jpg").toStdString().c_str()) );
+        }
+        else if(QFile::exists(fileNameNoExtension + "_depth.png"))
+        {
+            imgs.append( imread((fileNameNoExtension + "_depth.png").toStdString().c_str()) );
         }
 
         //read lable image
@@ -1076,10 +1096,89 @@ void MainWindow::on_btn_makeImgPatches_released()
         QString onlyFileName = fileNameNoExtension.split("/").last();
         QTime timer;
         timer.start();
-        preproc.makeImagePatches(imgs, labelImg, 15, 46, onlyFileName, outDir);
+        preproc.makeImagePatches(imgs, labelImg, 15, 46, onlyFileName, outDir, imgIndex++, imgTotal);
         qDebug() << timer.elapsed();
     }
 
+}
+
+void MainWindow::on_btn_makeTrainVal_released()
+{
+    QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select label text files", lastDir, "*.txt");
+    if(fileNames.count() == 0){ return; }
+    lastDir = QFileInfo(fileNames.first()).path();
+
+    bool ok;
+    int trainPercentage = QInputDialog::getInt(this, "Set percentage of training data", "Training data in percent:",
+                                               80, 0, 100, 1, &ok);
+    if( !ok || !(trainPercentage > 0 && trainPercentage < 100) ){ return; }
+
+
+    QFile outfileTrain(lastDir + "/train.txt");
+    outfileTrain.open(QFile::WriteOnly);
+    QTextStream outTrain(&outfileTrain);
+    QFile outfileVal(lastDir + "/val.txt");
+    outfileVal.open(QFile::WriteOnly);
+    QTextStream outVal(&outfileVal);
+
+//    int trainAmount = fileNames.count() * trainPercentage / 100;
+    int cnt = 0;
+    int max = fileNames.count();
+
+    QProgressDialog progress("Making training and validation label files", "cancel", 0, max);
+    progress.setValue(0);
+    progress.setMinimumWidth(450);
+    progress.setMinimumDuration(100);
+    progress.setWindowModality(Qt::WindowModal);
+
+    foreach(QString fileName, fileNames)
+    {
+        QFile infile(fileName);
+        infile.open(QFile::ReadOnly);
+        QTextStream in(&infile);
+
+        //add  a line to either training or validation labels depending on random number and probability
+        while(!in.atEnd())
+        {
+            if( (rand() % 100) < trainPercentage) //add to training text file
+            {
+                outTrain << in.readLine() << "\n";
+            }
+            else //add to validation text file
+            {
+                outVal << in.readLine() << "\n";
+            }
+        }
+        infile.close();
+
+        progress.setValue(cnt++);
+        if(progress.wasCanceled()){ return; }
+    }
+
+//    while(fileNames.count() != 0)
+//    {
+//        int randomIndex = rand() % fileNames.count();
+//        QFile infile(fileNames.at(randomIndex));
+//        infile.open(QFile::ReadOnly);
+//        QTextStream in(&infile);
+
+//        if(cnt < trainAmount) //add to training text file
+//        {
+//            while(!in.atEnd()){ outTrain << in.readLine() << "\n"; }
+//        }
+//        else //add to validation text file
+//        {
+//            while(!in.atEnd()){ outVal << in.readLine() << "\n"; }
+//        }
+
+//        fileNames.removeAt(randomIndex);
+//        progress.setValue(cnt++);
+//        if(progress.wasCanceled()){ return; }
+//    }
+
+    outfileTrain.close();
+    outfileVal.close();
+    progress.setValue(max);
 }
 
 
@@ -1261,5 +1360,7 @@ void MainWindow::on_pushButton_test_released()
 //    // endof ADAPT IMAGE NET LABEL DATA
 //    //////////////////////////////////////////////////////////////
 }
+
+
 
 

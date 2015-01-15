@@ -41,7 +41,8 @@ Mat ImagePreprocessor::NormalizeLocally(Mat img, int neighborhoodSize, bool outp
 
 
 void ImagePreprocessor::makeImagePatches(QList<Mat> rgbdnir, Mat labelImg, int localNeighborhood,
-                                         int patchSize, QString outName, QString outFolder)
+                                         int patchSize, QString outName, QString outFolder,
+                                         int imgIndex, int imgTotal)
 {
     //set image compression
     vector<int> pngParams;
@@ -51,7 +52,7 @@ void ImagePreprocessor::makeImagePatches(QList<Mat> rgbdnir, Mat labelImg, int l
     //make progress dialog
     int maxCnt = rgbdnir.first().cols * rgbdnir.first().rows;
     int cnt = 0;
-    QProgressDialog progress("Making patches...", "cancel", 0, maxCnt);
+    QProgressDialog progress("Making patches for image " + QString::number(imgIndex) + " / " + QString::number(imgTotal), "cancel", 0, maxCnt);
     progress.setValue(0);
     progress.setMinimumWidth(450);
     progress.setMinimumDuration(100);

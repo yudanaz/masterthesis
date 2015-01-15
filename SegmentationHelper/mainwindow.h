@@ -121,6 +121,8 @@ private slots:
 
     void on_btn_makeImgPatches_released();
 
+    void on_btn_makeTrainVal_released();
+
 private:
 	void makeLabelImages(QStringList fileNames);
 	void makeSeedsSuperpixels(QString fileName);
