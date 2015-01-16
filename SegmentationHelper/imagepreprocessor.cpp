@@ -162,39 +162,41 @@ void ImagePreprocessor::makeImagePatches(QList<Mat> rgbdnir, Mat labelImg, int l
     int w = channelPyr[s][0].cols;
     int h = channelPyr[s][0].rows;
 
-    //make one big image for each channel, containing all pixel neighborhoods
-    for (int ch = 0; ch < nrOfChannels; ++ch)
-    {
-        //make output image, careful to round correctly, e.g. an 15x15 img downsampled is 8x8, not 7x7
-        float divider = s == 0 ? 1.0 : s*2.0;
-        Mat channelImg(patchSize * (int)(origHeight/divider+0.5), patchSize * (int)(origWidth/divider+0.5), CV_8UC1);
+    //make output image, careful to round correctly, e.g. an 15x15 img downsampled is 8x8, not 7x7
+    float divider = s == 0 ? 1.0 : s*2.0;
+    int outHeight = patchSize * (int)(origHeight/divider+0.5);
+    int outWidth = patchSize * (int)(origWidth/divider+0.5) * nrOfChannels;
+    Mat scaleImg(outHeight, outWidth, CV_8UC1);
 
-        //iterate over all pixel
-        for (int y = border; y < h-border+1; ++y)
-        {
-        for (int x = border; x < w-border+1; ++x)
+    //iterate over all pixel
+    for (int y = border; y < h-border+1; ++y)
+    {
+    for (int x = border; x < w-border+1; ++x)
+    {
+        //make one big image for all channels, containing all pixel neighborhoods, and channel patches in the same row
+        for (int ch = 0; ch < nrOfChannels; ++ch)
         {
             //make patch ROI and copy to big channel output image
             //!NOTE! that because of the even patch size, pixel is not exactly in the middle of patch!
             cv::Rect srcROI(x-border, y-border, patchSize, patchSize);
-            cv::Rect destROI((x-border) * patchSize, (y-border) * patchSize, patchSize, patchSize);
-            channelPyr[s][ch](srcROI).copyTo(channelImg(destROI));
+            cv::Rect destROI((x-border) * patchSize * nrOfChannels  + ch * patchSize, (y-border) * patchSize, patchSize, patchSize);
+            channelPyr[s][ch](srcROI).copyTo(scaleImg(destROI));
 
             //report progress
             progress.setValue(cnt++);
             if(progress.wasCanceled()){ return; }
         }
-        }
-
-        QString nm = outFolder + "/" + outName + "/" + outName
-                + "_s" + QString::number(s) + "_ch" + QString::number(ch);
-//        imwrite((nm + ".png").toStdString(), channelImg, pngParams);
-        imwrite((nm + ".jpg").toStdString(), channelImg, jpgParams);
+    }
     }
 
+    QString txtnm = outFolder + "/" + outName + "/" + outName
+            + "_s" + QString::number(s);
+//        imwrite((nm + ".png").toStdString(), channelImg, pngParams);
+    imwrite((txtnm + ".jpg").toStdString(), scaleImg, jpgParams);
+
     //also write label img for every scale to output folder
-    QString nm = outFolder + "/" + outName + "/" + outName + "_s" + QString::number(s) + "_labels.png";
-    imwrite(nm.toStdString(), labelPyr[s]);
+    QString labelnm = outFolder + "/" + outName + "/" + outName + "_s" + QString::number(s) + "_labels.png";
+    imwrite(labelnm.toStdString(), labelPyr[s]);
     }
 
     progress.setValue(maxCnt);
