@@ -45,20 +45,20 @@ void ImagePreprocessor::makeImagePatches(QList<Mat> rgbdnir, Mat labelImg, int l
                                          QString outName, QString outFolder,
                                          int imgIndex, int imgTotal)
 {
+    int origWidth = rgbdnir[0].cols;
+    int origHeight = rgbdnir[0].rows;
+
     //set image compression
-    vector<int> pngParams;
-    pngParams.push_back(CV_IMWRITE_PNG_COMPRESSION);
-    pngParams.push_back(8);
+//    vector<int> pngParams;
+//    pngParams.push_back(CV_IMWRITE_PNG_COMPRESSION);
+//    pngParams.push_back(8);
+    vector<int> jpgParams;
+    jpgParams.push_back(CV_IMWRITE_JPEG_QUALITY);
+    jpgParams.push_back(94);
 
     //make temporary folder to store images before compressing into tar
     QDir dir;
     dir.mkdir(outFolder + "/" + outName);
-
-    //prepare text stream for labels
-    QFile outFile(outFolder + "/" + outName + "_labels.txt");
-    outFile.open(QFile::WriteOnly);
-    QTextStream txtOut(&outFile);
-
 
     //Split all input images into their channels and join all channels in one vector
     vector<Mat> channels;
@@ -147,7 +147,7 @@ void ImagePreprocessor::makeImagePatches(QList<Mat> rgbdnir, Mat labelImg, int l
     int maxCnt = 0;
     for (int s = 0; s < scales; ++s)
     {
-        maxCnt += (channelPyr[s][0].cols - patchSize-1) * (channelPyr[s][0].rows - patchSize-1);
+        maxCnt += (channelPyr[s][0].cols - patchSize-1) * (channelPyr[s][0].rows - patchSize-1) * nrOfChannels;
     }
     QProgressDialog progress("Making patches for image " + QString::number(imgIndex) + " / " + QString::number(imgTotal), "cancel", 0, maxCnt);
     progress.setValue(0);
@@ -162,46 +162,92 @@ void ImagePreprocessor::makeImagePatches(QList<Mat> rgbdnir, Mat labelImg, int l
     int w = channelPyr[s][0].cols;
     int h = channelPyr[s][0].rows;
 
-    for (int y = border; y < h-border+1; ++y)
+    //make one big image for each channel, containing all pixel neighborhoods
+    for (int ch = 0; ch < nrOfChannels; ++ch)
     {
-    for (int x = border; x < w-border+1; ++x)
-    {
-        //save in temporary folder: each channel of the image as separate file, in order to use compression and minimize file size
-        //!NOTE! that we use PNG with highest compression, because it gives us the smallest file size for such small images (here 46x46)
-        QString relativeUrlNm = outName + "/" + outName + "_s" + QString::number(s)
-                + "_p" + QString::number(x-border) + "x" + QString::number(y-border);
-        QString nm = outFolder + "/" + relativeUrlNm;
+        //make output image, careful to round correctly, e.g. an 15x15 img downsampled is 8x8, not 7x7
+        float divider = s == 0 ? 1.0 : s*2.0;
+        Mat channelImg(patchSize * (int)(origHeight/divider+0.5), patchSize * (int)(origWidth/divider+0.5), CV_8UC1);
 
-        Mat concat(patchSize, patchSize * nrOfChannels, CV_8UC1);
-
-        //concatenate all channels in one image in order to make saving faster and use less disk space
-        for (int ch = 0; ch < nrOfChannels; ++ch)
+        //iterate over all pixel
+        for (int y = border; y < h-border+1; ++y)
         {
-            //make patch ROI and copy to output list
+        for (int x = border; x < w-border+1; ++x)
+        {
+            //make patch ROI and copy to big channel output image
             //!NOTE! that because of the even patch size, pixel is not exactly in the middle of patch!
-            Mat patch;
-            cv::Rect roi(x-border, y-border, patchSize, patchSize);
-            channelPyr[s][ch](roi).copyTo(patch);
+            cv::Rect srcROI(x-border, y-border, patchSize, patchSize);
+            cv::Rect destROI((x-border) * patchSize, (y-border) * patchSize, patchSize, patchSize);
+            channelPyr[s][ch](srcROI).copyTo(channelImg(destROI));
 
-//              imwrite((nm + "_ch" + QString::number(ch) + ".png").toStdString(), patch_channels.at(ch), pngParams);
-            patch.copyTo(concat(Rect(ch * patchSize, 0, patchSize, patchSize)));
+            //report progress
+            progress.setValue(cnt++);
+            if(progress.wasCanceled()){ return; }
         }
-        imwrite((nm + ".png").toStdString(), concat, pngParams);
+        }
 
-        //get label and write name and label to file (only the  relative URL to a patch name is printed,
-        //the separate channels ("_ch1 .. _chN") have to be merged later when read in a Mat object)
-        uchar label = labelPyr[s].at<uchar>(y-border, x-border);
-        txtOut << relativeUrlNm << " " << label << "\n";
+        QString nm = outFolder + "/" + outName + "/" + outName
+                + "_s" + QString::number(s) + "_ch" + QString::number(ch);
+//        imwrite((nm + ".png").toStdString(), channelImg, pngParams);
+        imwrite((nm + ".jpg").toStdString(), channelImg, jpgParams);
+    }
 
-        //report progress
-        progress.setValue(++cnt);
-        if(progress.wasCanceled()){ return; }
+    //also write label img for every scale to output folder
+    QString nm = outFolder + "/" + outName + "/" + outName + "_s" + QString::number(s) + "_labels.png";
+    imwrite(nm.toStdString(), labelPyr[s]);
     }
-    }
-    }
+
     progress.setValue(maxCnt);
-    txtOut.flush();
-    outFile.close();
+//    txtOut.flush();
+//    outFile.close();
+
+//    //make patches and label text file for all scale, all channels
+//    for (int s = 0; s < scales; ++s)
+//    {
+//    //for every pixel (except border/padding pixels)
+//    int w = channelPyr[s][0].cols;
+//    int h = channelPyr[s][0].rows;
+
+//    for (int y = border; y < h-border+1; ++y)
+//    {
+//    for (int x = border; x < w-border+1; ++x)
+//    {
+//        //save in temporary folder: each channel of the image as separate file, in order to use compression and minimize file size
+//        //!NOTE! that we use PNG with highest compression, because it gives us the smallest file size for such small images (here 46x46)
+//        QString relativeUrlNm = outName + "/" + outName + "_s" + QString::number(s)
+//                + "_p" + QString::number(x-border) + "x" + QString::number(y-border);
+//        QString nm = outFolder + "/" + relativeUrlNm;
+
+//        Mat concat(patchSize, patchSize * nrOfChannels, CV_8UC1);
+
+//        //concatenate all channels in one image in order to make saving faster and use less disk space
+//        for (int ch = 0; ch < nrOfChannels; ++ch)
+//        {
+//            //make patch ROI and copy to output list
+//            //!NOTE! that because of the even patch size, pixel is not exactly in the middle of patch!
+//            Mat patch;
+//            cv::Rect roi(x-border, y-border, patchSize, patchSize);
+//            channelPyr[s][ch](roi).copyTo(patch);
+
+////              imwrite((nm + "_ch" + QString::number(ch) + ".png").toStdString(), patch_channels.at(ch), pngParams);
+//            patch.copyTo(concat(Rect(ch * patchSize, 0, patchSize, patchSize)));
+//        }
+//        imwrite((nm + ".png").toStdString(), concat, pngParams);
+
+//        //get label and write name and label to file (only the  relative URL to a patch name is printed,
+//        //the separate channels ("_ch1 .. _chN") have to be merged later when read in a Mat object)
+//        uchar label = labelPyr[s].at<uchar>(y-border, x-border);
+//        txtOut << relativeUrlNm << " " << label << "\n";
+
+//        //report progress
+//        progress.setValue(++cnt);
+//        if(progress.wasCanceled()){ return; }
+//    }
+//    }
+//    }
+//    progress.setValue(maxCnt);
+//    txtOut.flush();
+//    outFile.close();
 
 //    //pack as TAR or ZIP file in order to minimize space. a 46x46 PNG file will have ~0.6K but will need 4K on disk because of block size
 //    QProcess tarProc;

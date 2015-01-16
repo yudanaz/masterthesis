@@ -1048,6 +1048,11 @@ void MainWindow::on_btn_makeImgPatches_released()
         else if(fileName.contains("_depth")){ imgTotal--; }
     }
 
+    //prepare text stream to save all file names
+    QFile outFile(outDir + "/images.txt");
+    outFile.open(QFile::WriteOnly);
+    QTextStream txtOut(&outFile);
+
     foreach(QString fileName, fileNames)
     {
         //if a label file or nir file, jump to next
@@ -1098,6 +1103,9 @@ void MainWindow::on_btn_makeImgPatches_released()
         timer.start();
         preproc.makeImagePatches(imgs, labelImg, 9, 46, 3, onlyFileName, outDir, ++imgIndex, imgTotal);
         qDebug() << timer.elapsed();
+
+        //write file name in output file
+        txtOut << onlyFileName << "/" << onlyFileName << "\n";
     }
 
 }
@@ -1237,17 +1245,22 @@ void MainWindow::on_pushButton_test_released()
 //    ImagePreprocessor preproc;
 //    Mat a = imread(fileName.toStdString().c_str());
 
-//    Mat agray;
-//    cvtColor(a, agray, CV_BGR2GRAY);
-//    Mat asmall = preproc.downSampleWithoutSmoothing(agray);
-//    Mat asmall2;
-//    Mat asmall3;
-//    pyrDown(agray, asmall2);
-//    cv::resize(agray, asmall3, Size(), 0.5, 0.5, INTER_AREA);
-//    imwrite("orig.png", agray);
-//    imwrite("down1.png", asmall);
-//    imwrite("down2.png", asmall2);
-//    imwrite("down3.png", asmall3);
+//    vector<Mat> imgs;
+//    imgs.push_back(imread("1.png", IMREAD_GRAYSCALE));
+//    imgs.push_back(imread("2.png", IMREAD_GRAYSCALE));
+//    imgs.push_back(imread("3.png", IMREAD_GRAYSCALE));
+//    imgs.push_back(imread("4.png", IMREAD_GRAYSCALE));
+//    imgs.push_back(imread("5.png", IMREAD_GRAYSCALE));
+//    imgs.push_back(imread("6.png", IMREAD_GRAYSCALE));
+//    imgs.push_back(imread("7.png", IMREAD_GRAYSCALE));
+
+//    Mat multich;
+//    cv::merge(imgs, multich);
+
+//    cv::FileStorage fs("mergeALL", FileStorage::WRITE);
+//    fs << "M1" << multich;
+//    fs.release();
+
 
 //    //////////////////////////////////////////////////////////////
 //    // TEST MAKE IMAGE PATCHES
