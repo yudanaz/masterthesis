@@ -299,4 +299,78 @@ Mat ImagePreprocessor::downSampleWithoutSmoothing(Mat grayImg)
 
 
 
+void ImagePreprocessor::cutImageInPieces(int divideBy, QString fileName)
+{
+    Mat orig = imread(fileName.toStdString(), IMREAD_UNCHANGED);
+
+    QDir dir = QFileInfo(fileName).absoluteDir();
+    QString outDir = dir.absolutePath() + "/pieces";
+    dir.mkdir(outDir);
+    QStringList list = fileName.split("/");
+    fileName = list.last();
+
+    QString typeSuffix;
+    if(fileName.contains(".jpg"))
+    {
+        fileName.remove(".jpg"); typeSuffix = ".jpg";
+    }
+    else if(fileName.contains(".png"))
+    {
+        fileName.remove(".png"); typeSuffix = ".png";
+    }
+
+    QString channelSuffix;
+    if(fileName.contains("_labels"))
+    {
+        fileName.remove("_labels"); channelSuffix = "_labels";
+    }
+    else if(fileName.contains("_nir"))
+    {
+        fileName.remove("_nir"); channelSuffix = "_nir";
+    }
+    else if(fileName.contains("_depth"))
+    {
+        fileName.remove("_depth"); channelSuffix = "_depth";
+    }
+
+
+    int w = orig.cols / divideBy;
+    int h = orig.rows / divideBy;
+    std::vector<Mat> pieces;
+
+    for (int y = 0; y < divideBy; ++y)
+    {
+        for (int x = 0; x < divideBy; ++x)
+        {
+            //if int division leaves over some pixels, make last images in row / column bigger by that
+            int h_, w_;
+            if(y == divideBy-1)
+            {
+                h_ = h + orig.rows - divideBy * h;
+            }
+            else { h_ = h; }
+            if(x == divideBy-1)
+            {
+                w_ = w + orig.cols - divideBy * w;
+            }
+            else { w_ = w; }
+
+            Mat out(h_, w_, orig.type());
+            cv::Rect roi(x * w, y * h, w_, h_) ;
+            orig(roi).copyTo(out);
+            pieces.push_back(out);
+//            imshow("show", out);
+//            cvWaitKey(100);
+        }
+    }
+
+    for(int i = 0; i < pieces.size(); ++i)
+    {
+        QString nm = outDir + "/" + fileName + "_" + QString::number(i) + channelSuffix + typeSuffix;
+        imwrite(nm.toStdString(), pieces[i]);
+    }
+}
+
+
+
 

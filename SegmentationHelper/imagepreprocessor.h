@@ -18,6 +18,8 @@ class ImagePreprocessor
 public:
     ImagePreprocessor();
 
+    void cutImageInPieces(int divideBy, QString fileName);
+
     /*!
      * \brief Pre-processes an image to zero mean and unit variance
      * (standard deviation) for local neighborhoods in order to make
