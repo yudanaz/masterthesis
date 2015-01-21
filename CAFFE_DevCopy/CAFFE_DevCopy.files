@@ -166,3 +166,4 @@ src/caffe/proto/caffe.proto
 src/caffe/proto/caffe_pretty_print.proto
 include/caffe/netrgbdnir.hpp
 src/caffe/netrgbdnir.cpp
+src/caffe/solverrgbdnir.cpp

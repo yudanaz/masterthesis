@@ -15,4 +15,15 @@
 #include "caffe/util/io.hpp"
 #include "caffe/vision_layers.hpp"
 
+#include "blob.hpp"
+#include "common.hpp"
+#include "filler.hpp"
+#include "layer.hpp"
+#include "net.hpp"
+#include "../../build/src/caffe/proto/caffe.pb.h"
+#include "solver.hpp"
+#include "util/benchmark.hpp"
+#include "util/io.hpp"
+#include "vision_layers.hpp"
+
 #endif  // CAFFE_CAFFE_HPP_

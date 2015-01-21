@@ -5,7 +5,8 @@
 #include <string>
 #include <vector>
 
-#include "caffe/caffe.hpp"
+#include "/caffe/caffe.hpp"
+#include "../include/caffe/caffe.hpp"
 
 using caffe::Blob;
 using caffe::Caffe;

@@ -10,6 +10,10 @@
 
 #include "caffe/blob.hpp"
 #include "caffe/proto/caffe.pb.h"
+
+#include "../../include/caffe/blob.hpp"
+#include "../../build/src/caffe/proto/caffe.pb.h"
+
 #include "opencv2/opencv.hpp"
 
 #define HDF5_NUM_DIMS 4

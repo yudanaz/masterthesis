@@ -10,8 +10,8 @@ template <typename Dtype>
 class NetRGBDNIR : public Net<Dtype>
 {
 public:
-    void setup(std::string imgsListURL, int patchsize, int imgHeight, int imgWidth);
-    void feedNextPatchesToInputLayers(int batchSize);
+    void setup(std::string imgsListURL, int patchsize, int imgHeight, int imgWidth, int batchSize);
+    void feedNextPatchesToInputLayers();
 
 protected:
     void readNextImage();
@@ -25,6 +25,7 @@ protected:
     int imgMax;
     int patchCnt;
     int patchMax;
+    int batchSz;
 
     cv::Mat img_labels;
 

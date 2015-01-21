@@ -8,7 +8,7 @@
 namespace caffe {
 
 template<typename Dtype>
-void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int imgHeight, int imgWidth)
+void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int imgHeight, int imgWidth, int batchSize)
 {
     //read image names from file to list
     std::ifstream inFile;
@@ -30,13 +30,14 @@ void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int imgHei
     width = imgWidth;
     patchCnt = 0;
     patchMax = heigth * width;
+    batchSz = batchSize;
 
     //read first image
     readNextImage();
 }
 
 template<typename Dtype>
-void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers(int batchSize)
+void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 {
     vector<Datum> datums_rgb0;
     vector<Datum> datums_rgb1;
@@ -50,7 +51,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers(int batchSize)
     vector<Datum> datums_depth1;
     vector<Datum> datums_depth2;
 
-    for(int batchCnt = 0; batchCnt < batchSize; ++batchCnt)
+    for(int batchCnt = 0; batchCnt < batchSz; ++batchCnt)
     {
         //if all patches in current image have been read, load next image
         if(++patchCnt == patchMax)
