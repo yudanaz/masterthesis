@@ -133,17 +133,17 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
         if(layer->type() == LayerParameter_LayerType_MEMORY_DATA)
         {
             std::string nm = layer->layer_param().name();
-            if(nm == "rgb0"){ ((MemoryDataLayer<Dtype>)layer).AddDatumVector(datums_rgb0); }
-            else if(nm == "rgb1"){ ((MemoryDataLayer<Dtype>)layer).AddDatumVector(datums_rgb1); }
-            else if(nm == "rgb2"){ ((MemoryDataLayer<Dtype>)layer).AddDatumVector(datums_rgb2); }
+            if(nm == "rgb0"){ ((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_rgb0); }
+            else if(nm == "rgb1"){ ((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_rgb1); }
+            else if(nm == "rgb2"){ ((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_rgb2); }
 
-            else if(nm == "nir0"){ ((MemoryDataLayer<Dtype>)layer).AddDatumVector(datums_rgb0); }
-            else if(nm == "nir1"){ ((MemoryDataLayer<Dtype>)layer).AddDatumVector(datums_rgb1); }
-            else if(nm == "nir2"){ ((MemoryDataLayer<Dtype>)layer).AddDatumVector(datums_rgb2); }
+            else if(nm == "nir0"){ ((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_rgb0); }
+            else if(nm == "nir1"){ ((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_rgb1); }
+            else if(nm == "nir2"){ ((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_rgb2); }
 
-            else if(nm == "depth0"){ ((MemoryDataLayer<Dtype>)layer).AddDatumVector(datums_depth0); }
-            else if(nm == "depth1"){ ((MemoryDataLayer<Dtype>)layer).AddDatumVector(datums_depth1); }
-            else if(nm == "depth2"){ ((MemoryDataLayer<Dtype>)layer).AddDatumVector(datums_depth2); }
+            else if(nm == "depth0"){ ((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_depth0); }
+            else if(nm == "depth1"){ ((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_depth1); }
+            else if(nm == "depth2"){ ((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_depth2); }
         }
     }
 }
@@ -198,5 +198,6 @@ void NetRGBDNIR<Dtype>::readNextImage()
     cv::copyMakeBorder(temp1, img_depth2, borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 2 (1/4 the size)
 }
 
+INSTANTIATE_CLASS(NetRGBDNIR);
 
 } //namespace caffe

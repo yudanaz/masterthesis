@@ -4,12 +4,16 @@
 #include <string>
 #include <vector>
 
+#include <boost/pointer_cast.hpp>
+#include <boost/shared_ptr.hpp>
+
 #include "caffe/net.hpp"
 #include "caffe/proto/caffe.pb.h"
 #include "caffe/solver.hpp"
 #include "caffe/util/io.hpp"
 #include "caffe/util/math_functions.hpp"
 #include "caffe/util/upgrade_proto.hpp"
+#include "caffe/netrgbdnir.hpp"
 
 #include "../../include/caffe/net.hpp"
 #include "../../build/src/caffe/proto/caffe.pb.h"
@@ -17,6 +21,7 @@
 #include "../../include/caffe/util/io.hpp"
 #include "../../include/caffe/util/math_functions.hpp"
 #include "../../include/caffe/util/upgrade_proto.hpp"
+#include "../../include/caffe/netrgbdnir.hpp"
 
 
 namespace caffe {
@@ -84,7 +89,29 @@ void Solver<Dtype>::InitTrainNet() {
   net_state.MergeFrom(net_param.state());
   net_state.MergeFrom(param_.train_state());
   net_param.mutable_state()->CopyFrom(net_state);
-  net_.reset(new Net<Dtype>(net_param));
+//  net_.reset(new Net<Dtype>(net_param));
+
+    ////////////////////////////////////////////////////////////////////////////////
+    /// RGBDNIR extension of original Solver class: ////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+    isRGBDNIR = param_.has_rgbdnir_param();
+    if(!isRGBDNIR)
+    {
+        net_.reset(new Net<Dtype>(net_param));
+    }
+    else
+    {
+        net_.reset(new NetRGBDNIR<Dtype>(net_param));
+        std::string imageListURL = param_.rgbdnir_param().trainimgsurl();
+        int patchSize = param_.rgbdnir_param().patchsize();
+        int height = param_.rgbdnir_param().imgheight();
+        int width = param_.rgbdnir_param().imgwidth();
+        int batchSize = param_.rgbdnir_param().trainbatchsize();
+        boost::dynamic_pointer_cast<NetRGBDNIR<Dtype> >(net_)->setup(imageListURL, patchSize, height, width, batchSize);
+    }
+    ////////////////////////////////////////////////////////////////////////////////
+    /// endof RGBDNIR extension of original Solver class: //////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
 }
 
 template <typename Dtype>
@@ -158,7 +185,29 @@ void Solver<Dtype>::InitTestNets() {
     net_params[i].mutable_state()->CopyFrom(net_state);
     LOG(INFO)
         << "Creating test net (#" << i << ") specified by " << sources[i];
-    test_nets_[i].reset(new Net<Dtype>(net_params[i]));
+//    test_nets_[i].reset(new Net<Dtype>(net_params[i]));
+    ////////////////////////////////////////////////////////////////////////////////
+    /// RGBDNIR extension of original Solver class: ////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+    isRGBDNIR = param_.has_rgbdnir_param();
+    if(!isRGBDNIR)
+    {
+        test_nets_[i].reset(new Net<Dtype>(net_params[i]));
+    }
+    else
+    {
+        test_nets_[i].reset(new NetRGBDNIR<Dtype>(net_params[i]));
+        std::string imageListURL = param_.rgbdnir_param().testimgsurl();
+        int patchSize = param_.rgbdnir_param().patchsize();
+        int height = param_.rgbdnir_param().imgheight();
+        int width = param_.rgbdnir_param().imgwidth();
+        int batchSize = param_.rgbdnir_param().testbatchsize();
+        boost::dynamic_pointer_cast<NetRGBDNIR<Dtype> >(test_nets_[i])->setup(imageListURL, patchSize, height, width, batchSize);
+    }
+    ////////////////////////////////////////////////////////////////////////////////
+    /// endof RGBDNIR extension of original Solver class: //////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+
   }
 }
 
@@ -194,7 +243,20 @@ void Solver<Dtype>::Solve(const char* resume_file) {
 
     const bool display = param_.display() && iter_ % param_.display() == 0;
     net_->set_debug_info(display && param_.debug_info());
+//    Dtype loss = net_->ForwardBackward(bottom_vec);
+
+    ////////////////////////////////////////////////////////////////////////////////
+    /// RGBDNIR extension of original Solver class: ////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+    if(isRGBDNIR)
+    {
+        boost::dynamic_pointer_cast<NetRGBDNIR<Dtype> >(net_)->feedNextPatchesToInputLayers();
+    }
     Dtype loss = net_->ForwardBackward(bottom_vec);
+    ////////////////////////////////////////////////////////////////////////////////
+    /// endof RGBDNIR extension of original Solver class: //////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+
     if (display) {
       LOG(INFO) << "Iteration " << iter_ << ", loss = " << loss;
       const vector<Blob<Dtype>*>& result = net_->output_blobs();
@@ -265,8 +327,21 @@ void Solver<Dtype>::Test(const int test_net_id) {
   Dtype loss = 0;
   for (int i = 0; i < param_.test_iter(test_net_id); ++i) {
     Dtype iter_loss;
-    const vector<Blob<Dtype>*>& result =
-        test_net->Forward(bottom_vec, &iter_loss);
+//    const vector<Blob<Dtype>*>& result =
+//        test_net->Forward(bottom_vec, &iter_loss);
+
+    ////////////////////////////////////////////////////////////////////////////////
+    /// RGBDNIR extension of original Solver class: ////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+    if(isRGBDNIR)
+    {
+        boost::dynamic_pointer_cast<NetRGBDNIR<Dtype> >(test_net)->feedNextPatchesToInputLayers();
+    }
+    const vector<Blob<Dtype>*>& result = test_net->Forward(bottom_vec, &iter_loss);
+    ////////////////////////////////////////////////////////////////////////////////
+    /// endof RGBDNIR extension of original Solver class: //////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+
     if (param_.test_compute_loss()) {
       loss += iter_loss;
     }

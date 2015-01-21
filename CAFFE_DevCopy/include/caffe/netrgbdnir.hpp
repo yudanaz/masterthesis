@@ -3,6 +3,7 @@
 
 #include "../../include/caffe/net.hpp"
 #include <opencv2/opencv.hpp>
+#include "../../include/caffe/data_layers.hpp"
 
 namespace caffe {
 
@@ -10,6 +11,9 @@ template <typename Dtype>
 class NetRGBDNIR : public Net<Dtype>
 {
 public:
+    explicit NetRGBDNIR(const NetParameter& param) : Net<Dtype>(param){}
+    explicit NetRGBDNIR(const string& param_file) : Net<Dtype>(param_file){}
+
     void setup(std::string imgsListURL, int patchsize, int imgHeight, int imgWidth, int batchSize);
     void feedNextPatchesToInputLayers();
 
