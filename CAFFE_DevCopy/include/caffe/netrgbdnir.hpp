@@ -14,7 +14,7 @@ public:
     explicit NetRGBDNIR(const NetParameter& param) : Net<Dtype>(param){}
     explicit NetRGBDNIR(const string& param_file) : Net<Dtype>(param_file){}
 
-    void setup(std::string imgsListURL, int patchsize, int imgHeight, int imgWidth, int batchSize);
+    void setup(std::string imgsListURL, int patchsize, int batchSize);
     void feedNextPatchesToInputLayers();
 
 protected:
@@ -22,8 +22,6 @@ protected:
     cv::Mat getImgPatch(cv::Mat img, int x, int y);
     int patchSz;
     int borderSz;
-    int heigth;
-    int width;
     std::vector<std::string> imgs;
     int imgCnt;
     int imgMax;

@@ -1034,15 +1034,17 @@ void MainWindow::on_btn_makeImgPatches_released()
     lastDir = QFileInfo(fileNames.first()).path();
 
     bool ok;
-    int divide = QInputDialog::getInt(this, "Pieces", "Divide by?",
-                                               2, 0, 32, 2, &ok);
+    int divide = QInputDialog::getInt(this, "Pieces", "Divide by?", 4, 0, 32, 2, &ok);
+    if(!ok){ return; }
+
+    int patchSz = QInputDialog::getInt(this, "PatchSize", "What is the patch size?", 46, 0, 256, 2, &ok);
     if(!ok){ return; }
 
     ImagePreprocessor preproc;
 
     foreach(QString fileName, fileNames)
     {
-        preproc.cutImageInPieces(divide, fileName);
+        preproc.cutImageInPieces(divide, patchSz, fileName);
     }
 
 //    QString outDir = lastDir + "/patches";

@@ -104,10 +104,8 @@ void Solver<Dtype>::InitTrainNet() {
         net_.reset(new NetRGBDNIR<Dtype>(net_param));
         std::string imageListURL = param_.rgbdnir_param().trainimgsurl();
         int patchSize = param_.rgbdnir_param().patchsize();
-        int height = param_.rgbdnir_param().imgheight();
-        int width = param_.rgbdnir_param().imgwidth();
         int batchSize = param_.rgbdnir_param().trainbatchsize();
-        boost::dynamic_pointer_cast<NetRGBDNIR<Dtype> >(net_)->setup(imageListURL, patchSize, height, width, batchSize);
+        boost::dynamic_pointer_cast<NetRGBDNIR<Dtype> >(net_)->setup(imageListURL, patchSize, batchSize);
     }
     ////////////////////////////////////////////////////////////////////////////////
     /// endof RGBDNIR extension of original Solver class: //////////////////////////
@@ -199,10 +197,8 @@ void Solver<Dtype>::InitTestNets() {
         test_nets_[i].reset(new NetRGBDNIR<Dtype>(net_params[i]));
         std::string imageListURL = param_.rgbdnir_param().testimgsurl();
         int patchSize = param_.rgbdnir_param().patchsize();
-        int height = param_.rgbdnir_param().imgheight();
-        int width = param_.rgbdnir_param().imgwidth();
         int batchSize = param_.rgbdnir_param().testbatchsize();
-        boost::dynamic_pointer_cast<NetRGBDNIR<Dtype> >(test_nets_[i])->setup(imageListURL, patchSize, height, width, batchSize);
+        boost::dynamic_pointer_cast<NetRGBDNIR<Dtype> >(test_nets_[i])->setup(imageListURL, patchSize, batchSize);
     }
     ////////////////////////////////////////////////////////////////////////////////
     /// endof RGBDNIR extension of original Solver class: //////////////////////////

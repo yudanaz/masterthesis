@@ -8,7 +8,7 @@
 namespace caffe {
 
 template<typename Dtype>
-void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int imgHeight, int imgWidth, int batchSize)
+void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchSize)
 {
     //read image names from file to list
     std::ifstream inFile;
@@ -26,10 +26,8 @@ void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int imgHei
     //set the rest
     patchSz = patchsize;
     borderSz = patchsize / 2;
-    heigth = imgHeight;
-    width = imgWidth;
     patchCnt = 0;
-    patchMax = heigth * width;
+    patchMax = 0; //is set correctly in readNextImage each time an image is read
     batchSz = batchSize;
 
     //read first image
@@ -170,6 +168,7 @@ void NetRGBDNIR<Dtype>::readNextImage()
     std::string depthNm = imageURL + std::string("_depth.jpg");
 
     img_labels = cv::imread(labelsNm, cv::IMREAD_GRAYSCALE); //label img isn't downsampled nor padded
+    patchMax = img_labels.cols * img_labels.rows;
 
     cv::Mat temp1, temp2;
 

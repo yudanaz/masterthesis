@@ -18,7 +18,7 @@ class ImagePreprocessor
 public:
     ImagePreprocessor();
 
-    void cutImageInPieces(int divideBy, QString fileName);
+    void cutImageInPieces(int divideBy, int patchSize, QString fileName);
 
     /*!
      * \brief Pre-processes an image to zero mean and unit variance
@@ -59,6 +59,10 @@ public:
     void makeImagePatches(QList<Mat> img, Mat labelImg, int localNeighborhood, int patchSize, int scales, QString outName, QString outFolder, int imgIndex, int imgTotal);
 
     Mat downSampleWithoutSmoothing(Mat grayImg);
+
+private:
+    vector<int> pngParams;
+    vector<int> jpgParams;
 };
 
 #endif // IMAGEPREPROCESSOR_H

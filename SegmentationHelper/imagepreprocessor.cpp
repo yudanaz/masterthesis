@@ -7,7 +7,11 @@
 
 ImagePreprocessor::ImagePreprocessor()
 {
-
+    //set image compression
+    pngParams.push_back(CV_IMWRITE_PNG_COMPRESSION);
+    pngParams.push_back(5);
+    jpgParams.push_back(CV_IMWRITE_JPEG_QUALITY);
+    jpgParams.push_back(95);
 }
 
 Mat ImagePreprocessor::NormalizeLocally(Mat img, int meanKernel, int stdDevKernel, bool outputAs8bit)
@@ -299,7 +303,7 @@ Mat ImagePreprocessor::downSampleWithoutSmoothing(Mat grayImg)
 
 
 
-void ImagePreprocessor::cutImageInPieces(int divideBy, QString fileName)
+void ImagePreprocessor::cutImageInPieces(int divideBy, int patchSize, QString fileName)
 {
     Mat orig = imread(fileName.toStdString(), IMREAD_UNCHANGED);
 
@@ -342,7 +346,7 @@ void ImagePreprocessor::cutImageInPieces(int divideBy, QString fileName)
     {
         for (int x = 0; x < divideBy; ++x)
         {
-            //if int division leaves over some pixels, make last images in row / column bigger by that
+            //if int division leaves over some pixels, make las vfgt images in row / column bigger by that
             int h_, w_;
             if(y == divideBy-1)
             {
@@ -355,8 +359,21 @@ void ImagePreprocessor::cutImageInPieces(int divideBy, QString fileName)
             }
             else { w_ = w; }
 
-            Mat out(h_, w_, orig.type());
-            cv::Rect roi(x * w, y * h, w_, h_) ;
+            //make padding so that pieces overlap each other, but respecting image borders
+            //padding should ensure that pixels would be learned as border pixels but also
+            //inside their original neighborhood after cutting image into pieces
+            int border = patchSize/2;
+            int left = x * w;
+            int up = y * h;
+            int sizeX = w_;
+            int sizeY = h_;
+            int leftPad = (left - border < 0) ? 0 : border;
+            int upPad = (up - border < 0) ? 0 : border;
+            int rightPad = (left + sizeX + border > orig.cols) ? 0 : border;
+            int downPad = (up + sizeY + border > orig.rows) ? 0 : border;
+
+            Mat out;//(outSizeY, outSizeX, orig.type());
+            cv::Rect roi(left-leftPad, up-upPad, sizeX + leftPad + rightPad, sizeY + upPad + downPad) ;
             orig(roi).copyTo(out);
             pieces.push_back(out);
 //            imshow("show", out);
@@ -367,7 +384,8 @@ void ImagePreprocessor::cutImageInPieces(int divideBy, QString fileName)
     for(int i = 0; i < pieces.size(); ++i)
     {
         QString nm = outDir + "/" + fileName + "_" + QString::number(i) + channelSuffix + typeSuffix;
-        imwrite(nm.toStdString(), pieces[i]);
+        if(typeSuffix == ".jpg"){ imwrite(nm.toStdString(), pieces[i], jpgParams); }
+        else if(typeSuffix == ".png"){ imwrite(nm.toStdString(), pieces[i], pngParams); }
     }
 }
 

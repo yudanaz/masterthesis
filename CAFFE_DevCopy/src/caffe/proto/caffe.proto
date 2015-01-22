@@ -802,7 +802,5 @@ message RGBDNIRSegmImgSourceParameter {
   optional uint32 trainBatchSize = 3 [default = 128];
   optional uint32 testBatchSize = 4 [default = 64];
   required uint32 patchSize = 5; //the size of the patch around each pixel to classify
-  required uint32 imgHeight = 6; //the height of the images
-  required uint32 imgWidth = 7;
 }
 
