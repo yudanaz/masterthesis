@@ -1034,8 +1034,8 @@ void MainWindow::on_btn_makeImgPatches_released()
     lastDir = QFileInfo(fileNames.first()).path();
 
     bool ok;
-    int divide = QInputDialog::getInt(this, "Pieces", "Divide by?", 4, 0, 32, 2, &ok);
-    if(!ok){ return; }
+//    int divide = QInputDialog::getInt(this, "Pieces", "Divide by?", 4, 0, 32, 2, &ok);
+//    if(!ok){ return; }
 
     int patchSz = QInputDialog::getInt(this, "PatchSize", "What is the patch size?", 46, 0, 256, 2, &ok);
     if(!ok){ return; }
@@ -1044,7 +1044,7 @@ void MainWindow::on_btn_makeImgPatches_released()
 
     foreach(QString fileName, fileNames)
     {
-        preproc.cutImageInPieces(divide, patchSz, fileName);
+        preproc.cutImageIn4Pieces(patchSz, fileName);
     }
 
 //    QString outDir = lastDir + "/patches";
@@ -1152,24 +1152,32 @@ void MainWindow::on_btn_makeTrainVal_released()
     progress.setMinimumDuration(100);
     progress.setWindowModality(Qt::WindowModal);
 
+    //count pure filenames without NIR, Depth
+    int filesTotal = 0;
+    foreach(QString fileName, fileNames)
+    {
+        if(!(fileName.contains("_depth") || fileName.contains("_nir") || fileName.contains("_labels")) )
+        { filesTotal++; }
+    }
+
+    int trainCnt = 0;
+    int trainMax = (filesTotal * (float)trainPercentage / 100.0) + 0.5;
+    int testCnt = 0;
+    int testMax = filesTotal - trainMax;
+
     foreach(QString fileName, fileNames)
     {
         if(!(fileName.contains("_depth") || fileName.contains("_nir") || fileName.contains("_labels")) )
         {
-            QFileInfo labelsFile(fileName.remove(".jpg") + "_labels.png");
-            QFileInfo nirFile(fileName + "_nir.jpg");
-            QFileInfo depthFile(fileName + "_depth.jpg");
-
-            if(labelsFile.exists() && nirFile.exists() && depthFile.exists())
+            if( (rand() % 100) < trainPercentage) //add to training text file
             {
-                if( (rand() % 100) < trainPercentage) //add to training text file
-                {
-                    outTrain << fileName << "\n";
-                }
-                else //add to validation text file
-                {
-                    outVal << fileName << "\n";
-                }
+                if(trainCnt++ < trainMax){ outTrain << fileName << "\n"; }
+                else{ outVal << fileName << "\n"; }
+            }
+            else //add to validation text file
+            {
+                if(testCnt++ < testMax){ outVal << fileName << "\n"; }
+                else{ outTrain << fileName << "\n"; }
             }
         }
 

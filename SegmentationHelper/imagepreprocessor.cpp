@@ -303,7 +303,7 @@ Mat ImagePreprocessor::downSampleWithoutSmoothing(Mat grayImg)
 
 
 
-void ImagePreprocessor::cutImageInPieces(int divideBy, int patchSize, QString fileName)
+void ImagePreprocessor::cutImageIn4Pieces(int patchSize, QString fileName)
 {
     Mat orig = imread(fileName.toStdString(), IMREAD_UNCHANGED);
 
@@ -338,48 +338,69 @@ void ImagePreprocessor::cutImageInPieces(int divideBy, int patchSize, QString fi
     }
 
 
-    int w = orig.cols / divideBy;
-    int h = orig.rows / divideBy;
     std::vector<Mat> pieces;
+    int border = patchSize / 2;
+    int middleX = orig.cols / 2;
+    int middleY = orig.rows / 2;
+    int pieceWidth = middleX + border;
+    int pieceHeight = middleY + border;
 
-    for (int y = 0; y < divideBy; ++y)
-    {
-        for (int x = 0; x < divideBy; ++x)
-        {
-            //if int division leaves over some pixels, make las vfgt images in row / column bigger by that
-            int h_, w_;
-            if(y == divideBy-1)
-            {
-                h_ = h + orig.rows - divideBy * h;
-            }
-            else { h_ = h; }
-            if(x == divideBy-1)
-            {
-                w_ = w + orig.cols - divideBy * w;
-            }
-            else { w_ = w; }
+    Rect roi1(0, 0, pieceWidth, pieceHeight);
+    Rect roi2(middleX - border, 0, pieceWidth, pieceHeight);
+    Rect roi3(0, middleY - border, pieceWidth, pieceHeight);
+    Rect roi4(middleX - border, middleY - border, pieceWidth, pieceHeight);
+    Mat out1, out2, out3, out4;
 
-            //make padding so that pieces overlap each other, but respecting image borders
-            //padding should ensure that pixels would be learned as border pixels but also
-            //inside their original neighborhood after cutting image into pieces
-            int border = patchSize/2;
-            int left = x * w;
-            int up = y * h;
-            int sizeX = w_;
-            int sizeY = h_;
-            int leftPad = (left - border < 0) ? 0 : border;
-            int upPad = (up - border < 0) ? 0 : border;
-            int rightPad = (left + sizeX + border > orig.cols) ? 0 : border;
-            int downPad = (up + sizeY + border > orig.rows) ? 0 : border;
+    orig(roi1).copyTo(out1);
+    orig(roi2).copyTo(out2);
+    orig(roi3).copyTo(out3);
+    orig(roi4).copyTo(out4);
 
-            Mat out;//(outSizeY, outSizeX, orig.type());
-            cv::Rect roi(left-leftPad, up-upPad, sizeX + leftPad + rightPad, sizeY + upPad + downPad) ;
-            orig(roi).copyTo(out);
-            pieces.push_back(out);
-//            imshow("show", out);
-//            cvWaitKey(100);
-        }
-    }
+    pieces.push_back(out1);
+    pieces.push_back(out2);
+    pieces.push_back(out3);
+    pieces.push_back(out4);
+
+    //    int w = orig.cols / divideBy;
+    //    int h = orig.rows / divideBy;
+//    for (int y = 0; y < divideBy; ++y)
+//    {
+//        for (int x = 0; x < divideBy; ++x)
+//        {
+//            //if int division leaves over some pixels, make las vfgt images in row / column bigger by that
+//            int h_, w_;
+//            if(y == divideBy-1)
+//            {
+//                h_ = h + orig.rows - divideBy * h;
+//            }
+//            else { h_ = h; }
+//            if(x == divideBy-1)
+//            {
+//                w_ = w + orig.cols - divideBy * w;
+//            }
+//            else { w_ = w; }
+
+//            //make padding so that pieces overlap each other, but respecting image borders
+//            //padding should ensure that pixels would be learned as border pixels but also
+//            //inside their original neighborhood after cutting image into pieces
+//            int border = patchSize/2;
+//            int left = x * w;
+//            int up = y * h;
+//            int sizeX = w_;
+//            int sizeY = h_;
+//            int leftPad = (left - border < 0) ? 0 : border;
+//            int upPad = (up - border < 0) ? 0 : border;
+//            int rightPad = (left + sizeX + border > orig.cols) ? 0 : border;
+//            int downPad = (up + sizeY + border > orig.rows) ? 0 : border;
+
+//            Mat out;//(outSizeY, outSizeX, orig.type());
+//            cv::Rect roi(left-leftPad, up-upPad, sizeX + leftPad + rightPad, sizeY + upPad + downPad) ;
+//            orig(roi).copyTo(out);
+//            pieces.push_back(out);
+////            imshow("show", out);
+////            cvWaitKey(100);
+//        }
+//    }
 
     for(int i = 0; i < pieces.size(); ++i)
     {

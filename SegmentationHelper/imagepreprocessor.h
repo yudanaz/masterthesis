@@ -18,7 +18,7 @@ class ImagePreprocessor
 public:
     ImagePreprocessor();
 
-    void cutImageInPieces(int divideBy, int patchSize, QString fileName);
+    void cutImageIn4Pieces(int patchSize, QString fileName);
 
     /*!
      * \brief Pre-processes an image to zero mean and unit variance
