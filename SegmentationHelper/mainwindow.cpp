@@ -1165,8 +1165,10 @@ void MainWindow::on_btn_makeTrainVal_released()
     int testCnt = 0;
     int testMax = filesTotal - trainMax;
 
-    foreach(QString fileName, fileNames)
+    while(fileNames.size() != 0)
     {
+        int index = rand() % fileNames.size();
+        QString fileName = fileNames[index].remove(".jpg");
         if(!(fileName.contains("_depth") || fileName.contains("_nir") || fileName.contains("_labels")) )
         {
             if( (rand() % 100) < trainPercentage) //add to training text file
@@ -1180,6 +1182,8 @@ void MainWindow::on_btn_makeTrainVal_released()
                 else{ outTrain << fileName << "\n"; }
             }
         }
+
+        fileNames.removeAt(index);
 
         progress.setValue(cnt++);
         if(progress.wasCanceled()){ return; }
