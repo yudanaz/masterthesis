@@ -6,6 +6,10 @@
 
 #include <boost/pointer_cast.hpp>
 #include <boost/shared_ptr.hpp>
+#include <iostream>
+#include <fstream>
+#include <ctime>
+#include <boost/lexical_cast.hpp>
 
 #include "caffe/net.hpp"
 #include "caffe/proto/caffe.pb.h"
@@ -22,6 +26,8 @@
 #include "../../include/caffe/util/math_functions.hpp"
 #include "../../include/caffe/util/upgrade_proto.hpp"
 #include "../../include/caffe/netrgbdnir.hpp"
+
+
 
 
 namespace caffe {
@@ -230,6 +236,24 @@ void Solver<Dtype>::Solve(const char* resume_file) {
   // resume_file above.
   const int start_iter = iter_;
 
+  ////////////////////////////////////////////////////////////////////////////////
+  /// RGBDNIR extension of original Solver class: ////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////
+  //make logfile
+  std::ofstream lossLogFile;
+  if(param_.has_logfileurl())
+  {
+      time_t sec;
+      time(&sec);
+      std::string s = param_.logfileurl() + std::string("/lossLog_")
+              + boost::lexical_cast<std::string>(sec) + std::string(".txt");
+      lossLogFile.open((char*)s.c_str());
+  }
+  ////////////////////////////////////////////////////////////////////////////////
+  /// endof RGBDNIR extension of original Solver class: //////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////
+
+
   // For a network that is trained by the solver, no bottom or top vecs
   // should be given, and we will just provide dummy vecs.
   vector<Blob<Dtype>*> bottom_vec;
@@ -257,6 +281,8 @@ void Solver<Dtype>::Solve(const char* resume_file) {
         boost::dynamic_pointer_cast<NetRGBDNIR<Dtype> >(net_)->feedNextPatchesToInputLayers();
     }
     Dtype loss = net_->ForwardBackward(bottom_vec);
+    lossLogFile << loss << "\n";
+    lossLogFile.flush();
     ////////////////////////////////////////////////////////////////////////////////
     /// endof RGBDNIR extension of original Solver class: //////////////////////////
     ////////////////////////////////////////////////////////////////////////////////

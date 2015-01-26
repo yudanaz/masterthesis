@@ -2,6 +2,8 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <boost/random/uniform_int.hpp>
+#include <boost/random/variate_generator.hpp>
 #include "../../include/caffe/data_layers.hpp"
 #include "../../include/caffe/util/io.hpp"
 
@@ -24,6 +26,7 @@ void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchS
         imgs.push_back(line);
         imgMax++;
     }
+//    LOG(INFO) << "max imgs in list: " << imgMax;
     inFile.close();
 
     //set the rest
@@ -31,14 +34,22 @@ void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchS
     borderSz = patchsize / 2;
     patchCnt = 0;
     patchMax = 0; //is set correctly in readNextImage each time an image is read
+                  //(actually not neccessary because all images should have same size, but i'll leave it like this for now...)
     batchSz = batchSize;
     hasRGB = RGB;
     hasNIR = NIR;
     hasDepth = depth;
     multiscale = isMultiscale;
 
+    //define how many pixels should be selected randomly out of every image, before loading a new image
+    randomPatchesCntMax = batchSize * 4;
+
+
     //read first image
     readNextImage();
+
+    //define random patches that should be read from this image
+    setRandomPatches();
 }
 
 template<typename Dtype>
@@ -60,18 +71,23 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
         //LOG(INFO) << "Starting nr " << batchCnt << " / " << batchSz << " in current batch";
 
         //if all patches in current image have been read, load next image
-        if(patchCnt == patchMax)
+        if(patchCnt >= randomPatchesCntMax)//patchMax)
         {
             //LOG(INFO) << "Inside";
             readNextImage();
+            setRandomPatches();
             patchCnt = 0;
         }
 
+//        LOG(INFO) << "patch count: " << patchCnt;
+
         //get the correct pixel indices
         int w = img_labels.cols;
-        int h = img_labels.rows;
-        int x = patchCnt % w + borderSz;
-        int y = patchCnt / w + borderSz;
+//        int h = img_labels.rows;
+        int x = randomPatches[patchCnt] % w;
+        int y = randomPatches[patchCnt] / w;
+//        int x = patchCnt % w;
+//        int y = patchCnt / w;
 
         //get label for this patch
         int currentLabel = img_labels.at<uchar>(y,x);
@@ -83,8 +99,8 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
             patch_rgb0 = getImgPatch(img_rgb0, x, y);
             if(multiscale)
             {
-                if(patchCnt % 2 == 0){ patch_rgb1 = getImgPatch(img_rgb1, x, y); }
-                if(patchCnt % 4 == 0){ patch_rgb2 = getImgPatch(img_rgb2, x, y); }
+                /*if(patchCnt % 2 == 0)*/{ patch_rgb1 = getImgPatch(img_rgb1, x/2, y/2); }
+                /*if(patchCnt % 4 == 0)*/{ patch_rgb2 = getImgPatch(img_rgb2, x/4, y/4); }
             }
         }
 
@@ -93,8 +109,8 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
             patch_nir0 = getImgPatch(img_nir0, x, y);
             if(multiscale)
             {
-                if(patchCnt % 2 == 0){ patch_nir1 = getImgPatch(img_nir1, x, y); }
-                if(patchCnt % 4 == 0){ patch_nir2 = getImgPatch(img_nir2, x, y); }
+                /*if(patchCnt % 2 == 0)*/{ patch_nir1 = getImgPatch(img_nir1, x/2, y/2); }
+                /*if(patchCnt % 4 == 0)*/{ patch_nir2 = getImgPatch(img_nir2, x/4, y/4); }
             }
         }
 
@@ -103,8 +119,8 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
             patch_depth0 = getImgPatch(img_depth0, x, y);
             if(multiscale)
             {
-                if(patchCnt % 2 == 0){ patch_depth1 = getImgPatch(img_depth1, x, y); }
-                if(patchCnt % 4 == 0){ patch_depth2 = getImgPatch(img_depth2, x, y); }
+                /*if(patchCnt % 2 == 0)*/{ patch_depth1 = getImgPatch(img_depth1, x/2, y/2); }
+                /*if(patchCnt % 4 == 0)*/{ patch_depth2 = getImgPatch(img_depth2, x/4, y/4); }
             }
         }
 
@@ -184,7 +200,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
             }
         }
 
-        batchCnt++;
+        patchCnt++;
     }
 
     //LOG(INFO) << "Feed Datum vectors to Memory Data Layers";
@@ -224,20 +240,38 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 }
 
 template<typename Dtype>
+void NetRGBDNIR<Dtype>::setRandomPatches()
+{
+    boost::uniform_int<> distribution(0, patchMax - 1);
+    boost::variate_generator<boost::mt19937&, boost::uniform_int<> > die(gen, distribution);
+
+    randomPatches.clear();
+
+    for(int i = 0; i < randomPatchesCntMax; ++i)
+    {
+        int rp = die();
+//        LOG(INFO) << rp;
+        randomPatches.push_back(rp);
+    }
+}
+
+template<typename Dtype>
 cv::Mat NetRGBDNIR<Dtype>::getImgPatch(cv::Mat img, int x, int y)
 {
     cv::Mat patch;
-    cv::Rect srcROI(x-borderSz, y-borderSz, patchSz, patchSz);
+    cv::Rect srcROI(x, y, patchSz, patchSz);
     img(srcROI).copyTo(patch);
+//    cv::imshow("", patch);
+//    cv::waitKey(700);
     return patch;
 }
 
 template<typename Dtype>
 void NetRGBDNIR<Dtype>::readNextImage()
 {
-    //LOG(INFO) << "Get next image name from list";
     //get next image URL, also circle through images (if iterations are > all available patches)
     std::string imageURL = imgs[ (imgCnt++) % imgMax ];
+//    LOG(INFO) << "Read next image: " << imageURL;
 
     //load all image types (RGB, NIR and Depth) if available, create scales (image pyramid) pad images (make borders)
     std::string labelsNm = imageURL + std::string("_labels.png");

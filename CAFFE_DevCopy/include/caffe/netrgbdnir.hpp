@@ -4,6 +4,7 @@
 #include "../../include/caffe/net.hpp"
 #include <opencv2/opencv.hpp>
 #include "../../include/caffe/data_layers.hpp"
+#include <boost/random/mersenne_twister.hpp>
 
 namespace caffe {
 
@@ -19,7 +20,9 @@ public:
 
 protected:
     void readNextImage();
+    void setRandomPatches();
     cv::Mat getImgPatch(cv::Mat img, int x, int y);
+
     int patchSz;
     int borderSz;
     std::vector<std::string> imgs;
@@ -28,6 +31,10 @@ protected:
     int patchCnt;
     int patchMax;
     int batchSz;
+
+    boost::mt19937 gen; //random number generator
+    int randomPatchesCntMax;
+    vector<int> randomPatches;
 
     bool hasRGB;
     bool hasNIR;
