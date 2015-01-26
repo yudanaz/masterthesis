@@ -70,7 +70,7 @@ void KinectCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 		success = freenectDevice->getVideo(rgbMat);
 		while(!success)
 		{
-			success = freenectDevice->getVideo(rgbMat);
+            success = freenectDevice->getVideo(rgbMat);
 		}
 		camImgs[Kinect_RGB] = rgbMat;
 	}
