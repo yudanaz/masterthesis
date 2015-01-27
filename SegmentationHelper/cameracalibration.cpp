@@ -7,9 +7,9 @@ CameraCalibration::CameraCalibration(QWidget *parent):
 	homogeneityCalibrated(false),
 	nrOfNIRChannels(4), //4 NIR channels max right now (will change with new flashlight)
 	camMatrices_goldeye(4),
-    distCoeffs_goldeye(4),
-    RGB2NIR_resizeFactor(0),
-    RGB2NIR_fittingComputed(false)
+	distCoeffs_goldeye(4),
+	RGB2NIR_resizeFactor(0),
+	RGB2NIR_fittingComputed(false)
 {
 	parentWidget = parent;
 }
@@ -61,10 +61,10 @@ void CameraCalibration::calibrateGoldeyeMultiChannel(QList<QList<Mat> > calibImg
 void CameraCalibration::calibrateStereoCameras(QList<Mat> calibImgsLeft, QList<Mat> calibImgsRight,
 											   int chessboard_width, int chessboard_height, QString calibFileName)
 {
-    doStereoCalibration(calibImgsLeft, calibImgsRight, chessboard_width, chessboard_height, calibFileName);
+	doStereoCalibration(calibImgsLeft, calibImgsRight, chessboard_width, chessboard_height, calibFileName);
 
 	//save the calibration file
-    if(calibFileName != ""){ saveStereoCalibrationFile(calibFileName, false); }
+	if(calibFileName != ""){ saveStereoCalibrationFile(calibFileName, false); }
 
 	QMessageBox::information(parentWidget, "Calibration successful", "Stereo Camera Pair has been calibrated", QMessageBox::Ok);
 	goldeyeCalibrated = false;
@@ -74,177 +74,177 @@ void CameraCalibration::calibrateStereoCameras(QList<Mat> calibImgsLeft, QList<M
 
 void CameraCalibration::calibrateRGBNIRStereoCameras(QList<Mat> calibImgsNIR_L, QList<Mat> calibImgsRGB_R, int chessboard_width, int chessboard_height, QString calibFileName)
 {
-    //resize and crop RGB images to fit NIR images:
-    QList<Mat> calibImgsRGB_R_fitted = fitRGBimgs2NIRimgs(calibImgsNIR_L, calibImgsRGB_R, chessboard_width, chessboard_height);
+	//resize and crop RGB images to fit NIR images:
+	QList<Mat> calibImgsRGB_R_fitted = fitRGBimgs2NIRimgs(calibImgsNIR_L, calibImgsRGB_R, chessboard_width, chessboard_height);
 
-    //calibrate stereo images
-    doStereoCalibration(calibImgsNIR_L, calibImgsRGB_R_fitted, chessboard_width, chessboard_height, calibFileName);
+	//calibrate stereo images
+	doStereoCalibration(calibImgsNIR_L, calibImgsRGB_R_fitted, chessboard_width, chessboard_height, calibFileName);
 
-    //save the calibration file
-    if(calibFileName != ""){ saveStereoCalibrationFile(calibFileName, true); }
+	//save the calibration file
+	if(calibFileName != ""){ saveStereoCalibrationFile(calibFileName, true); }
 
-    QMessageBox::information(parentWidget, "Calibration successful", "RGN & NIR Stereo Pair has been calibrated", QMessageBox::Ok);
-    goldeyeCalibrated = false;
-    cameraCalibrated = false;
-    stereoCalibrated = true;
+	QMessageBox::information(parentWidget, "Calibration successful", "RGN & NIR Stereo Pair has been calibrated", QMessageBox::Ok);
+	goldeyeCalibrated = false;
+	cameraCalibrated = false;
+	stereoCalibrated = true;
 }
 
 void CameraCalibration::doStereoCalibration(QList<Mat> calibImgsLeft, QList<Mat> calibImgsRight,
-                                            int chessboard_width, int chessboard_height, QString calibFileName)
+											int chessboard_width, int chessboard_height, QString calibFileName)
 {
-    Size imgSize = calibImgsLeft.first().size();
+	Size imgSize = calibImgsLeft.first().size();
 
-    //get object and image points
-    vector<Point3f> obj;
-    for (int j = 0; j < chessboard_width * chessboard_height; j++)
-    {
-        obj.push_back(Point3f(j / chessboard_width, j % chessboard_width, 0.0f));
-    }
-    vector<vector<Point3f> > objectPoints_L;
-    vector<vector<Point3f> > objectPoints_R;
-    vector<vector<Point2f> > imagePoints_L;
-    vector<vector<Point2f> > imagePoints_R;
+	//get object and image points
+	vector<Point3f> obj;
+	for (int j = 0; j < chessboard_width * chessboard_height; j++)
+	{
+		obj.push_back(Point3f(j / chessboard_width, j % chessboard_width, 0.0f));
+	}
+	vector<vector<Point3f> > objectPoints_L;
+	vector<vector<Point3f> > objectPoints_R;
+	vector<vector<Point2f> > imagePoints_L;
+	vector<vector<Point2f> > imagePoints_R;
 
-    getObjectAndImagePoints(calibImgsLeft, chessboard_width, chessboard_height, obj, objectPoints_L, imagePoints_L);
-    getObjectAndImagePoints(calibImgsRight, chessboard_width, chessboard_height, obj, objectPoints_R, imagePoints_R);
+	getObjectAndImagePoints(calibImgsLeft, chessboard_width, chessboard_height, obj, objectPoints_L, imagePoints_L);
+	getObjectAndImagePoints(calibImgsRight, chessboard_width, chessboard_height, obj, objectPoints_R, imagePoints_R);
 
-    //check wether all points have been found for left and right images
-    if(imagePoints_L.size() != imagePoints_R.size())
-    {
-        QMessageBox::information(parentWidget, "Error", "Couldnt find all chessboard corners", QMessageBox::Ok);
-        return;
-    }
+	//check wether all points have been found for left and right images
+	if(imagePoints_L.size() != imagePoints_R.size())
+	{
+		QMessageBox::information(parentWidget, "Error", "Couldnt find all chessboard corners", QMessageBox::Ok);
+		return;
+	}
 
-    //start stereo calibration
-    Mat CM_L = Mat(3, 3, CV_64FC1);
-    Mat CM_R = Mat(3, 3, CV_64FC1);
-    Mat D_L, D_R;
-    Mat rotMat, translVec, E, F;
+	//start stereo calibration
+	Mat CM_L = Mat(3, 3, CV_64FC1);
+	Mat CM_R = Mat(3, 3, CV_64FC1);
+	Mat D_L, D_R;
+	Mat rotMat, translVec, E, F;
 
-    stereoCalibrate(objectPoints_L, imagePoints_L, imagePoints_R,
-                    CM_L, D_L, CM_R, D_R, imgSize, rotMat, translVec, E, F,
-                    cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 100, 1e-5),
-                    CV_CALIB_SAME_FOCAL_LENGTH | CV_CALIB_ZERO_TANGENT_DIST);
+	stereoCalibrate(objectPoints_L, imagePoints_L, imagePoints_R,
+					CM_L, D_L, CM_R, D_R, imgSize, rotMat, translVec, E, F,
+					cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 100, 1e-5),
+					CV_CALIB_SAME_FOCAL_LENGTH | CV_CALIB_ZERO_TANGENT_DIST);
 
-    //start stereo rectification and trigger making the rectify maps (in undist and remap method)
-    Mat R1, R2, P1, P2, Q;
-    stereoRectify(CM_L, D_L, CM_R, D_R, imgSize, rotMat, translVec, R1, R2, P1, P2, Q);
-    rectifyMapsCreated = false;
+	//start stereo rectification and trigger making the rectify maps (in undist and remap method)
+	Mat R1, R2, P1, P2, Q;
+	stereoRectify(CM_L, D_L, CM_R, D_R, imgSize, rotMat, translVec, R1, R2, P1, P2, Q);
+	rectifyMapsCreated = false;
 
-    //store everythin in class members for later use
-    camMatrices_goldeye[0] = CM_L.clone();
-    camMatrices_goldeye[1] = CM_R.clone();
-    distCoeffs_goldeye[0] = D_L.clone();
-    distCoeffs_goldeye[1] = D_R.clone();
-    rotationMatrix = rotMat.clone();
-    translationVec = translVec.clone();
-    essentialMat = E.clone();
-    fundamentalMat = F.clone();
-    rectificTransf_L = R1.clone();
-    rectificTransf_R = R2.clone();
-    projectionMat_L = P1.clone();
-    projectionMat_R = P2.clone();
-    disparity2DepthMat = Q.clone();
+	//store everythin in class members for later use
+	camMatrices_goldeye[0] = CM_L.clone();
+	camMatrices_goldeye[1] = CM_R.clone();
+	distCoeffs_goldeye[0] = D_L.clone();
+	distCoeffs_goldeye[1] = D_R.clone();
+	rotationMatrix = rotMat.clone();
+	translationVec = translVec.clone();
+	essentialMat = E.clone();
+	fundamentalMat = F.clone();
+	rectificTransf_L = R1.clone();
+	rectificTransf_R = R2.clone();
+	projectionMat_L = P1.clone();
+	projectionMat_R = P2.clone();
+	disparity2DepthMat = Q.clone();
 }
 
 Mat CameraCalibration::resizeAndCropRGBImg(Mat rgbImg)
 {
-    Mat resized, cropped;
-    if(!RGB2NIR_fittingComputed){ return cropped; } //return empty
-    resize(rgbImg, resized, Size(), RGB2NIR_resizeFactor, RGB2NIR_resizeFactor, INTER_CUBIC);
-    resized(RGB2NIR_cropRect).copyTo(cropped);
-    return cropped;
+	Mat resized, cropped;
+	if(!RGB2NIR_fittingComputed){ return cropped; } //return empty
+	resize(rgbImg, resized, Size(), RGB2NIR_resizeFactor, RGB2NIR_resizeFactor, INTER_CUBIC);
+	resized(RGB2NIR_cropRect).copyTo(cropped);
+	return cropped;
 }
 
 QList<Mat> CameraCalibration::fitRGBimgs2NIRimgs(QList<Mat> origNirs, QList<Mat> origRGBs,
-                                                 int chessboard_width, int chessboard_height)
+												 int chessboard_width, int chessboard_height)
 {
-    QList<Mat> resizedRGBs, fittedRGBs;
+	QList<Mat> resizedRGBs, fittedRGBs;
 
-    // 1) find chessboard corners
-    if(origNirs.count() != origRGBs.count()){ return fittedRGBs; } //amount of both lists must be equal
-    vector<vector<Point2f> > cornersNIR_L;
-    vector<vector<Point2f> > cornersRGB_R;
-    Size size = Size(chessboard_width, chessboard_height);
+	// 1) find chessboard corners
+	if(origNirs.count() != origRGBs.count()){ return fittedRGBs; } //amount of both lists must be equal
+	vector<vector<Point2f> > cornersNIR_L;
+	vector<vector<Point2f> > cornersRGB_R;
+	Size size = Size(chessboard_width, chessboard_height);
 
-    for (int i = 0; i < origNirs.count(); ++i)
-    {
-        Mat imgGrayL, imgGrayR;
-        vector<Point2f> cornersL, cornersR;
+	for (int i = 0; i < origNirs.count(); ++i)
+	{
+		Mat imgGrayL, imgGrayR;
+		vector<Point2f> cornersL, cornersR;
 
-        //NIR, left:
-        cvtColor(origNirs.at(i), imgGrayL, CV_BGR2GRAY); //must be gray scale
-        bool success = findChessboardCorners(imgGrayL, size, cornersL, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
-        if(success){ cornersNIR_L.push_back(cornersL); }
+		//NIR, left:
+		cvtColor(origNirs.at(i), imgGrayL, CV_BGR2GRAY); //must be gray scale
+		bool success = findChessboardCorners(imgGrayL, size, cornersL, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
+		if(success){ cornersNIR_L.push_back(cornersL); }
 
-        //RGB, right:
-        cvtColor(origRGBs.at(i), imgGrayR, CV_BGR2GRAY); //must be gray scale
-        success = findChessboardCorners(imgGrayR, size, cornersR, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
-        if(success){ cornersRGB_R.push_back(cornersR); }
-    }
-    //check wether all points have been found for left and right images
-    if(cornersRGB_R.size() != cornersNIR_L.size())
-    {
-        QMessageBox::information(parentWidget, "Error", "Couldnt find all chessboard corners", QMessageBox::Ok);
-        return fittedRGBs;
-    }
+		//RGB, right:
+		cvtColor(origRGBs.at(i), imgGrayR, CV_BGR2GRAY); //must be gray scale
+		success = findChessboardCorners(imgGrayR, size, cornersR, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
+		if(success){ cornersRGB_R.push_back(cornersR); }
+	}
+	//check wether all points have been found for left and right images
+	if(cornersRGB_R.size() != cornersNIR_L.size())
+	{
+		QMessageBox::information(parentWidget, "Error", "Couldnt find all chessboard corners", QMessageBox::Ok);
+		return fittedRGBs;
+	}
 
 
-    // 2) get average resize factor by comparing corner distances for NIR and RGB images
-    int nrOfImages = cornersNIR_L.size();
-    int nrOfCorners = cornersNIR_L[0].size();
-    double avgResizeFactor = 0.0;
-    for(int i = 0; i < nrOfImages; ++i)
-    {
-        //get distances between chessboard corners for each image type (NIR and RGB)
-        //and compute the relationship / resize factor
-        for (int j = 0; j < nrOfCorners-1; ++j)
-        {
-            Point2f diff_NIR = cornersNIR_L[i][j] - cornersNIR_L[i][j+1];
-            double euclDist_NIR = sqrt(diff_NIR.x * diff_NIR.x + diff_NIR.y * diff_NIR.y);
+	// 2) get average resize factor by comparing corner distances for NIR and RGB images
+	int nrOfImages = cornersNIR_L.size();
+	int nrOfCorners = cornersNIR_L[0].size();
+	double avgResizeFactor = 0.0;
+	for(int i = 0; i < nrOfImages; ++i)
+	{
+		//get distances between chessboard corners for each image type (NIR and RGB)
+		//and compute the relationship / resize factor
+		for (int j = 0; j < nrOfCorners-1; ++j)
+		{
+			Point2f diff_NIR = cornersNIR_L[i][j] - cornersNIR_L[i][j+1];
+			double euclDist_NIR = sqrt(diff_NIR.x * diff_NIR.x + diff_NIR.y * diff_NIR.y);
 
-            Point2f diff_RGB = cornersRGB_R[i][j] - cornersRGB_R[i][j+1];
-            double euclDist_RGB = sqrt(diff_RGB.x * diff_RGB.x + diff_RGB.y * diff_RGB.y);
+			Point2f diff_RGB = cornersRGB_R[i][j] - cornersRGB_R[i][j+1];
+			double euclDist_RGB = sqrt(diff_RGB.x * diff_RGB.x + diff_RGB.y * diff_RGB.y);
 
-            double resizeFactor = euclDist_NIR / euclDist_RGB;
-            avgResizeFactor += resizeFactor;
+			double resizeFactor = euclDist_NIR / euclDist_RGB;
+			avgResizeFactor += resizeFactor;
 //            qDebug() << "resize factor: " << resizeFactor;
 //            qDebug() << "NIR: " << euclDist_NIR << "   RGB: " << euclDist_RGB;
-        }
-    }
-    //get average
-    avgResizeFactor /= (nrOfImages * nrOfCorners);
-    qDebug() << "average resize factor: " << avgResizeFactor;
+		}
+	}
+	//get average
+	avgResizeFactor /= (nrOfImages * nrOfCorners);
+	qDebug() << "average resize factor: " << avgResizeFactor;
 
-    // 3) resize the RGB images
-    foreach(Mat rgbImg, origRGBs)
-    {
-        Mat resized;
-        resize(rgbImg, resized, Size(), avgResizeFactor, avgResizeFactor, INTER_CUBIC);
-        resizedRGBs.append(resized);
+	// 3) resize the RGB images
+	foreach(Mat rgbImg, origRGBs)
+	{
+		Mat resized;
+		resize(rgbImg, resized, Size(), avgResizeFactor, avgResizeFactor, INTER_CUBIC);
+		resizedRGBs.append(resized);
 //        imshow("orig", rgbImg);
 //        imshow("resized", resized);
-    }
+	}
 
-    // 4) crop the rgb images
-    int nirw = origNirs.at(0).cols;
-    int nirh = origNirs.at(0).rows;
-    int rgbw = resizedRGBs.at(0).cols;
-    int rgbh = resizedRGBs.at(0).rows;
-    Rect cropRect( (rgbw-nirw)/2, (rgbh-nirh)/2, nirw, nirh );
+	// 4) crop the rgb images
+	int nirw = origNirs.at(0).cols;
+	int nirh = origNirs.at(0).rows;
+	int rgbw = resizedRGBs.at(0).cols;
+	int rgbh = resizedRGBs.at(0).rows;
+	Rect cropRect( (rgbw-nirw)/2, (rgbh-nirh)/2, nirw, nirh );
 
-    foreach(Mat rgbImg, resizedRGBs)
-    {
-        Mat cropped;
-        rgbImg(cropRect).copyTo(cropped);
-        fittedRGBs.append(cropped);
+	foreach(Mat rgbImg, resizedRGBs)
+	{
+		Mat cropped;
+		rgbImg(cropRect).copyTo(cropped);
+		fittedRGBs.append(cropped);
 //        imshow("cropped", cropped);
-    }
+	}
 
-    RGB2NIR_resizeFactor = avgResizeFactor;
-    RGB2NIR_cropRect = cropRect;
-    RGB2NIR_fittingComputed = true;
-    return fittedRGBs;
+	RGB2NIR_resizeFactor = avgResizeFactor;
+	RGB2NIR_cropRect = cropRect;
+	RGB2NIR_fittingComputed = true;
+	return fittedRGBs;
 }
 
 void CameraCalibration::calibrateCamFromImages(QList<Mat> calibImgs, int channelIndex,
@@ -286,43 +286,42 @@ void CameraCalibration::getObjectAndImagePoints(QList<Mat> calibImgs, int width,
 												vector<vector<Point2f> >& imagePoints,
 												bool isGrayScale)
 {
-	bool success = false;
 	Size chessboard_sz = Size(width, height);
 
 	//get chessboard corners for all images
-	QProgressDialog progress("Analyzing chessboard patterns", "Cancel", 0, calibImgs.length(), parentWidget);
-	progress.setMinimumWidth(450);
-	progress.setMinimumDuration(1000);
-	progress.setWindowModality(Qt::WindowModal);
-	int progressCnt = 0;
+	getImagePoints(calibImgs, chessboard_sz, imagePoints, isGrayScale);
 
-	int cnt = 0;
+	//put as many of the dummy object points in the list as there are image points
+	for (int i = 0; i < imagePoints.size(); ++i)
+	{
+		objectPoints.push_back(obj);
+	}
+}
+
+void CameraCalibration::getImagePoints(QList<Mat> calibImgs, Size chessboardSize, vector<vector<Point2f> > &imagePoints, bool isGrayScale)
+{
+	//get chessboard corners for all images
+	bool success = false;
 	foreach(Mat img, calibImgs)
 	{
 		vector<Point2f> corners;
 		Mat imgGray;
 		if(!isGrayScale){ cvtColor(img, imgGray, CV_BGR2GRAY); }
 		else{ imgGray = img; }
-		success = findChessboardCorners(imgGray, chessboard_sz, corners,
+		success = findChessboardCorners(imgGray, chessboardSize, corners,
 										CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
 
 		if(success)
 		{
 			imagePoints.push_back(corners);
-			objectPoints.push_back(obj);
 		}
 
 		//show found corners in image
-		drawChessboardCorners(img, chessboard_sz, corners, success);
-		namedWindow("found corners", CV_WINDOW_KEEPRATIO);
-		imshow("found corners", img);
-		cvWaitKey(2);
-
-		progress.setValue(progressCnt++);
-		if(progress.wasCanceled()) { return; }
+//		drawChessboardCorners(img, chessboard_sz, corners, success);
+//		namedWindow("found corners", CV_WINDOW_KEEPRATIO);
+//		imshow("found corners", img);
+//		cvWaitKey(2);
 	}
-	progress.setValue(calibImgs.length());
-	destroyWindow("found corners");
 }
 
 void CameraCalibration::undistortSingleImage(QString fileName)
@@ -401,22 +400,22 @@ void CameraCalibration::setDisparityParameters(int minDisparity, int nrOfDispari
 	sbm.state->preFilterSize = prefilterSize;
 	sbm.state->preFilterCap = prefilterCap;
 
-    sgbm.preFilterCap = prefilterCap;
+	sgbm.preFilterCap = prefilterCap;
 
-    //correspondence via SAD
+	//correspondence via SAD
 	sbm.state->minDisparity = minDisparity;
 	sbm.state->numberOfDisparities = nrOfDisparities;
 	sbm.state->SADWindowSize = SADWindowSize;
 
-    sgbm.minDisparity = minDisparity;
-    sgbm.numberOfDisparities = nrOfDisparities;
-    int sgbmWindowSize = SADWindowSize > 0 ? SADWindowSize : 3;
-    int channels = 1; //because we convert images to grayscale
-    sgbm.SADWindowSize = sgbmWindowSize;
-    sgbm.P1 = 8 * channels * sgbmWindowSize * sgbmWindowSize;
-    sgbm.P2 = 32 * channels * sgbmWindowSize * sgbmWindowSize;
-    sgbm.disp12MaxDiff = 1; //Maximum allowed difference (in integer pixel units)
-    //in the left-right disparity check. Set it to a non-positive value to disable the check.
+	sgbm.minDisparity = minDisparity;
+	sgbm.numberOfDisparities = nrOfDisparities;
+	int sgbmWindowSize = SADWindowSize > 0 ? SADWindowSize : 3;
+	int channels = 1; //because we convert images to grayscale
+	sgbm.SADWindowSize = sgbmWindowSize;
+	sgbm.P1 = 8 * channels * sgbmWindowSize * sgbmWindowSize;
+	sgbm.P2 = 32 * channels * sgbmWindowSize * sgbmWindowSize;
+	sgbm.disp12MaxDiff = 1; //Maximum allowed difference (in integer pixel units)
+	//in the left-right disparity check. Set it to a non-positive value to disable the check.
 
 	//post filters -> remove bad matches
 	sbm.state->textureThreshold = textureThresh;
@@ -424,89 +423,89 @@ void CameraCalibration::setDisparityParameters(int minDisparity, int nrOfDispari
 	sbm.state->speckleWindowSize = specklewindowSize;
 	sbm.state->speckleRange = speckleRange;
 
-    sgbm.uniquenessRatio = uniquenessRatio;
-    sgbm.speckleWindowSize = specklewindowSize;
-    sgbm.speckleRange = speckleRange;
+	sgbm.uniquenessRatio = uniquenessRatio;
+	sgbm.speckleWindowSize = specklewindowSize;
+	sgbm.speckleRange = speckleRange;
 
-    sgbm.fullDP = true;
+	sgbm.fullDP = true;
 }
 
 Mat CameraCalibration::makeDisparityMap(Mat leftGrayImg, Mat rightGrayImg, bool useSGBM)
 {
 	//compute disparities
-    Mat disp;//(leftGrayImg.rows, leftGrayImg.cols, CV_16UC1);
-    if(useSGBM)
-    {
-        sgbm(leftGrayImg, rightGrayImg,disp);
-    }
-    else
-    {
-        sbm(leftGrayImg, rightGrayImg, disp, CV_16S);
-    }
+	Mat disp;//(leftGrayImg.rows, leftGrayImg.cols, CV_16UC1);
+	if(useSGBM)
+	{
+		sgbm(leftGrayImg, rightGrayImg,disp);
+	}
+	else
+	{
+		sbm(leftGrayImg, rightGrayImg, disp, CV_16S);
+	}
 
-    //get real values (disp values are multiple of 16, see http://docs.opencv.org/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html#stereosgbm-operator)
-    disp = disp / 16;
-    return disp;
+	//get real values (disp values are multiple of 16, see http://docs.opencv.org/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html#stereosgbm-operator)
+	disp = disp / 16;
+	return disp;
 }
 
 Mat CameraCalibration::improveDisparityMap(int nrOfSuperPixel, Mat superpixelMap, Mat disparityMap)
 {
-    nrOfSuperPixel += 30; //there seem to be always some numbers that are jumbed, resulting in unused indices
+	nrOfSuperPixel += 30; //there seem to be always some numbers that are jumbed, resulting in unused indices
 
-    Mat res (disparityMap.rows, disparityMap.cols, disparityMap.type(), Scalar(0));
+	Mat res (disparityMap.rows, disparityMap.cols, disparityMap.type(), Scalar(0));
 
-    //make 2D-vector to hold sum of disparities and pixel amount for each superpixel
-    //(vector type is long in order to hold summed value, although disparity map type is short)
-    vector< vector<long> > superpxs(nrOfSuperPixel, vector<long>(2));
+	//make 2D-vector to hold sum of disparities and pixel amount for each superpixel
+	//(vector type is long in order to hold summed value, although disparity map type is short)
+	vector< vector<long> > superpxs(nrOfSuperPixel, vector<long>(2));
 
-    //if superpixel or disparity map not in ushort format, return emtpy
-    int type1 = superpixelMap.type();
-    int type2 = disparityMap.type();
-    if( type1 != CV_16UC1 || type2 != CV_16SC1)
-    {
-        return res;
-    }
+	//if superpixel or disparity map not in ushort format, return emtpy
+	int type1 = superpixelMap.type();
+	int type2 = disparityMap.type();
+	if( type1 != CV_16UC1 || type2 != CV_16SC1)
+	{
+		return res;
+	}
 
-    //init superpixel vector
-    for(int i = 0; i < nrOfSuperPixel; ++i )
-    {
-        superpxs[i][0] = 0;
-        superpxs[i][1] = 0;
-    }
+	//init superpixel vector
+	for(int i = 0; i < nrOfSuperPixel; ++i )
+	{
+		superpxs[i][0] = 0;
+		superpxs[i][1] = 0;
+	}
 
-    //sum and count all disparity values for each superpixel
-    MatIterator_<ushort> it_superpx, end;
-    MatIterator_<short> it_disp;
-    for( it_superpx = superpixelMap.begin<ushort>(), it_disp = disparityMap.begin<short>(),
-         end = superpixelMap.end<ushort>(); it_superpx != end; ++it_superpx, ++it_disp )
-    {
-        short dispVal = *it_disp;
-        if(dispVal > 0)
-        {
-            superpxs[*it_superpx][0] += dispVal; //add disparity value
-            superpxs[*it_superpx][1]++; //count number of pixels in superpixel
-        }
-    }
+	//sum and count all disparity values for each superpixel
+	MatIterator_<ushort> it_superpx, end;
+	MatIterator_<short> it_disp;
+	for( it_superpx = superpixelMap.begin<ushort>(), it_disp = disparityMap.begin<short>(),
+		 end = superpixelMap.end<ushort>(); it_superpx != end; ++it_superpx, ++it_disp )
+	{
+		short dispVal = *it_disp;
+		if(dispVal > 0)
+		{
+			superpxs[*it_superpx][0] += dispVal; //add disparity value
+			superpxs[*it_superpx][1]++; //count number of pixels in superpixel
+		}
+	}
 
-    //average values for each superpixel
-    for(int i = 0; i < nrOfSuperPixel; ++i )
-    {
-        ushort amountInSuperPx = superpxs[i][1];
-        if(amountInSuperPx > 0)
-        {
-            superpxs[i][0] /= amountInSuperPx;
-        }
-    }
+	//average values for each superpixel
+	for(int i = 0; i < nrOfSuperPixel; ++i )
+	{
+		ushort amountInSuperPx = superpxs[i][1];
+		if(amountInSuperPx > 0)
+		{
+			superpxs[i][0] /= amountInSuperPx;
+		}
+	}
 
-    //write averaged values in output matrix
-    MatIterator_<short> it_res;
-    for( it_superpx = superpixelMap.begin<ushort>(), it_res = res.begin<short>(),
-         end = superpixelMap.end<ushort>(); it_superpx != end; ++it_superpx, ++it_res )
-    {
-        *it_res = superpxs[*it_superpx][0];
-    }
+	//write averaged values in output matrix
+	MatIterator_<short> it_res;
+	for( it_superpx = superpixelMap.begin<ushort>(), it_res = res.begin<short>(),
+		 end = superpixelMap.end<ushort>(); it_superpx != end; ++it_superpx, ++it_res )
+	{
+		*it_res = superpxs[*it_superpx][0];
+	}
 
-    return res;
+	return res;
 }
 
 
@@ -530,7 +529,7 @@ Mat CameraCalibration::alignImageByFeatures(Mat imageL, Mat imageRtoBeAligned)
 	int numBest = 50;
 	if(matches.size() > numBest)
 	{
-		std::nth_element(matches.begin(), matches.begin()+numBest, matches.end()); //sort to 10th position
+		std::nth_element(matches.begin(), matches.begin()+numBest, matches.end()); //sort to numBest's position
 		matches.erase(matches.begin()+numBest, matches.end());//remove rest
 	}
 
@@ -549,10 +548,10 @@ Mat CameraCalibration::alignImageByFeatures(Mat imageL, Mat imageRtoBeAligned)
 		matchedDescriptorsR.push_back(rightMatch);
 	}
 
-    //if no descriptors found, return empty
-    if(matchedDescriptorsL.size() == 0 || matchedDescriptorsR.size() == 0){ return Mat(); }
+	//if no descriptors found, return empty
+	if(matchedDescriptorsL.size() == 0 || matchedDescriptorsR.size() == 0){ return Mat(); }
 
-    //warp perspective of right image with homography matrix from descriptors
+	//warp perspective of right image with homography matrix from descriptors
 	Mat homography = findHomography(matchedDescriptorsR, matchedDescriptorsL, CV_RANSAC);
 	Mat warpedImg;
 	warpPerspective(imageRtoBeAligned, warpedImg, homography, imageRtoBeAligned.size());
@@ -575,17 +574,17 @@ void CameraCalibration::saveStereoCalibrationFile(QString calibFileName, bool is
 {
 	if(calibFileName != "")
 	{
-        if(isRGBNIR)
-        {
-            calibFileName = calibFileName.remove(".rgbnirstcal").append(".rgbnirstcal");
-        }
-        else
-        {
-            calibFileName = calibFileName.remove(".stereocal").append(".stereocal");
-        }
+		if(isRGBNIR)
+		{
+			calibFileName = calibFileName.remove(".rgbnirstcal").append(".rgbnirstcal");
+		}
+		else
+		{
+			calibFileName = calibFileName.remove(".stereocal").append(".stereocal");
+		}
 
 
-        FileStorage fs(calibFileName.toStdString().c_str(), FileStorage::WRITE);
+		FileStorage fs(calibFileName.toStdString().c_str(), FileStorage::WRITE);
 		fs << "CM_L" << camMatrices_goldeye[0];
 		fs << "CM_R" << camMatrices_goldeye[1];
 		fs << "D_L" << distCoeffs_goldeye[0];
@@ -599,11 +598,11 @@ void CameraCalibration::saveStereoCalibrationFile(QString calibFileName, bool is
 		fs << "P_L" << projectionMat_L;
 		fs << "P_R" << projectionMat_R;
 		fs << "Q" << disparity2DepthMat;
-        if(isRGBNIR)
-        {
-            fs << "FAC" << RGB2NIR_resizeFactor;
-            fs << "REC" << RGB2NIR_cropRect;
-        }
+		if(isRGBNIR)
+		{
+			fs << "FAC" << RGB2NIR_resizeFactor;
+			fs << "REC" << RGB2NIR_cropRect;
+		}
 		fs.release();
 	}
 }
@@ -619,7 +618,7 @@ void CameraCalibration::loadCalibrationFile(QStringList calibFiles)
 		FileStorage fs(file.toStdString().c_str(), FileStorage::READ);
 
 		//if stereo calibration file, load and return
-        if(file.contains(".stereocal") || file.contains(".rgbnirstcal"))
+		if(file.contains(".stereocal") || file.contains(".rgbnirstcal"))
 		{
 			Mat CML, CMR, DL, DR;
 			fs["CM_L"] >> CML;
@@ -634,7 +633,7 @@ void CameraCalibration::loadCalibrationFile(QStringList calibFiles)
 			fs["R_R"] >> rectificTransf_R;
 			fs["P_L"] >> projectionMat_L;
 			fs["P_R"] >> projectionMat_R;
-            fs["Q"] >> disparity2DepthMat;
+			fs["Q"] >> disparity2DepthMat;
 
 			camMatrices_goldeye[0] = CML.clone();
 			camMatrices_goldeye[1] = CMR.clone();
@@ -645,13 +644,13 @@ void CameraCalibration::loadCalibrationFile(QStringList calibFiles)
 			rectifyMapsCreated = false; //trigger making the rectify maps once in stereo undist.&remap method
 			cameraCalibrated = goldeyeCalibrated = false;
 
-            if(file.contains(".rgbnirstcal"))
-            {
-                fs["FAC"] >> RGB2NIR_resizeFactor;
-                fs["REC"] >> RGB2NIR_cropRect;
-                RGB2NIR_fittingComputed = true;
-            }
-            fs.release();
+			if(file.contains(".rgbnirstcal"))
+			{
+				fs["FAC"] >> RGB2NIR_resizeFactor;
+				fs["REC"] >> RGB2NIR_cropRect;
+				RGB2NIR_fittingComputed = true;
+			}
+			fs.release();
 			return;
 		}
 
@@ -664,12 +663,12 @@ void CameraCalibration::loadCalibrationFile(QStringList calibFiles)
 		distCoeffs_goldeye[cnt] = D.clone();
 
 		cnt++;
-        fs.release();
+		fs.release();
 	}
 
 	cameraCalibrated = goldeyeCalibrated = stereoCalibrated = false;
 	if(cnt == 1){ cameraCalibrated = true; }
-    else if(cnt == nrOfNIRChannels){ goldeyeCalibrated = true; }
+	else if(cnt == nrOfNIRChannels){ goldeyeCalibrated = true; }
 }
 
 void CameraCalibration::makeAndSaveHomogeneityMatrices(QStringList calibImgTarFiles, QString folderURL)

@@ -45,6 +45,8 @@ public:
 
 		bool getDepth(Mat& output);
 
+		bool getIR(Mat& output);
+
 	private:
 		std::vector<uint8_t> m_buffer_depth;
 		std::vector<uint8_t> m_buffer_rgb;
@@ -52,11 +54,13 @@ public:
 		uint16_t* depth;
 		Mat depthMat;
 		Mat rgbMat;
+		Mat irMat;
 		Mat ownMat;
 		myMutex m_rgb_mutex;
 		myMutex m_depth_mutex;
 		bool m_new_rgb_frame;
 		bool m_new_depth_frame;
+		bool m_new_ir_frame;
 };
 
 #endif // MYFREENECTOPENCVDEVICE_H

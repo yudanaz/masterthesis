@@ -60,20 +60,20 @@ public:
 	void calibrateStereoCameras(QList<Mat> calibImgsLeft, QList<Mat> calibImgsRight,
 								int chessboard_width, int chessboard_height, QString calibFileName = "");
 
-    void calibrateRGBNIRStereoCameras(QList<Mat> calibImgsNIR_L, QList<Mat> calibImgsRGB_R,
-                                int chessboard_width, int chessboard_height, QString calibFileName = "");
+	void calibrateRGBNIRStereoCameras(QList<Mat> calibImgsNIR_L, QList<Mat> calibImgsRGB_R,
+								int chessboard_width, int chessboard_height, QString calibFileName = "");
 
-    void doStereoCalibration(QList<Mat> calibImgsLeft, QList<Mat> calibImgsRight,
-                             int chessboard_width, int chessboard_height, QString calibFileName = "");
+	void doStereoCalibration(QList<Mat> calibImgsLeft, QList<Mat> calibImgsRight,
+							 int chessboard_width, int chessboard_height, QString calibFileName = "");
 
-    /*!
-     * \brief Resizes and crops an RGB image according to parameters defined previously by
-     * fitRGBimgs2NIRimgs(). The resulting image has the same object resolution and size as
-     * the NIR image.
-     * \param rgbImg: The RGB image.
-     * \return The resized and cropped image.
-     */
-    Mat resizeAndCropRGBImg(Mat rgbImg);
+	/*!
+	 * \brief Resizes and crops an RGB image according to parameters defined previously by
+	 * fitRGBimgs2NIRimgs(). The resulting image has the same object resolution and size as
+	 * the NIR image.
+	 * \param rgbImg: The RGB image.
+	 * \return The resized and cropped image.
+	 */
+	Mat resizeAndCropRGBImg(Mat rgbImg);
 
 	/*!
 	 * \brief Loads and distignuishes between calibration files for the three camera types:
@@ -81,7 +81,7 @@ public:
 	 * \param calibFiles: List containing the calibration files (goldeye needs separate single-camera
 	 * calibratedcalibration for each waveband).
 	 */
-    void loadCalibrationFile(QStringList calibFiles);
+	void loadCalibrationFile(QStringList calibFiles);
 
 	void undistortSingleImage(QString fileName);
 	void undistortGoldeyeMultiChImg(QStringList tarFileNames);
@@ -106,43 +106,43 @@ public:
 
 	/*!
 	 * \brief Computes a disparity image using the Block Matching algorithm by [Konolige97]
-     * OR
-     * the semi-global Block Matching algorithm by [Hirschmuller,
-     * H. Stereo Processing by Semiglobal Matching and Mutual Information, PAMI(30), No. 2, February 2008, pp. 328-341.]
-     */
-    Mat makeDisparityMap(Mat leftGrayImg, Mat rightGrayImg, bool useSGBM);
+	 * OR
+	 * the semi-global Block Matching algorithm by [Hirschmuller,
+	 * H. Stereo Processing by Semiglobal Matching and Mutual Information, PAMI(30), No. 2, February 2008, pp. 328-341.]
+	 */
+	Mat makeDisparityMap(Mat leftGrayImg, Mat rightGrayImg, bool useSGBM);
 
-    /*!
-     * \brief Improves a disparity map by propagating disparity to zero-valued pixels
-     * (mismatch / occlusion /...). For this the dispartity is averaged in each superpixel.
-     * \param superpixelmap: The superpixels for the original image with wich the disparity
-     * map is aligned (typically the left one)
-     * \param disp: The disparity map.
-     * \return: The improved disparity map.
-     */
-    Mat improveDisparityMap(int nrOfSuperPixel, Mat superpixelMap, Mat disparityMap);
+	/*!
+	 * \brief Improves a disparity map by propagating disparity to zero-valued pixels
+	 * (mismatch / occlusion /...). For this the dispartity is averaged in each superpixel.
+	 * \param superpixelmap: The superpixels for the original image with wich the disparity
+	 * map is aligned (typically the left one)
+	 * \param disp: The disparity map.
+	 * \return: The improved disparity map.
+	 */
+	Mat improveDisparityMap(int nrOfSuperPixel, Mat superpixelMap, Mat disparityMap);
 
-    /*!
-     * \brief Aligns an image to a reference image of the same scene, usign SURF features and
-     * brute-force matching. Cameras shouldn't be too far apart.
-     * \param imageL: the reference image
-     * \param imageRtoBeAligned: image that is aligned to the reference image
-     * \return the aligned image.
-     */
-    Mat alignImageByFeatures(Mat imageL, Mat imageRtoBeAligned);
+	/*!
+	 * \brief Aligns an image to a reference image of the same scene, usign SURF features and
+	 * brute-force matching. Cameras shouldn't be too far apart.
+	 * \param imageL: the reference image
+	 * \param imageRtoBeAligned: image that is aligned to the reference image
+	 * \return the aligned image.
+	 */
+	Mat alignImageByFeatures(Mat imageL, Mat imageRtoBeAligned);
 
 
-    /*!
-     * \brief Generates matrices which can be used to make goldeye camera waveband images homogeneous
-     * (in terms of brightness resulting from LED ring flash). The resulting matrices should be used
-     * for pixel-wise multiplication with the corresponding waveband image.
-     * \param calibImgTarFiles: A list of multichannel reference images, preferably focused in middle
-     * waveband(s) and captured in front of a white wall.
-     * \param folderURL: Folder to which the homogeneity matrices should be saved.
-     */
-    void makeAndSaveHomogeneityMatrices(QStringList calibImgTarFiles, QString folderURL);
+	/*!
+	 * \brief Generates matrices which can be used to make goldeye camera waveband images homogeneous
+	 * (in terms of brightness resulting from LED ring flash). The resulting matrices should be used
+	 * for pixel-wise multiplication with the corresponding waveband image.
+	 * \param calibImgTarFiles: A list of multichannel reference images, preferably focused in middle
+	 * waveband(s) and captured in front of a white wall.
+	 * \param folderURL: Folder to which the homogeneity matrices should be saved.
+	 */
+	void makeAndSaveHomogeneityMatrices(QStringList calibImgTarFiles, QString folderURL);
 
-    bool loadHomogeneityMatrices(QString loadFileURL);
+	bool loadHomogeneityMatrices(QString loadFileURL);
 	void applyHomogeneityMatrices(QString multiChImgtarFile);
 
 
@@ -150,7 +150,7 @@ public:
 	bool isCalibrated_cam(){ return cameraCalibrated; }
 	bool isCalibrated_goldeye(){ return goldeyeCalibrated; }
 	bool isCalibrated_stereo(){ return stereoCalibrated; }
-    bool isComputed_RGB2NIRfitting(){ return RGB2NIR_fittingComputed; }
+	bool isComputed_RGB2NIRfitting(){ return RGB2NIR_fittingComputed; }
 
 private:
 	void calibrateCamFromImages(QList<Mat> calibImgs, int channelIndex,
@@ -158,22 +158,23 @@ private:
 	void getObjectAndImagePoints(QList<Mat> calibImgs, int width, int height, vector<Point3f> obj,
 								 vector<vector<Point3f> >& objectPoints, vector<vector<Point2f> >& imagePoints,
 								 bool isGrayScale = false);
+	void getImagePoints(QList<Mat> calibImgs, Size chessboardSize, vector<vector<Point2f> >& imagePoints, bool isGrayScale = false);
 	void saveCalibrationFile(QString calibFileName, int channelIndex);
-    void saveStereoCalibrationFile(QString calibFileName, bool isRGBNIR);
+	void saveStereoCalibrationFile(QString calibFileName, bool isRGBNIR);
 	void makeRectifyMapsForStereo(Size leftImgSize, Size rightImgSize);
 
-    /*!
-     * \brief Fits the larger images of the RGB cam to the smaller NIR images by computing
-     * a resizing factor based on chessboard images and cropping the images.
-     * \param origNIR: the original NIR images used as references.
-     * \param origRGB: the original RGB images that must be resized and cropped..
-     * \return the resized and cropped RGB images.
-     */
-    QList<Mat> fitRGBimgs2NIRimgs(QList<Mat> origNirs, QList<Mat> origRGBs, int chessboard_width, int chessboard_height);
+	/*!
+	 * \brief Fits the larger images of the RGB cam to the smaller NIR images by computing
+	 * a resizing factor based on chessboard images and cropping the images.
+	 * \param origNIR: the original NIR images used as references.
+	 * \param origRGB: the original RGB images that must be resized and cropped..
+	 * \return the resized and cropped RGB images.
+	 */
+	QList<Mat> fitRGBimgs2NIRimgs(QList<Mat> origNirs, QList<Mat> origRGBs, int chessboard_width, int chessboard_height);
 
 	QWidget *parentWidget;
 	StereoBM sbm;
-    StereoSGBM sgbm;
+	StereoSGBM sgbm;
 	bool cameraCalibrated;
 	bool goldeyeCalibrated;
 	bool stereoCalibrated;
@@ -185,9 +186,9 @@ private:
 	QVector<Mat> distCoeffs_goldeye;
 	int nrOfNIRChannels;
 
-    double RGB2NIR_resizeFactor;
-    Rect RGB2NIR_cropRect;
-    bool RGB2NIR_fittingComputed;
+	double RGB2NIR_resizeFactor;
+	Rect RGB2NIR_cropRect;
+	bool RGB2NIR_fittingComputed;
 
 	Mat camMatrix_stereoL;
 	Mat camMatrix_stereoR;
