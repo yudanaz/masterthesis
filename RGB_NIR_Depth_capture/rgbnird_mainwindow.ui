@@ -117,7 +117,7 @@
      <item>
       <widget class="QLineEdit" name="lineEdit_countdown">
        <property name="text">
-        <string>5</string>
+        <string>3</string>
        </property>
       </widget>
      </item>
@@ -131,7 +131,7 @@
      <item>
       <widget class="QLineEdit" name="lineEdit_amount">
        <property name="text">
-        <string>8</string>
+        <string>3</string>
        </property>
       </widget>
      </item>
@@ -145,7 +145,7 @@
      <item>
       <widget class="QLineEdit" name="lineEdit_interval">
        <property name="text">
-        <string>1.5</string>
+        <string>0.5</string>
        </property>
       </widget>
      </item>

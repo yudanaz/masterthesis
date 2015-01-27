@@ -1,5 +1,5 @@
 #include <QDir>
-#include <QTime>
+#include <QDateTime>
 #include "rgb_nir_depth_capture.h"
 #include "ui_rgbnird_mainwindow.h"
 #include "prosilicaworker.h"
@@ -10,12 +10,11 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::RGBNIRD_MainWindow),
 	triggerSave(false),
-	imgCnt(0),
+	capturingSeries(false), countingDown(false), countdownSeconds(0), countdownTime(0), seriesCnt(0), seriesMax(0), seriesInterval(0),
 	ptr_RGBScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene)),
 	ptr_NIRScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene)),
 	ptr_depthScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene)),
-	capturingSeries(false), countingDown(false), countdownTime(0), seriesCnt(0), seriesMax(0), seriesInterval(0),
-	sound_beep("beep.wav"), sound_click("cameraClick.wav")
+	sound_click("sound/cameraClick.wav"), sound_beep("sound/beep.wav"), sound_beep2("sound/beep2.wav")
 {
 	ui->setupUi(this);
 
@@ -161,7 +160,7 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 	//if set, capture a series of images.
 	if(capturingSeries){ captureSeries(); }
 
-	//save current image list if save button is clicked
+	//save current image list if save button is clicked or captureSeries() is triggered
 	if(triggerSave)
 	{
 		sound_click.play();
@@ -169,18 +168,24 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 		QDir dir;
 		if(!dir.exists(QDir::currentPath()+"/out")){ dir.mkdir(QDir::currentPath()+"/out"); }
 		i.toFront();
-		QTime time;
+		QDateTime now = QDateTime::currentDateTime();
+		QString dateTime_str = QString::number(now.date().year())
+							   + QString("%1").arg(now.date().month(), 2, 10, QChar('0'))
+							   + QString("%1").arg(now.date().day(), 2, 10, QChar('0')) + "_"
+							   + QString("%1").arg(now.time().hour(), 2, 10, QChar('0'))
+							   + QString("%1").arg(now.time().minute(), 2, 10, QChar('0'))
+							   + QString("%1").arg(now.time().second(), 2, 10, QChar('0'))
+							   + QString("%1").arg(now.time().msec()/10, 2, 10, QChar('0'));
+
 		while(i.hasNext())
 		{
 			i.next();
 			QString nm = QDir::currentPath() + "/out/" +
-						 QString::number(imgCnt) + "_" +
-						 //time.currentTime().toString() + "_" +
+						 dateTime_str + "_" +
 						 VimbaCamManager::getRGBDNIR_captureTypeString( (RGBDNIR_captureType)i.key() ) + ".png";
 			imwrite(nm.toStdString().c_str(), i.value());
 		}
 		triggerSave = false;
-		imgCnt++;
 	}
 
 	threadLock.unlock();
@@ -193,7 +198,8 @@ void RGB_NIR_Depth_Capture::captureSeries()
 	//beep every second
 	if(countingDown && myBeepTimer.elapsed() > 1000)
 	{
-		sound_beep.play();
+		if(--countdownSeconds == 1) { sound_beep2.play(); }
+		else { sound_beep.play(); }
 		myBeepTimer.restart();
 	}
 
@@ -262,7 +268,8 @@ void RGB_NIR_Depth_Capture::on_pushButton_saveSeries_released()
 {
 	capturingSeries = true;
 	countingDown = true;
-	countdownTime = ui->lineEdit_countdown->text().toInt() * 1000;
+	countdownSeconds = ui->lineEdit_countdown->text().toInt();
+	countdownTime = countdownSeconds * 1000;
 	seriesCnt = 0;
 	seriesMax = ui->lineEdit_amount->text().toInt();
 	seriesInterval = ui->lineEdit_interval->text().toDouble() * 1000.0;

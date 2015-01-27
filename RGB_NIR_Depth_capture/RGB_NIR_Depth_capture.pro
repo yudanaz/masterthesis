@@ -73,3 +73,15 @@ SOURCES += main.cpp
 HEADERS  +=
 
 FORMS    += rgbnird_mainwindow.ui
+
+OTHER_FILES += \
+	sound/beep.wav \
+	sound/cameraClick.wav \
+    sound/beep2.wav
+
+#COPY SOUNDS FROM SOURCE TO BUILD DIR
+copydata.commands = $(COPY_DIR) $$PWD/sound $$OUT_PWD
+first.depends = $(first) copydata
+export(first.depends)
+export(copydata.commands)
+QMAKE_EXTRA_TARGETS += first copydata

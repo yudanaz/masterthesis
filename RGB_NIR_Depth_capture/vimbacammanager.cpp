@@ -296,13 +296,13 @@ QString VimbaCamManager::getRGBDNIR_captureTypeString(RGBDNIR_captureType i)
 {
 	switch (i) {
 		case RGB: return "RGB";
-		case Kinect_Depth: return "Kinect Depth Map";
-		case Kinect_RGB: return "Kinect RGB Image";
-		case NIR_Dark: return "NIR Dark image";
-		case NIR_935: return "NIR 935 nm Waveband";
-		case NIR_1060: return "NIR 1060 nm Waveband";
-		case NIR_1300: return "NIR 1300 nm Waveband";
-		case NIR_1550: return "NIR 1550 nm Waveband";
+		case Kinect_Depth: return "Kinect_Depth";
+		case Kinect_RGB: return "Kinect_RGB";
+		case NIR_Dark: return "NIR_Dark";
+		case NIR_935: return "NIR_935nm";
+		case NIR_1060: return "NIR_1060nm";
+		case NIR_1300: return "NIR_1300nm";
+		case NIR_1550: return "NIR_1550nm";
 		default:
 			break;
 	}

@@ -55,12 +55,14 @@ private:
 	bool countingDown;
 	QTime myTimer;
 	QTime myBeepTimer;
+	int countdownSeconds;
 	int countdownTime;
 	int seriesCnt;
 	int seriesMax;
 	int seriesInterval;
 	QSound sound_click;
 	QSound sound_beep;
+	QSound sound_beep2;
 
 	RGBDNIR_MAP allCapturesImgs;
 
@@ -73,8 +75,6 @@ private:
 	ImgAcquisitionWorker *myImgAcqWorker2;
 	ImgAcquisitionWorker *myImgAcqWorker3;
 	QMutex threadLock;
-
-	int imgCnt;
 
 	QSharedPointer<QGraphicsScene> ptr_RGBScene;
 	QSharedPointer<QGraphicsScene> ptr_NIRScene;
