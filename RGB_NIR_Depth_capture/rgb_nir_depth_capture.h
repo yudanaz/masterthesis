@@ -48,8 +48,10 @@ private slots:
 
 	void on_pushButton_saveSeries_released();
 
-private:
+	void on_btn_saveIR_RGB_pair_released();
 
+private:
+	QString getUniquePrefixFromDateAndTime();
 	void captureSeries();
 	bool capturingSeries;
 	bool countingDown;
@@ -64,10 +66,11 @@ private:
 	QSound sound_beep;
 	QSound sound_beep2;
 
-	RGBDNIR_MAP allCapturesImgs;
+	RGBDNIR_MAP allCapturedImgs;
 
 	Ui::RGBNIRD_MainWindow *ui;
 	bool triggerSave;
+	bool triggerSaveIR_RGB_pair;
 	QThread workerThread1;
 	QThread workerThread2;
 	QThread workerThread3;

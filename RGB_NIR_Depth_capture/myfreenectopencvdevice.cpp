@@ -1,11 +1,13 @@
 #include "myfreenectopencvdevice.h"
 
 MyFreenectOpenCVDevice::MyFreenectOpenCVDevice(freenect_context *_ctx, int _index):
-	Freenect::FreenectDevice(_ctx, _index), m_buffer_depth(FREENECT_DEPTH_11BIT),
+	Freenect::FreenectDevice(_ctx, _index),
+	in_IR_mode(false), modeSetOnce_IR(false), modeSetOnce_RGB(false),
+	m_buffer_depth(FREENECT_DEPTH_11BIT),
 	m_buffer_rgb(FREENECT_VIDEO_RGB), m_gamma(2048), m_new_rgb_frame(false),
 	m_new_depth_frame(false), depthMat(Size(640,480),CV_16UC1),
 	rgbMat(Size(640,480), CV_8UC3, Scalar(0)),
-	irMat(Size(640,480),CV_16UC1),
+	irMat(Size(640,480),CV_8UC1),
 	ownMat(Size(640,480),CV_8UC3,Scalar(0))
 {
 	for( unsigned int i = 0 ; i < 2048 ; i++) {
@@ -20,20 +22,19 @@ void MyFreenectOpenCVDevice::VideoCallback(void* _rgb, uint32_t timestamp)
 //    std::cout << "RGB callback" << std::endl;
 	m_rgb_mutex.lock();
 
-	freenect_video_format format = getVideoFormat();
-	if(format == FREENECT_VIDEO_RGB)
+//	freenect_video_format format = getVideoFormat();
+	if(!in_IR_mode)//RGB -> 3 channel image
 	{
 		uint8_t* rgb = static_cast<uint8_t*>(_rgb);
 		rgbMat.data = rgb;
 		m_new_rgb_frame = true;
 	}
-	else if(format == FREENECT_VIDEO_IR_8BIT)
+	else//IR -> 1 channel image
 	{
-		uint16_t* ir = static_cast<uint16_t*>(_rgb);
+		uint8_t* ir = static_cast<uint8_t*>(_rgb);
 		irMat.data = (uchar*) ir;
 		m_new_ir_frame = true;
 	}
-
 	m_rgb_mutex.unlock();
 }
 
@@ -89,4 +90,35 @@ bool MyFreenectOpenCVDevice::getIR(Mat& output)
 		return false;
 	}
 }
+
+
+void MyFreenectOpenCVDevice::toggleIRMode(bool ir_on)
+{
+	//this method was supposed to make the time gaps between rgb and ir faster but that apparently doesn't work...
+
+	if(in_IR_mode == ir_on) { return; } //nothing changed
+	in_IR_mode = ir_on;
+
+	freenect_stop_video((_freenect_device*)getDevice());
+	if(in_IR_mode)
+	{
+		if(!modeSetOnce_IR)
+		{
+			mode_IR = freenect_find_video_mode(FREENECT_RESOLUTION_MEDIUM, FREENECT_VIDEO_IR_8BIT);
+			modeSetOnce_IR = true;
+		}
+		freenect_set_video_mode((_freenect_device*)getDevice(), mode_IR);
+	}
+	else //in RGB mode
+	{
+		if(!modeSetOnce_RGB)
+		{
+			mode_RGB = freenect_find_video_mode(FREENECT_RESOLUTION_MEDIUM, FREENECT_VIDEO_RGB);
+			modeSetOnce_RGB = true;
+		}
+		freenect_set_video_mode((_freenect_device*)getDevice(), mode_RGB);
+	}
+	freenect_start_video((_freenect_device*)getDevice());
+}
+
 

@@ -47,7 +47,15 @@ public:
 
 		bool getIR(Mat& output);
 
+		void toggleIRMode(bool ir_on);
+
 	private:
+		bool in_IR_mode;
+		freenect_frame_mode mode_IR;
+		bool modeSetOnce_IR;
+		freenect_frame_mode mode_RGB;
+		bool modeSetOnce_RGB;
+
 		std::vector<uint8_t> m_buffer_depth;
 		std::vector<uint8_t> m_buffer_rgb;
 		std::vector<uint16_t> m_gamma;

@@ -9,7 +9,7 @@
 RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::RGBNIRD_MainWindow),
-	triggerSave(false),
+	triggerSave(false), triggerSaveIR_RGB_pair(false),
 	capturingSeries(false), countingDown(false), countdownSeconds(0), countdownTime(0), seriesCnt(0), seriesMax(0), seriesInterval(0),
 	ptr_RGBScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene)),
 	ptr_NIRScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene)),
@@ -84,17 +84,21 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 	threadLock.lock();
 
 	//first join the images from sent by the thread to this slot with all images (by all threads)
-	if(capturedImgs.contains(RGB)){ allCapturesImgs[RGB] = capturedImgs[RGB]; }
-	if(capturedImgs.contains(Kinect_Depth)){ allCapturesImgs[Kinect_Depth] = capturedImgs[Kinect_Depth]; }
-	if(capturedImgs.contains(Kinect_RGB)){ allCapturesImgs[Kinect_RGB] = capturedImgs[Kinect_RGB]; }
-	if(capturedImgs.contains(NIR_Dark)){ allCapturesImgs[NIR_Dark] = capturedImgs[NIR_Dark]; }
-	if(capturedImgs.contains(NIR_935)){ allCapturesImgs[NIR_935] = capturedImgs[NIR_935]; }
-	if(capturedImgs.contains(NIR_1060)){ allCapturesImgs[NIR_1060] = capturedImgs[NIR_1060]; }
-	if(capturedImgs.contains(NIR_1300)){ allCapturesImgs[NIR_1300] = capturedImgs[NIR_1300]; }
-	if(capturedImgs.contains(NIR_1550)){ allCapturesImgs[NIR_1550] = capturedImgs[NIR_1550]; }
+	if(capturedImgs.contains(RGB)){ allCapturedImgs[RGB] = capturedImgs[RGB]; }
+	if(capturedImgs.contains(Kinect_Depth)){ allCapturedImgs[Kinect_Depth] = capturedImgs[Kinect_Depth]; }
+	if(capturedImgs.contains(Kinect_RGB)){ allCapturedImgs[Kinect_RGB] = capturedImgs[Kinect_RGB]; }
+	if(capturedImgs.contains(NIR_Dark)){ allCapturedImgs[NIR_Dark] = capturedImgs[NIR_Dark]; }
+	if(capturedImgs.contains(NIR_935)){ allCapturedImgs[NIR_935] = capturedImgs[NIR_935]; }
+	if(capturedImgs.contains(NIR_1060)){ allCapturedImgs[NIR_1060] = capturedImgs[NIR_1060]; }
+	if(capturedImgs.contains(NIR_1300)){ allCapturedImgs[NIR_1300] = capturedImgs[NIR_1300]; }
+	if(capturedImgs.contains(NIR_1550)){ allCapturedImgs[NIR_1550] = capturedImgs[NIR_1550]; }
+	if(triggerSaveIR_RGB_pair && capturedImgs.contains(Kinect_IR))
+	{
+		allCapturedImgs[Kinect_IR] = capturedImgs[Kinect_IR];
+	}
 
 
-	QMapIterator<RGBDNIR_captureType, Mat> i(allCapturesImgs);
+	QMapIterator<RGBDNIR_captureType, Mat> i(allCapturedImgs);
 	while(i.hasNext())
 	{
 		i.next();
@@ -168,14 +172,7 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 		QDir dir;
 		if(!dir.exists(QDir::currentPath()+"/out")){ dir.mkdir(QDir::currentPath()+"/out"); }
 		i.toFront();
-		QDateTime now = QDateTime::currentDateTime();
-		QString dateTime_str = QString::number(now.date().year())
-							   + QString("%1").arg(now.date().month(), 2, 10, QChar('0'))
-							   + QString("%1").arg(now.date().day(), 2, 10, QChar('0')) + "_"
-							   + QString("%1").arg(now.time().hour(), 2, 10, QChar('0'))
-							   + QString("%1").arg(now.time().minute(), 2, 10, QChar('0'))
-							   + QString("%1").arg(now.time().second(), 2, 10, QChar('0'))
-							   + QString("%1").arg(now.time().msec()/10, 2, 10, QChar('0'));
+		QString dateTime_str = getUniquePrefixFromDateAndTime();
 
 		while(i.hasNext())
 		{
@@ -186,6 +183,25 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 			imwrite(nm.toStdString().c_str(), i.value());
 		}
 		triggerSave = false;
+	}
+
+	//save pair of kinect RGB and IR images if triggered
+	if(triggerSaveIR_RGB_pair)
+	{
+		if(allCapturedImgs.contains(Kinect_IR) && allCapturedImgs.contains(Kinect_RGB))
+		{
+			sound_click.play();
+
+			QString dateTime_str = getUniquePrefixFromDateAndTime();
+			QString nmRGB = QDir::currentPath() + "/out/" + dateTime_str + "_kinectPairRGB.png";
+			QString nmIR = QDir::currentPath() + "/out/" + dateTime_str + "_kinectPairIR.png";
+			imwrite(nmRGB.toStdString(), allCapturedImgs[Kinect_RGB]);
+			imwrite(nmIR.toStdString(), allCapturedImgs[Kinect_IR]);
+
+			//remove ir image so it isn't saved twice
+			allCapturedImgs.remove(Kinect_IR);
+			triggerSaveIR_RGB_pair = false;
+		}
 	}
 
 	threadLock.unlock();
@@ -229,6 +245,19 @@ void RGB_NIR_Depth_Capture::captureSeries()
 			myTimer.restart();
 		}
 	}
+}
+
+
+QString RGB_NIR_Depth_Capture::getUniquePrefixFromDateAndTime()
+{
+	QDateTime now = QDateTime::currentDateTime();
+	return QString::number(now.date().year())
+		   + QString("%1").arg(now.date().month(), 2, 10, QChar('0'))
+		   + QString("%1").arg(now.date().day(), 2, 10, QChar('0')) + "_"
+		   + QString("%1").arg(now.time().hour(), 2, 10, QChar('0'))
+		   + QString("%1").arg(now.time().minute(), 2, 10, QChar('0'))
+		   + QString("%1").arg(now.time().second(), 2, 10, QChar('0'))
+		   + QString("%1").arg(now.time().msec()/10, 2, 10, QChar('0'));
 }
 
 
@@ -276,4 +305,10 @@ void RGB_NIR_Depth_Capture::on_pushButton_saveSeries_released()
 	myTimer.start();
 	myBeepTimer.start();
 	sound_beep.play();
+}
+
+void RGB_NIR_Depth_Capture::on_btn_saveIR_RGB_pair_released()
+{
+	triggerSaveIR_RGB_pair = true;
+	((KinectWorker*)myImgAcqWorker3)->triggerIRcapture();
 }

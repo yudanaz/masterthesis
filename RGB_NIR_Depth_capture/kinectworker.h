@@ -8,6 +8,7 @@ class KinectWorker : public ImgAcquisitionWorker
 public:
 	KinectWorker();
 	~KinectWorker();
+	void triggerIRcapture();
 
 public slots:
 	void startAcquisition();

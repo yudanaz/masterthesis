@@ -298,6 +298,7 @@ QString VimbaCamManager::getRGBDNIR_captureTypeString(RGBDNIR_captureType i)
 		case RGB: return "RGB";
 		case Kinect_Depth: return "Kinect_Depth";
 		case Kinect_RGB: return "Kinect_RGB";
+		case Kinect_IR: return "Kinect_IR";
 		case NIR_Dark: return "NIR_Dark";
 		case NIR_935: return "NIR_935nm";
 		case NIR_1060: return "NIR_1060nm";

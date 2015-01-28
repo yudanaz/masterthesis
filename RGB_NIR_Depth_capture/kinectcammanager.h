@@ -13,6 +13,7 @@ public:
 	void connectCameras();
 	void closeCameras();
 	void getImages(QMap<RGBDNIR_captureType, Mat> &camImgs);
+	void triggerIRcapture();
 
 	bool isConnected();
 
@@ -20,6 +21,7 @@ private:
 	Freenect::Freenect freenect;
 	MyFreenectOpenCVDevice *freenectDevice;
 	bool connected;
+	bool captureOneIrFrame;
 };
 
 #endif // KINECTCAMMANAGER_H

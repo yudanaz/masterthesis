@@ -35,3 +35,9 @@ void KinectWorker::startAcquisition()
 		lock.unlock();
 	}
 }
+
+
+void KinectWorker::triggerIRcapture()
+{
+	kinectCamManager.triggerIRcapture();
+}
