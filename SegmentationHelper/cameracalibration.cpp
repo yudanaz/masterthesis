@@ -826,7 +826,22 @@ void CameraCalibration::applyHomogeneityMatrices(QString multiChImgtarFile)
 	imwrite((outNm + "_homgen1550.png").toStdString().c_str(), c1550);
 }
 
+void CameraCalibration::makeHomographyMatrix(QString calibfile_A, QString calibfile_B, Size chessboardSize)
+{
+	Mat a = imread(calibfile_A.toStdString(), IMREAD_GRAYSCALE);
+	Mat b = imread(calibfile_B.toStdString(), IMREAD_GRAYSCALE);
+	vector<Point2f> cornersA, cornersB;
+	findChessboardCorners(a, chessboardSize, cornersA, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
+	findChessboardCorners(b, chessboardSize, cornersB, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
 
+	Mat homography = findHomography(cornersA, cornersB, CV_RANSAC);
+
+	QString outDir = calibfile_A.remove(calibfile_A.split("/").last());
+	string outNm = (outDir + "homography.mat").toStdString();
+	FileStorage fs(outNm, CV_STORAGE_WRITE);
+	fs << "homography" << homography;
+	fs.release();
+}
 
 
 

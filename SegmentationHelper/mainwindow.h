@@ -74,11 +74,11 @@ private slots:
 
 	void on_btn_calibStereo_released();
 
-    void on_btn_calibStereoGRBNIR_released();
+	void on_btn_calibStereoGRBNIR_released();
 
 	void on_btn_undistStereo_released();
 
-    void on_btn_undistStereoRGBNIR_released();
+	void on_btn_undistStereoRGBNIR_released();
 
 	void on_btn_stereoVision_released();
 
@@ -114,23 +114,27 @@ private slots:
 
 	void on_btn_homogenApply_released();
 
-    void on_checkBox_useSGBM_clicked();
+	void on_checkBox_useSGBM_clicked();
 
-    void on_pushButton_test_released();
+	void on_pushButton_test_released();
 
 
-    void on_btn_makeImgPatches_released();
+	void on_btn_makeImgPatches_released();
 
-    void on_btn_makeTrainVal_released();
+	void on_btn_makeTrainVal_released();
+
+	void on_btn_makeHomographyMatrix_released();
+
+	void on_btn_registerImages_released();
 
 private:
 	void makeLabelImages(QStringList fileNames);
 	void makeSeedsSuperpixels(QString fileName);
 	void makeSlicSuperpixels(QString fileName);
 	void makeFelsenzwalbSuperpixels(QString fileName);
-    void makeDisparityImage(Mat leftImgCol, Mat rightImgCol);
+	void makeDisparityImage(Mat leftImgCol, Mat rightImgCol);
 	void makeSurfFeatures(QString fileName);
-    void undistortStereo(bool isRGB_NIR_Stereo);
+	void undistortStereo(bool isRGB_NIR_Stereo);
 
 
 
@@ -143,8 +147,8 @@ private:
 	QString lastFelsenzwalbFilename;
 	QString lastStereoFileNameL;
 	QString lastStereoFileNameR;
-    Mat lastStereoFileR;
-    Mat lastStereoFileL;
+	Mat lastStereoFileR;
+	Mat lastStereoFileL;
 	QString lastFeatureFileName;
 
 	CameraCalibration camCalib;

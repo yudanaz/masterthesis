@@ -131,6 +131,8 @@ public:
 	 */
 	Mat alignImageByFeatures(Mat imageL, Mat imageRtoBeAligned);
 
+	void makeHomographyMatrix(QString calibfile_A, QString calibfile_B, Size chessboardSize);
+
 
 	/*!
 	 * \brief Generates matrices which can be used to make goldeye camera waveband images homogeneous

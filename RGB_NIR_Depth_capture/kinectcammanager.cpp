@@ -53,7 +53,6 @@ void KinectCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 
 	//add Kinect Images
 	Mat depthMat(Size(640,480),CV_16UC1);
-	Mat depthMap8bit (Size(640,480),CV_8UC1);
 	Mat rgbMat(Size(640,480),CV_8UC3,Scalar(0));
 
 	try
@@ -66,8 +65,7 @@ void KinectCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 		{
 			success = freenectDevice->getDepth(depthMat);
 		}
-		depthMat.convertTo(depthMap8bit, CV_8UC1, 255.0/2048.0);
-		camImgs[Kinect_Depth] = depthMap8bit;
+		camImgs[Kinect_Depth] = depthMat;
 
 		//try getting rgb image until successful
 		success = freenectDevice->getVideo(rgbMat);

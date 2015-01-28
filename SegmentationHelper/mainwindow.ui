@@ -402,6 +402,30 @@
       </layout>
      </item>
      <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_24">
+       <item>
+        <widget class="QPushButton" name="btn_makeHomographyMatrix">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(20, 219, 50)</string>
+         </property>
+         <property name="text">
+          <string>Make Komography Matrix</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btn_registerImages">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(20, 219, 50)</string>
+         </property>
+         <property name="text">
+          <string>Register Images</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
       <layout class="QHBoxLayout" name="horizontalLayout_21">
        <item>
         <widget class="QLabel" name="label_17">
@@ -1125,7 +1149,7 @@ color: rgb(255, 255, 127);</string>
      <x>0</x>
      <y>0</y>
      <width>1072</width>
-     <height>25</height>
+     <height>20</height>
     </rect>
    </property>
   </widget>

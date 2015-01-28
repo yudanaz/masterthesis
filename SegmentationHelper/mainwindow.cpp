@@ -21,8 +21,8 @@ MainWindow::MainWindow(QWidget *parent) :
 {
 	ui->setupUi(this);
 
-    //read color map from app dir
-    QFile colorfin(QDir::currentPath() + "/VOCcolormap.txt");
+	//read color map from app dir
+	QFile colorfin(QDir::currentPath() + "/VOCcolormap.txt");
 	colorfin.open(QFile::ReadOnly | QFile::Text);
 	QTextStream colorIn(&colorfin);
 	int count = 0;
@@ -191,13 +191,13 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 			xml.readNext();
 		}
 
-        //save images to disk
+		//save images to disk
 		imwrite( colorFileName.toStdString().c_str(), colorImg, imageSettings);
 		imwrite( grayFileName.toStdString().c_str(), grayImg, imageSettings);
 
 		//show progress in progress bar
 		progress.setValue(++progressCnt);
-        if(progress.wasCanceled()) { return; }
+		if(progress.wasCanceled()) { return; }
 	}
 	progress.setValue(fileNames.length());
 }
@@ -222,7 +222,7 @@ void MainWindow::makeSeedsSuperpixels(QString fileName)
 		seedW = 2;
 		seedH = 2;
 		seedLevels = 4;
-    }
+	}
 
 	QTime myTimer;
 	myTimer.start();
@@ -242,10 +242,10 @@ void MainWindow::makeSeedsSuperpixels(QString fileName)
 
 	//get labels, transform to opencv mat obj and display
 //	UINT* _labels = seeds.get_labels();
-    Mat cvLabels, cvLabels8bit;
-    cvLabels = seeds.getLabelsAsMat();
-    cvLabels.convertTo(cvLabels8bit, CV_8UC1, 256.0/seeds.count_superpixels());
-    imshow("Labels", cvLabels8bit);
+	Mat cvLabels, cvLabels8bit;
+	cvLabels = seeds.getLabelsAsMat();
+	cvLabels.convertTo(cvLabels8bit, CV_8UC1, 256.0/seeds.count_superpixels());
+	imshow("Labels", cvLabels8bit);
 //	imshow("Original", img);
 
 //	int sz = 3*width*height;
@@ -253,20 +253,20 @@ void MainWindow::makeSeedsSuperpixels(QString fileName)
 //	UINT* output_buff = new UINT[sz];
 //	for (int i = 0; i<sz; i++) output_buff[i] = 0;
 
-    UINT* imgUINT = seeds.getUINT(img);
-    UINT *labels = seeds.get_labels();
-    DrawContoursAroundSegments(imgUINT, labels, width, height, 0xFF1493, true);//0xff0000 draws white contours
+	UINT* imgUINT = seeds.getUINT(img);
+	UINT *labels = seeds.get_labels();
+	DrawContoursAroundSegments(imgUINT, labels, width, height, 0xFF1493, true);//0xff0000 draws white contours
 	Mat labelsOverlayed = seeds.getMat(imgUINT);
-    imshow("Superpixels", labelsOverlayed);
+	imshow("Superpixels", labelsOverlayed);
 
 	//save label names
-    QString fileNameOnly = fileName.split("/").last().split(".")[0];
-    QString labelsFileName = lastDir + "/" + fileNameOnly + "labels.txt";
-    seeds.SaveLabels_Text(labelsFileName.toStdString().c_str());
+	QString fileNameOnly = fileName.split("/").last().split(".")[0];
+	QString labelsFileName = lastDir + "/" + fileNameOnly + "labels.txt";
+	seeds.SaveLabels_Text(labelsFileName.toStdString().c_str());
 
-    //display the number of superpixels created with this settings
-    QString nrOfSuperpxs = QString::number(seeds.count_superpixels());
-    ui->label_nrOfSuperpxs->setText("= " + nrOfSuperpxs + " superpixels");
+	//display the number of superpixels created with this settings
+	QString nrOfSuperpxs = QString::number(seeds.count_superpixels());
+	ui->label_nrOfSuperpxs->setText("= " + nrOfSuperpxs + " superpixels");
 }
 
 void MainWindow::makeSlicSuperpixels(QString fileName)
@@ -341,13 +341,13 @@ void MainWindow::makeFelsenzwalbSuperpixels(QString fileName)
 //void MainWindow::makeDisparityImage(QString fileNameL, QString fileNameR)
 void MainWindow::makeDisparityImage(Mat leftImgCol, Mat rightImgCol)
 {
-    bool improve = false;
-    if(ui->checkBox_improveWithSeed->isChecked()){ improve = true; }
+	bool improve = false;
+	if(ui->checkBox_improveWithSeed->isChecked()){ improve = true; }
 
 	//load L and R images as grayscale
-    Mat leftImg, rightImg, disp, dispImprov;
-    cvtColor(leftImgCol, leftImg, CV_BGR2GRAY);
-    cvtColor(rightImgCol, rightImg, CV_BGR2GRAY);
+	Mat leftImg, rightImg, disp, dispImprov;
+	cvtColor(leftImgCol, leftImg, CV_BGR2GRAY);
+	cvtColor(rightImgCol, rightImg, CV_BGR2GRAY);
 
 	//set parameters
 	camCalib.setDisparityParameters(ui->slider_minDisp->value(),
@@ -360,66 +360,66 @@ void MainWindow::makeDisparityImage(Mat leftImgCol, Mat rightImgCol)
 									ui->slider_speckleWindow->value(),
 									ui->slider_speckleRange->value());
 
-    //process
-    disp = camCalib.makeDisparityMap(leftImg, rightImg, ui->checkBox_useSGBM->isChecked());
+	//process
+	disp = camCalib.makeDisparityMap(leftImg, rightImg, ui->checkBox_useSGBM->isChecked());
 
-    if(improve)
-    {
-        //get info for seed alg
-        int seedW, seedH, seedLevels;
-        QStringList seedInfo = ui->lineEdit_seedInfo->text().split(",");
-        if(seedInfo.length() == 3)
-        {
-            seedW = seedInfo.at(0).toInt();
-            seedH = seedInfo.at(1).toInt();
-            seedLevels = seedInfo.at(2).toInt();
-        }
-        else
-        {
-            seedW = 2;
-            seedH = 2;
-            seedLevels = 4;
-        }
+	if(improve)
+	{
+		//get info for seed alg
+		int seedW, seedH, seedLevels;
+		QStringList seedInfo = ui->lineEdit_seedInfo->text().split(",");
+		if(seedInfo.length() == 3)
+		{
+			seedW = seedInfo.at(0).toInt();
+			seedH = seedInfo.at(1).toInt();
+			seedLevels = seedInfo.at(2).toInt();
+		}
+		else
+		{
+			seedW = 2;
+			seedH = 2;
+			seedLevels = 4;
+		}
 
-        //apply x-offset to original left image in order to get an image that is more aligned
-        //with the disparity map (which is somewhere between L and R image)
-        int xoffset = ui->lineEdit_SEEDxoffset->text().toInt();
-        Mat leftImgColShifted = Mat::zeros(leftImgCol.size(), leftImgCol.type());
-        leftImgCol(Rect(xoffset, 0,leftImgCol.cols-xoffset, leftImgCol.rows)).copyTo(
-                    leftImgColShifted(Rect(0, 0, leftImgCol.cols-xoffset, leftImgCol.rows)));
+		//apply x-offset to original left image in order to get an image that is more aligned
+		//with the disparity map (which is somewhere between L and R image)
+		int xoffset = ui->lineEdit_SEEDxoffset->text().toInt();
+		Mat leftImgColShifted = Mat::zeros(leftImgCol.size(), leftImgCol.type());
+		leftImgCol(Rect(xoffset, 0,leftImgCol.cols-xoffset, leftImgCol.rows)).copyTo(
+					leftImgColShifted(Rect(0, 0, leftImgCol.cols-xoffset, leftImgCol.rows)));
 
-        //run SEEDS algorithm
-        int NR_BINS = 5;
-        int width = leftImg.cols;
-        int height = leftImg.rows;
-        int channels = leftImg.channels();
-        SEEDS seeds(width, height, channels, NR_BINS);
-        seeds.initialize(seedW, seedH, seedLevels); //hard-coded for now, see makeSeedsSuperpixels() method
-        seeds.update_image_ycbcr(leftImgColShifted);
-        seeds.iterate();
+		//run SEEDS algorithm
+		int NR_BINS = 5;
+		int width = leftImg.cols;
+		int height = leftImg.rows;
+		int channels = leftImg.channels();
+		SEEDS seeds(width, height, channels, NR_BINS);
+		seeds.initialize(seedW, seedH, seedLevels); //hard-coded for now, see makeSeedsSuperpixels() method
+		seeds.update_image_ycbcr(leftImgColShifted);
+		seeds.iterate();
 
-        //show labels
-    //    Mat cvLabels, cvLabels8bit;
-    //    cvLabels = seeds.getLabelsAsMat();
-    //    cvLabels.convertTo(cvLabels8bit, CV_8UC1, 256.0/seeds.count_superpixels());
-    //    imshow("seeds superpixels", cvLabels8bit);
+		//show labels
+	//    Mat cvLabels, cvLabels8bit;
+	//    cvLabels = seeds.getLabelsAsMat();
+	//    cvLabels.convertTo(cvLabels8bit, CV_8UC1, 256.0/seeds.count_superpixels());
+	//    imshow("seeds superpixels", cvLabels8bit);
 
-        //improve disparity image with superpixels
-        dispImprov = camCalib.improveDisparityMap(seeds.count_superpixels(), seeds.getLabelsAsMat(), disp);
-    }
+		//improve disparity image with superpixels
+		dispImprov = camCalib.improveDisparityMap(seeds.count_superpixels(), seeds.getLabelsAsMat(), disp);
+	}
 
-    //normalize (from 16 to 8 bit) and show
-    double minVal, maxVal;
-    Mat disp2, disp3;
-    minMaxLoc(disp, &minVal, &maxVal); //find minimum and maximum intensities
-    disp.convertTo(disp2, CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
-    //minMaxLoc(dispImprov, &minVal, &maxVal); //find minimum and maximum intensities
-    if(improve) { dispImprov.convertTo(disp3, CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal)); }
+	//normalize (from 16 to 8 bit) and show
+	double minVal, maxVal;
+	Mat disp2, disp3;
+	minMaxLoc(disp, &minVal, &maxVal); //find minimum and maximum intensities
+	disp.convertTo(disp2, CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
+	//minMaxLoc(dispImprov, &minVal, &maxVal); //find minimum and maximum intensities
+	if(improve) { dispImprov.convertTo(disp3, CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal)); }
 
-    imshow("left image", leftImg); // disparity image is aligned with left image
-    //imshow("right image", rightImg);
-    imshow("disparity map", disp2);
-    if(improve){ imshow("improved disparity map", disp3); }
+	imshow("left image", leftImg); // disparity image is aligned with left image
+	//imshow("right image", rightImg);
+	imshow("disparity map", disp2);
+	if(improve){ imshow("improved disparity map", disp3); }
 }
 
 void MainWindow::makeSurfFeatures(QString fileName)
@@ -506,11 +506,11 @@ void MainWindow::on_pushButton_seedAgain_released()
 
 void MainWindow::on_btn_slic_released()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr(IMGTYPES));
-    if(fileName == "") return;
-    lastDir = QFileInfo(fileName).path();
-    lastSlicFilename = fileName;
-    makeSlicSuperpixels(fileName);
+	QString fileName = QFileDialog::getOpenFileName(this, tr("Select image file"), lastDir, tr(IMGTYPES));
+	if(fileName == "") return;
+	lastDir = QFileInfo(fileName).path();
+	lastSlicFilename = fileName;
+	makeSlicSuperpixels(fileName);
 }
 
 void MainWindow::on_pushButton_slicAgain_released()
@@ -596,7 +596,7 @@ void MainWindow::on_btn_calibStereo_released()
 	QStringList fileNames_L = QFileDialog::getOpenFileNames(this, tr("Select LEFT camera files containing chessboard image"), lastDir);
 	if(fileNames_L.count() == 0) return;
 	lastDir =QFileInfo(fileNames_L.first()).path();
-    QStringList fileNames_R = QFileDialog::getOpenFileNames(this, tr("Select RIGHT camera files containing chessboard image"), lastDir);
+	QStringList fileNames_R = QFileDialog::getOpenFileNames(this, tr("Select RIGHT camera files containing chessboard image"), lastDir);
 	if(fileNames_R.count() == 0) return;
 	lastDir =QFileInfo(fileNames_R.first()).path();
 
@@ -615,24 +615,24 @@ void MainWindow::on_btn_calibStereo_released()
 
 void MainWindow::on_btn_calibStereoGRBNIR_released()
 {
-    QStringList fileNames_L = QFileDialog::getOpenFileNames(this, tr("Select NIR (left) camera files containing chessboard image"), lastDir);
-    if(fileNames_L.count() == 0) return;
-    lastDir =QFileInfo(fileNames_L.first()).path();
-    QStringList fileNames_R = QFileDialog::getOpenFileNames(this, tr("Select RGB (right) camera files containing chessboard image"), lastDir);
-    if(fileNames_R.count() == 0) return;
-    lastDir =QFileInfo(fileNames_R.first()).path();
+	QStringList fileNames_L = QFileDialog::getOpenFileNames(this, tr("Select NIR (left) camera files containing chessboard image"), lastDir);
+	if(fileNames_L.count() == 0) return;
+	lastDir =QFileInfo(fileNames_L.first()).path();
+	QStringList fileNames_R = QFileDialog::getOpenFileNames(this, tr("Select RGB (right) camera files containing chessboard image"), lastDir);
+	if(fileNames_R.count() == 0) return;
+	lastDir =QFileInfo(fileNames_R.first()).path();
 
-    //get calib images for left and right camera
-    QList<Mat> calibImgsNIR_L, calibImgsRGB_R;
-    foreach(QString file, fileNames_L){ calibImgsNIR_L.append(imread(file.toStdString().c_str())); }
-    foreach(QString file, fileNames_R){ calibImgsRGB_R.append(imread(file.toStdString().c_str())); }
+	//get calib images for left and right camera
+	QList<Mat> calibImgsNIR_L, calibImgsRGB_R;
+	foreach(QString file, fileNames_L){ calibImgsNIR_L.append(imread(file.toStdString().c_str())); }
+	foreach(QString file, fileNames_R){ calibImgsRGB_R.append(imread(file.toStdString().c_str())); }
 
-    //ask user where to store the calibration data and save
-    QString calibFileName = QFileDialog::getSaveFileName(this, "Select file to store NIR-RGB-stereo calibration file",
-                                                         QDir::homePath());
+	//ask user where to store the calibration data and save
+	QString calibFileName = QFileDialog::getSaveFileName(this, "Select file to store NIR-RGB-stereo calibration file",
+														 QDir::homePath());
 
-    QStringList params = ui->lineEdit_calibSingleInfo->text().split(",");
-    camCalib.calibrateRGBNIRStereoCameras(calibImgsNIR_L, calibImgsRGB_R, params.first().toInt(), params.last().toInt(), calibFileName);
+	QStringList params = ui->lineEdit_calibSingleInfo->text().split(",");
+	camCalib.calibrateRGBNIRStereoCameras(calibImgsNIR_L, calibImgsRGB_R, params.first().toInt(), params.last().toInt(), calibFileName);
 }
 
 void MainWindow::on_btn_undistSingle_released()
@@ -670,81 +670,81 @@ void MainWindow::on_btn_undistStereo_released()
 		QMessageBox::information(this, "Error", "Stereo Cam Pair has not been calibrated", QMessageBox::Ok);
 		return;
 	}
-    undistortStereo(false);
+	undistortStereo(false);
 }
 
 
 void MainWindow::on_btn_undistStereoRGBNIR_released()
 {
-    if(!camCalib.isCalibrated_stereo())
-    {
-        QMessageBox::information(this, "Error", "Stereo Cam Pair has not been calibrated", QMessageBox::Ok);
-        return;
-    }
-    if(!camCalib.isComputed_RGB2NIRfitting())
-    {
-        QMessageBox::information(this, "Error", "The RGB-to-NIR-fitting has not been computed", QMessageBox::Ok);
-        return;
-    }
-    undistortStereo(true);
+	if(!camCalib.isCalibrated_stereo())
+	{
+		QMessageBox::information(this, "Error", "Stereo Cam Pair has not been calibrated", QMessageBox::Ok);
+		return;
+	}
+	if(!camCalib.isComputed_RGB2NIRfitting())
+	{
+		QMessageBox::information(this, "Error", "The RGB-to-NIR-fitting has not been computed", QMessageBox::Ok);
+		return;
+	}
+	undistortStereo(true);
 }
 
 void MainWindow::undistortStereo(bool isRGB_NIR_Stereo)
 {
-    //get files
-    QStringList fileNames_L = QFileDialog::getOpenFileNames(this, tr("Select LEFT image file(s)"), lastDir, tr(IMGTYPES));
-    if(fileNames_L.length() == 0){ return; }
-    lastDir = QFileInfo(fileNames_L.first()).path();
-    QStringList fileNames_R = QFileDialog::getOpenFileNames(this, tr("Select RIGHT image file(s)"), lastDir, tr(IMGTYPES));
-    if(fileNames_R.length() == 0){ return; }
-    lastDir = QFileInfo(fileNames_R.first()).path();
+	//get files
+	QStringList fileNames_L = QFileDialog::getOpenFileNames(this, tr("Select LEFT image file(s)"), lastDir, tr(IMGTYPES));
+	if(fileNames_L.length() == 0){ return; }
+	lastDir = QFileInfo(fileNames_L.first()).path();
+	QStringList fileNames_R = QFileDialog::getOpenFileNames(this, tr("Select RIGHT image file(s)"), lastDir, tr(IMGTYPES));
+	if(fileNames_R.length() == 0){ return; }
+	lastDir = QFileInfo(fileNames_R.first()).path();
 
-    QString nmLeft, nmRight;
+	QString nmLeft, nmRight;
 
-    //make undistorted images for all stereo pairs
-    for(int i = 0; i < fileNames_L.length(); ++i)
-    {
-        QString fileName_L = fileNames_L.at(i);
-        QString fileName_R = fileNames_R.at(i);
+	//make undistorted images for all stereo pairs
+	for(int i = 0; i < fileNames_L.length(); ++i)
+	{
+		QString fileName_L = fileNames_L.at(i);
+		QString fileName_R = fileNames_R.at(i);
 
-        if(fileName_L != "" && fileName_R != "")
-        {
+		if(fileName_L != "" && fileName_R != "")
+		{
 
-            //get images from files, do remapping, get disparity image and show it
-            Mat leftImage = imread(fileName_L.toStdString().c_str());
-            Mat rightImage = imread(fileName_R.toStdString().c_str());
+			//get images from files, do remapping, get disparity image and show it
+			Mat leftImage = imread(fileName_L.toStdString().c_str());
+			Mat rightImage = imread(fileName_R.toStdString().c_str());
 
-            //if this stereo image is made of RGB and NIR images, resize and crop the RGB image
-            if(isRGB_NIR_Stereo)
-            {
-                rightImage = camCalib.resizeAndCropRGBImg(rightImage);
+			//if this stereo image is made of RGB and NIR images, resize and crop the RGB image
+			if(isRGB_NIR_Stereo)
+			{
+				rightImage = camCalib.resizeAndCropRGBImg(rightImage);
 
-                //also make sobel images and max contrst width
+				//also make sobel images and max contrst width
 //                Sobel(leftImage, leftImage, -1, 1, 1, 3);
 //                Sobel(rightImage, rightImage, -1, 1, 1, 3);
-            }
+			}
 
 
-            Mat imgUL, imgUR;
-            camCalib.undistortAndRemapStereoImages(leftImage, rightImage, imgUL, imgUR);
+			Mat imgUL, imgUR;
+			camCalib.undistortAndRemapStereoImages(leftImage, rightImage, imgUL, imgUR);
 
-            //save images -> use left fileName as base name and append "L" and "R"
-            QString fileNameLeft = fileName_L;
-            QString fileNameRight = fileName_L;
-            nmLeft = (fileNameLeft.remove(".png").remove(".jpg")).append("_remap_L.png");
-            nmRight = (fileNameRight.remove(".png").remove(".jpg")).append("_remap_R.png");
-            imwrite(nmLeft.toStdString().c_str(), imgUL);
-            imwrite(nmRight.toStdString().c_str(), imgUR);
-        }
-    }
-    QMessageBox::information(this, "Save successful", "Remapped images have been saved", QMessageBox::Ok);
+			//save images -> use left fileName as base name and append "L" and "R"
+			QString fileNameLeft = fileName_L;
+			QString fileNameRight = fileName_L;
+			nmLeft = (fileNameLeft.remove(".png").remove(".jpg")).append("_remap_L.png");
+			nmRight = (fileNameRight.remove(".png").remove(".jpg")).append("_remap_R.png");
+			imwrite(nmLeft.toStdString().c_str(), imgUL);
+			imwrite(nmRight.toStdString().c_str(), imgUR);
+		}
+	}
+	QMessageBox::information(this, "Save successful", "Remapped images have been saved", QMessageBox::Ok);
 
-    //show and remmeber last image
-    lastStereoFileL = imread(nmLeft.toStdString().c_str(), CV_LOAD_IMAGE_COLOR);
-    lastStereoFileR = imread(nmRight.toStdString().c_str(), CV_LOAD_IMAGE_COLOR);
-    makeDisparityImage(lastStereoFileL, lastStereoFileR);
-    lastStereoFileNameL = nmLeft;
-    lastStereoFileNameR = nmRight;
+	//show and remmeber last image
+	lastStereoFileL = imread(nmLeft.toStdString().c_str(), CV_LOAD_IMAGE_COLOR);
+	lastStereoFileR = imread(nmRight.toStdString().c_str(), CV_LOAD_IMAGE_COLOR);
+	makeDisparityImage(lastStereoFileL, lastStereoFileR);
+	lastStereoFileNameL = nmLeft;
+	lastStereoFileNameR = nmRight;
 }
 
 
@@ -760,23 +760,23 @@ void MainWindow::on_btn_stereoVision_released()
 	lastStereoFileNameR = fileName;
 	lastDir = QFileInfo(fileName).path();
 
-    lastStereoFileL = imread(lastStereoFileNameL.toStdString().c_str(), CV_LOAD_IMAGE_COLOR);
-    lastStereoFileR = imread(lastStereoFileNameR.toStdString().c_str(), CV_LOAD_IMAGE_COLOR);
+	lastStereoFileL = imread(lastStereoFileNameL.toStdString().c_str(), CV_LOAD_IMAGE_COLOR);
+	lastStereoFileR = imread(lastStereoFileNameR.toStdString().c_str(), CV_LOAD_IMAGE_COLOR);
 
-    makeDisparityImage(lastStereoFileL, lastStereoFileR);
+	makeDisparityImage(lastStereoFileL, lastStereoFileR);
 }
 
 void MainWindow::on_pushButton_stereoAgain_released()
 {
-    if(lastStereoFileNameL != "" && lastStereoFileNameR != "")
-    {
-        makeDisparityImage(lastStereoFileL, lastStereoFileR);
-    }
+	if(lastStereoFileNameL != "" && lastStereoFileNameR != "")
+	{
+		makeDisparityImage(lastStereoFileL, lastStereoFileR);
+	}
 }
 
 void MainWindow::on_btn_undistLOAD_released()
 {
-    QStringList fileNames = QFileDialog::getOpenFileNames(this, tr("Select calibration file(s)"), lastDir, tr("*.rgbnirstcal *.stereocal *.singlecal"));
+	QStringList fileNames = QFileDialog::getOpenFileNames(this, tr("Select calibration file(s)"), lastDir, tr("*.rgbnirstcal *.stereocal *.singlecal"));
 	if(fileNames.length() == 0){ return; }
 	lastDir =QFileInfo(fileNames.first()).path();
 
@@ -863,13 +863,13 @@ void MainWindow::on_slider_prefilterSize_sliderMoved(int position)
 		ui->slider_prefilterSize->setValue(position);
 	}
 	ui->label_prefilterSize->setText( QString::number(position) );
-    makeDisparityImage(lastStereoFileL, lastStereoFileR);
+	makeDisparityImage(lastStereoFileL, lastStereoFileR);
 }
 
 void MainWindow::on_slider_prefilterCAP_sliderMoved(int position)
 {
 	ui->label_prefilterCAP->setText( QString::number(position) );
-    makeDisparityImage(lastStereoFileL, lastStereoFileR);
+	makeDisparityImage(lastStereoFileL, lastStereoFileR);
 }
 
 void MainWindow::on_slider_SADwindow_sliderMoved(int position)
@@ -881,13 +881,13 @@ void MainWindow::on_slider_SADwindow_sliderMoved(int position)
 		ui->slider_SADwindow->setValue(position);
 	}
 	ui->label_SADwindow->setText( QString::number(position) );
-    makeDisparityImage(lastStereoFileL, lastStereoFileR);
+	makeDisparityImage(lastStereoFileL, lastStereoFileR);
 }
 
 void MainWindow::on_slider_minDisp_sliderMoved(int position)
 {
 	ui->label_minDisp->setText( QString::number(position) );
-    makeDisparityImage(lastStereoFileL, lastStereoFileR);
+	makeDisparityImage(lastStereoFileL, lastStereoFileR);
 }
 
 void MainWindow::on_slider_dispRange_sliderMoved(int position)
@@ -900,13 +900,13 @@ void MainWindow::on_slider_dispRange_sliderMoved(int position)
 		ui->slider_dispRange->setValue(position);
 	}
 	ui->label_dispRange->setText( QString::number(position) );
-    makeDisparityImage(lastStereoFileL, lastStereoFileR);
+	makeDisparityImage(lastStereoFileL, lastStereoFileR);
 }
 
 void MainWindow::on_slider_textureThresh_sliderMoved(int position)
 {
 	ui->label_textureThresh->setText( QString::number(position) );
-    makeDisparityImage(lastStereoFileL, lastStereoFileR);
+	makeDisparityImage(lastStereoFileL, lastStereoFileR);
 }
 
 void MainWindow::on_slider_speckleWindow_sliderMoved(int position)
@@ -918,19 +918,19 @@ void MainWindow::on_slider_speckleWindow_sliderMoved(int position)
 		ui->slider_speckleWindow->setValue(position);
 	}
 	ui->label_speckleWindow->setText( QString::number(position) );
-    makeDisparityImage(lastStereoFileL, lastStereoFileR);
+	makeDisparityImage(lastStereoFileL, lastStereoFileR);
 }
 
 void MainWindow::on_slider_speckleRange_sliderMoved(int position)
 {
 	ui->label_speckleRange->setText( QString::number(position) );
-    makeDisparityImage(lastStereoFileL, lastStereoFileR);
+	makeDisparityImage(lastStereoFileL, lastStereoFileR);
 }
 
 void MainWindow::on_slider_uniqueness_sliderMoved(int position)
 {
 	ui->label_uniqueness->setText( QString::number(position) );
-    makeDisparityImage(lastStereoFileL, lastStereoFileR);
+	makeDisparityImage(lastStereoFileL, lastStereoFileR);
 }
 
 void MainWindow::on_btn_saveParams_released()
@@ -1014,38 +1014,38 @@ void MainWindow::on_btn_loadParams_released()
 
 void MainWindow::on_checkBox_useSGBM_clicked()
 {
-    bool enabled = !ui->checkBox_useSGBM->isChecked();
-    ui->slider_prefilterSize->setEnabled(enabled);
-    ui->label_prefilterSize->setEnabled(enabled);
-    ui->label_preFilterSizeLabel->setEnabled(enabled);
+	bool enabled = !ui->checkBox_useSGBM->isChecked();
+	ui->slider_prefilterSize->setEnabled(enabled);
+	ui->label_prefilterSize->setEnabled(enabled);
+	ui->label_preFilterSizeLabel->setEnabled(enabled);
 
-    ui->slider_textureThresh->setEnabled(enabled);
-    ui->label_textureThresh->setEnabled(enabled);
-    ui->label_textureThresholdLabel->setEnabled(enabled);
+	ui->slider_textureThresh->setEnabled(enabled);
+	ui->label_textureThresh->setEnabled(enabled);
+	ui->label_textureThresholdLabel->setEnabled(enabled);
 
-    makeDisparityImage(lastStereoFileL, lastStereoFileR);
+	makeDisparityImage(lastStereoFileL, lastStereoFileR);
 
 }
 
 void MainWindow::on_btn_makeImgPatches_released()
 {
-    QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select Files", lastDir, IMGTYPES);
-    if(fileNames.count() == 0){ return; }
-    lastDir = QFileInfo(fileNames.first()).path();
+	QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select Files", lastDir, IMGTYPES);
+	if(fileNames.count() == 0){ return; }
+	lastDir = QFileInfo(fileNames.first()).path();
 
-    bool ok;
+	bool ok;
 //    int divide = QInputDialog::getInt(this, "Pieces", "Divide by?", 4, 0, 32, 2, &ok);
 //    if(!ok){ return; }
 
-    int patchSz = QInputDialog::getInt(this, "PatchSize", "What is the patch size?", 46, 0, 256, 2, &ok);
-    if(!ok){ return; }
+	int patchSz = QInputDialog::getInt(this, "PatchSize", "What is the patch size?", 46, 0, 256, 2, &ok);
+	if(!ok){ return; }
 
-    ImagePreprocessor preproc;
+	ImagePreprocessor preproc;
 
-    foreach(QString fileName, fileNames)
-    {
-        preproc.cutImageIn4Pieces(patchSz, fileName);
-    }
+	foreach(QString fileName, fileNames)
+	{
+		preproc.cutImageIn4Pieces(patchSz, fileName);
+	}
 
 //    QString outDir = lastDir + "/patches";
 //    QDir dir;
@@ -1126,68 +1126,68 @@ void MainWindow::on_btn_makeImgPatches_released()
 
 void MainWindow::on_btn_makeTrainVal_released()
 {
-    QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select image files", lastDir, IMGTYPES);
-    if(fileNames.count() == 0){ return; }
-    lastDir = QFileInfo(fileNames.first()).path();
+	QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select image files", lastDir, IMGTYPES);
+	if(fileNames.count() == 0){ return; }
+	lastDir = QFileInfo(fileNames.first()).path();
 
-    bool ok;
-    int trainPercentage = QInputDialog::getInt(this, "Set percentage of training data", "Training data in percent:",
-                                               80, 0, 100, 1, &ok);
-    if( !ok || !(trainPercentage > 0 && trainPercentage < 100) ){ return; }
+	bool ok;
+	int trainPercentage = QInputDialog::getInt(this, "Set percentage of training data", "Training data in percent:",
+											   80, 0, 100, 1, &ok);
+	if( !ok || !(trainPercentage > 0 && trainPercentage < 100) ){ return; }
 
 
-    QFile outfileTrain(lastDir + "/train.txt");
-    outfileTrain.open(QFile::WriteOnly);
-    QTextStream outTrain(&outfileTrain);
-    QFile outfileVal(lastDir + "/val.txt");
-    outfileVal.open(QFile::WriteOnly);
-    QTextStream outVal(&outfileVal);
+	QFile outfileTrain(lastDir + "/train.txt");
+	outfileTrain.open(QFile::WriteOnly);
+	QTextStream outTrain(&outfileTrain);
+	QFile outfileVal(lastDir + "/val.txt");
+	outfileVal.open(QFile::WriteOnly);
+	QTextStream outVal(&outfileVal);
 
-    int cnt = 0;
-    int max = fileNames.count();
+	int cnt = 0;
+	int max = fileNames.count();
 
-    QProgressDialog progress("Making training and validation label text files", "cancel", 0, max);
-    progress.setValue(0);
-    progress.setMinimumWidth(450);
-    progress.setMinimumDuration(100);
-    progress.setWindowModality(Qt::WindowModal);
+	QProgressDialog progress("Making training and validation label text files", "cancel", 0, max);
+	progress.setValue(0);
+	progress.setMinimumWidth(450);
+	progress.setMinimumDuration(100);
+	progress.setWindowModality(Qt::WindowModal);
 
-    //count pure filenames without NIR, Depth
-    int filesTotal = 0;
-    foreach(QString fileName, fileNames)
-    {
-        if(!(fileName.contains("_depth") || fileName.contains("_nir") || fileName.contains("_labels")) )
-        { filesTotal++; }
-    }
+	//count pure filenames without NIR, Depth
+	int filesTotal = 0;
+	foreach(QString fileName, fileNames)
+	{
+		if(!(fileName.contains("_depth") || fileName.contains("_nir") || fileName.contains("_labels")) )
+		{ filesTotal++; }
+	}
 
-    int trainCnt = 0;
-    int trainMax = (filesTotal * (float)trainPercentage / 100.0) + 0.5;
-    int testCnt = 0;
-    int testMax = filesTotal - trainMax;
+	int trainCnt = 0;
+	int trainMax = (filesTotal * (float)trainPercentage / 100.0) + 0.5;
+	int testCnt = 0;
+	int testMax = filesTotal - trainMax;
 
-    while(fileNames.size() != 0)
-    {
-        int index = rand() % fileNames.size();
-        QString fileName = fileNames[index].remove(".jpg");
-        if(!(fileName.contains("_depth") || fileName.contains("_nir") || fileName.contains("_labels")) )
-        {
-            if( (rand() % 100) < trainPercentage) //add to training text file
-            {
-                if(trainCnt++ < trainMax){ outTrain << fileName << "\n"; }
-                else{ outVal << fileName << "\n"; }
-            }
-            else //add to validation text file
-            {
-                if(testCnt++ < testMax){ outVal << fileName << "\n"; }
-                else{ outTrain << fileName << "\n"; }
-            }
-        }
+	while(fileNames.size() != 0)
+	{
+		int index = rand() % fileNames.size();
+		QString fileName = fileNames[index].remove(".jpg");
+		if(!(fileName.contains("_depth") || fileName.contains("_nir") || fileName.contains("_labels")) )
+		{
+			if( (rand() % 100) < trainPercentage) //add to training text file
+			{
+				if(trainCnt++ < trainMax){ outTrain << fileName << "\n"; }
+				else{ outVal << fileName << "\n"; }
+			}
+			else //add to validation text file
+			{
+				if(testCnt++ < testMax){ outVal << fileName << "\n"; }
+				else{ outTrain << fileName << "\n"; }
+			}
+		}
 
-        fileNames.removeAt(index);
+		fileNames.removeAt(index);
 
-        progress.setValue(cnt++);
-        if(progress.wasCanceled()){ return; }
-    }
+		progress.setValue(cnt++);
+		if(progress.wasCanceled()){ return; }
+	}
 
 //    QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select label text files", lastDir, "*.txt");
 //    if(fileNames.count() == 0){ return; }
@@ -1261,9 +1261,9 @@ void MainWindow::on_btn_makeTrainVal_released()
 //        if(progress.wasCanceled()){ return; }
 //    }
 
-    outfileTrain.close();
-    outfileVal.close();
-    progress.setValue(max);
+	outfileTrain.close();
+	outfileVal.close();
+	progress.setValue(max);
 }
 
 
@@ -1316,11 +1316,18 @@ void MainWindow::on_pushButton_test_released()
 //    // endof TRANSFORM STANFORD BACKGROUND DATASET LABELS INTO PNG
 //    //////////////////////////////////////////////////////////////
 
-//    QString fileName = QFileDialog::getOpenFileName(this, "Select File", lastDir, IMGTYPES);
-//    if(fileName == ""){ return; }
-//    lastDir = QFileInfo(fileName).path();
-//    ImagePreprocessor preproc;
-//    Mat a = imread(fileName.toStdString().c_str());
+	QString fileName = QFileDialog::getOpenFileName(this, "Select File", lastDir, IMGTYPES);
+	if(fileName == ""){ return; }
+	lastDir = QFileInfo(fileName).path();
+	ImagePreprocessor preproc;
+	Mat a = imread(fileName.toStdString().c_str(), IMREAD_ANYDEPTH | IMREAD_ANYCOLOR);
+	a.convertTo(a, CV_8UC1, 255.0/2047.0);
+	imshow("just loaded", a);
+	qDebug() << a.type();
+
+//	qDebug() << CV_16UC1;
+//	qDebug() << CV_8UC1;
+//	qDebug() << CV_8UC3;
 
 //    vector<Mat> imgs;
 //    imgs.push_back(imread("1.png", IMREAD_GRAYSCALE));
@@ -1355,10 +1362,10 @@ void MainWindow::on_pushButton_test_released()
 //    //////////////////////////////////////////////////////////////
 
 
-    //////////////////////////////////////////////////////////////
-    // TEST LOCAL NORMALIZATION
-    //////////////////////////////////////////////////////////////
-    //split image in its channels
+	//////////////////////////////////////////////////////////////
+	// TEST LOCAL NORMALIZATION
+	//////////////////////////////////////////////////////////////
+	//split image in its channels
 //    vector<Mat> channels(a.channels());
 //    cv::split(a, channels);
 
@@ -1396,26 +1403,26 @@ void MainWindow::on_pushButton_test_released()
 //        imwrite(s.toStdString().c_str() , a);
 //    }
 
-    //normalize to [0,1] in order to display
+	//normalize to [0,1] in order to display
 //    cv::normalize(aNorm, aNorm, 0, 1, NORM_MINMAX);
 //    cv::normalize(aNorm2, aNorm2, 0, 1, NORM_MINMAX);
 
-    //print one channel to console - because of normalization, everything should be close to 128
+	//print one channel to console - because of normalization, everything should be close to 128
 //    vector<Mat> temp(a.channels());
 //    cv::split(aNorm2, temp);
 //    Helper::Print1ChMatrixToConsole(temp.at(0));
 
 
-    //save to disk in order to compare images in GIMP to see if separate channel normalization
-    //and multichannel normalization do exactly the same thing.
+	//save to disk in order to compare images in GIMP to see if separate channel normalization
+	//and multichannel normalization do exactly the same thing.
 //    Mat aNorm_8bit, aNorm2_8bit;
 //    aNorm.convertTo(aNorm_8bit, CV_8U, 255);
 //    aNorm2.convertTo(aNorm2_8bit, CV_8U, 255);
 //    imwrite("test1.png", aNorm_8bit);
 //    imwrite("test2.png", aNorm2_8bit);
-    //////////////////////////////////////////////////////////////
-    // endof TEST LOCAL NORMALIZATION
-    //////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////
+	// endof TEST LOCAL NORMALIZATION
+	//////////////////////////////////////////////////////////////
 
 
 //    //////////////////////////////////////////////////////////////
@@ -1483,3 +1490,36 @@ void MainWindow::on_pushButton_test_released()
 
 
 
+
+void MainWindow::on_btn_makeHomographyMatrix_released()
+{
+	QString fileNameA = QFileDialog::getOpenFileName(this, "Select image A", lastDir, IMGTYPES);
+	if(fileNameA == ""){ return; }
+	lastDir = QFileInfo(fileNameA).path();
+	QString fileNameB = QFileDialog::getOpenFileName(this, "Select image B", lastDir, IMGTYPES);
+	if(fileNameB == ""){ return; }
+	lastDir = QFileInfo(fileNameB).path();
+
+	QStringList params = ui->lineEdit_calibSingleInfo->text().split(",");
+	camCalib.makeHomographyMatrix(fileNameA, fileNameB, Size(params[0].toInt(), params[1].toInt()));
+}
+
+void MainWindow::on_btn_registerImages_released()
+{
+	QString fileNameA = QFileDialog::getOpenFileName(this, "Select image A to be registered to image B", lastDir, IMGTYPES);
+	if(fileNameA == ""){ return; }
+	lastDir = QFileInfo(fileNameA).path();
+	QString fileNameMat = QFileDialog::getOpenFileName(this, "Select homography matrix from A to B", lastDir, "*.mat");
+	if(fileNameMat == ""){ return; }
+	lastDir = QFileInfo(fileNameMat).path();
+
+	Mat a = imread(fileNameA.toStdString());
+	Mat b = imread(fileNameA.toStdString());
+	FileStorage fs(fileNameMat.toStdString(), CV_STORAGE_READ);
+	Mat h, aa;
+	fs["homography"] >> h;
+	warpPerspective(a, aa, h, a.size());
+	fs.release();
+
+	imwrite( (fileNameA.remove(".png") + "_registered.png").toStdString(), aa );
+}

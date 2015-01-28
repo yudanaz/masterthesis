@@ -143,7 +143,9 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 		else if(type == Kinect_Depth)
 		{
 			//make a resized copy of the image according to graphic widget size
-			cv::resize(img, imgSmall, Size(width_depth,height_depth));
+			Mat depthMap8bit (Size(640,480),CV_8UC1);
+			img.convertTo(depthMap8bit, CV_8UC1, 255.0/2047.0);
+			cv::resize(depthMap8bit, imgSmall, Size(width_depth,height_depth));
 			cvtColor(imgSmall, imgSmall, CV_GRAY2RGB);
 
 			//show in widget width inverted channels (because Mat is BGR and QImage is RGB)
