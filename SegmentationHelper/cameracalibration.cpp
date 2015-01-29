@@ -124,7 +124,7 @@ void CameraCalibration::doStereoCalibration(QList<Mat> calibImgsLeft, QList<Mat>
 	stereoCalibrate(objectPoints_L, imagePoints_L, imagePoints_R,
 					CM_L, D_L, CM_R, D_R, imgSize, rotMat, translVec, E, F,
 					cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 100, 1e-5),
-					CV_CALIB_SAME_FOCAL_LENGTH | CV_CALIB_ZERO_TANGENT_DIST);
+                    CV_CALIB_SAME_FOCAL_LENGTH | CV_CALIB_ZERO_TANGENT_DIST);
 
 	//start stereo rectification and trigger making the rectify maps (in undist and remap method)
 	Mat R1, R2, P1, P2, Q;
