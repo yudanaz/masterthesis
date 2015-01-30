@@ -177,13 +177,14 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 
 	}
 
-	if(myCamType == Vimba_Goldeye && connected_goldeye && connected_flashlight)
+	else if(myCamType == Vimba_Goldeye && connected_goldeye && connected_flashlight)
 	{
 		//get lock on flashlight usage:
 //		QMutexLocker locker(&flashlightLock);
 
 		try
 		{
+//			camImgs[NIR_Dark] = goldeye->getCVFrame();
 			bool darkImageSaved = false;
 
 			//get waveband images from camera (plus dark)
@@ -195,20 +196,20 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 				quint8 key = flashlight->getFrameKey();
 				//qDebug() << "index: " << i << "frameKey: " << key;
 
+				//get next frame from camera
+				img = goldeye->getCVFrame();
+
 				//acknowledge flashlight when last waveband is reached
 				if(i == nrOfWavebands)
 				{
 					flashlight->sendAck();
 				}
 
-				//get next frame from camera
-				img = goldeye->getCVFrame();
-
 				//return if image empty to avoid runtime errors
 				if(img.rows == 0 || img.cols == 0){ continue; }
 
 				//apply fixed pattern noise calibration
-				myImageSource.doFPNCalib(img);
+//				myImageSource.doFPNCalib(img);
 
 				//if waveband, subtract dark image to get "pure" waveband image
 				//and do white calibration

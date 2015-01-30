@@ -9,6 +9,8 @@ public:
 	KinectWorker();
 	~KinectWorker();
 	void triggerIRcapture();
+	void switch_RGB_IR(bool captureRGB);
+	bool isCapturingRGB();
 
 public slots:
 	void startAcquisition();

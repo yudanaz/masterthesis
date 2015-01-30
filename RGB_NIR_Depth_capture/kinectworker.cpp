@@ -16,14 +16,13 @@ void KinectWorker::startAcquisition()
 {
 	if(kinectCamManager.isConnected())
 	{
-		RGBDNIR_MAP images;
-
 		lock.lockForRead();
 
 		stopped = false;
 		do
 		{
 			//get RGB image and depth map from Kinect
+			RGBDNIR_MAP images;
 			kinectCamManager.getImages(images);
 
 			//forward images to main thread
@@ -40,4 +39,14 @@ void KinectWorker::startAcquisition()
 void KinectWorker::triggerIRcapture()
 {
 	kinectCamManager.triggerIRcapture();
+}
+
+void KinectWorker::switch_RGB_IR(bool captureRGB)
+{
+	kinectCamManager.switch_RGB_IR(captureRGB);
+}
+
+bool KinectWorker::isCapturingRGB()
+{
+	return kinectCamManager.isCapturingRGB();
 }

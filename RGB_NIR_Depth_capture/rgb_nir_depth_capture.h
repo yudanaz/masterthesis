@@ -50,6 +50,8 @@ private slots:
 
 	void on_btn_saveIR_RGB_pair_released();
 
+	void on_pushButton_switchRGB_IR_released();
+
 private:
 	QString getUniquePrefixFromDateAndTime();
 	void captureSeries();
@@ -71,6 +73,9 @@ private:
 	Ui::RGBNIRD_MainWindow *ui;
 	bool triggerSave;
 	bool triggerSaveIR_RGB_pair;
+	bool triggerSwitchRGB2IR;
+	bool triggerSwitchIR2RGB;
+	bool capturingRGB;
 	QThread workerThread1;
 	QThread workerThread2;
 	QThread workerThread3;

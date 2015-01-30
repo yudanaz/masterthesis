@@ -16,18 +16,19 @@ void GoldeyeWorker::startAcquisition()
 {
 	if(vimbaCamManager.goldeyeIsConnected())
 	{
-		RGBDNIR_MAP images;
-
 		lock.lockForRead();
 
 		stopped = false;
 		do
 		{
-			//get RGB and NIR images from vimba cameras
+			RGBDNIR_MAP images;
+			//get NIR image from goldeye
 			vimbaCamManager.getImages(images);
 
 			//forward images to main thread
 			emit imagesReady(images);
+
+			usleep(100000);
 		}
 		while(acquiring);
 		stopped = true;

@@ -10,6 +10,7 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::RGBNIRD_MainWindow),
 	triggerSave(false), triggerSaveIR_RGB_pair(false),
+	triggerSwitchRGB2IR(false), triggerSwitchIR2RGB(false), capturingRGB(true),
 	capturingSeries(false), countingDown(false), countdownSeconds(0), countdownTime(0), seriesCnt(0), seriesMax(0), seriesInterval(0),
 	ptr_RGBScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene)),
 	ptr_NIRScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene)),
@@ -85,18 +86,34 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 
 	//first join the images from sent by the thread to this slot with all images (by all threads)
 	if(capturedImgs.contains(RGB)){ allCapturedImgs[RGB] = capturedImgs[RGB]; }
-	if(capturedImgs.contains(Kinect_Depth)){ allCapturedImgs[Kinect_Depth] = capturedImgs[Kinect_Depth]; }
-	if(capturedImgs.contains(Kinect_RGB)){ allCapturedImgs[Kinect_RGB] = capturedImgs[Kinect_RGB]; }
+
 	if(capturedImgs.contains(NIR_Dark)){ allCapturedImgs[NIR_Dark] = capturedImgs[NIR_Dark]; }
 	if(capturedImgs.contains(NIR_935)){ allCapturedImgs[NIR_935] = capturedImgs[NIR_935]; }
 	if(capturedImgs.contains(NIR_1060)){ allCapturedImgs[NIR_1060] = capturedImgs[NIR_1060]; }
 	if(capturedImgs.contains(NIR_1300)){ allCapturedImgs[NIR_1300] = capturedImgs[NIR_1300]; }
 	if(capturedImgs.contains(NIR_1550)){ allCapturedImgs[NIR_1550] = capturedImgs[NIR_1550]; }
-	if(triggerSaveIR_RGB_pair && capturedImgs.contains(Kinect_IR))
+
+	if(capturedImgs.contains(Kinect_Depth)){ allCapturedImgs[Kinect_Depth] = capturedImgs[Kinect_Depth]; }
+	if(capturedImgs.contains(Kinect_RGB))
 	{
+		if(triggerSwitchIR2RGB)
+		{
+			allCapturedImgs.clear();
+			capturingRGB = true;
+			triggerSwitchIR2RGB = false;
+		}
+		allCapturedImgs[Kinect_RGB] = capturedImgs[Kinect_RGB];
+	}
+	if(capturedImgs.contains(Kinect_IR))
+	{
+		if(triggerSwitchRGB2IR)
+		{
+			allCapturedImgs.clear();
+			capturingRGB = false;
+			triggerSwitchRGB2IR = false;
+		}
 		allCapturedImgs[Kinect_IR] = capturedImgs[Kinect_IR];
 	}
-
 
 	QMapIterator<RGBDNIR_captureType, Mat> i(allCapturedImgs);
 	while(i.hasNext())
@@ -120,7 +137,7 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 			ptr_RGBScene->addPixmap(QPixmap::fromImage(qimg.rgbSwapped()));
 			ui->graphicsView_RGB->setScene(ptr_RGBScene.data());
 		}
-		else if(type == NIR_1300)
+		else if(type == NIR_Dark)//NIR_1300)
 		{
 			//make a resized copy of the image according to graphic widget size
 			cv::resize(img, imgSmall, Size(width_nir,height_nir));
@@ -140,12 +157,13 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 			ptr_NIRScene->addPixmap(QPixmap::fromImage(qimg));
 			ui->graphicsView_NIR->setScene(ptr_NIRScene.data());
 		}
-		else if(type == Kinect_Depth)
+		else if(capturingRGB && type == Kinect_Depth || !capturingRGB && type == Kinect_IR)
 		{
 			//make a resized copy of the image according to graphic widget size
-			Mat depthMap8bit (Size(640,480),CV_8UC1);
-			img.convertTo(depthMap8bit, CV_8UC1, 255.0/2047.0);
-			cv::resize(depthMap8bit, imgSmall, Size(width_depth,height_depth));
+			Mat img8bit;
+			if(capturingRGB){ img.convertTo(img8bit, CV_8UC1, 255.0/2047.0); }//scaling for depth image
+			else{ img8bit = img; }//no scaling for IR image
+			cv::resize(img8bit, imgSmall, Size(width_depth,height_depth));
 			cvtColor(imgSmall, imgSmall, CV_GRAY2RGB);
 
 			//show in widget width inverted channels (because Mat is BGR and QImage is RGB)
@@ -313,4 +331,12 @@ void RGB_NIR_Depth_Capture::on_btn_saveIR_RGB_pair_released()
 {
 	triggerSaveIR_RGB_pair = true;
 	((KinectWorker*)myImgAcqWorker3)->triggerIRcapture();
+}
+
+void RGB_NIR_Depth_Capture::on_pushButton_switchRGB_IR_released()
+{
+	bool capturingRGB = ((KinectWorker*)myImgAcqWorker3)->isCapturingRGB();
+	triggerSwitchRGB2IR = capturingRGB;
+	triggerSwitchIR2RGB = !capturingRGB;
+	((KinectWorker*)myImgAcqWorker3)->switch_RGB_IR(!capturingRGB);
 }
