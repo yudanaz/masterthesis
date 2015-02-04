@@ -23,9 +23,11 @@ class IO
 public:
     IO(QWidget* parent);
     QString getFileName(QString msg2user, QString extension);
+    QString getSaveFile(QString msg2user, QString extension);
     QStringList getFileNames(QString msg2user, QString extension);
 
     static void print1ChMatrixToConsole(Mat mat);
+    static QString getTypeName(int type);
 
 private:
     QString lastDir;

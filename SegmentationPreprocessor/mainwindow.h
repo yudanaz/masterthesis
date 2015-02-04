@@ -18,7 +18,13 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_pushButton_released();
+    void on_pushButton_calib_released();
+
+    void on_pushButton_preproc_released();
+
+    void on_pushButton_save_released();
+
+    void on_pushButton_load_released();
 
 private:
     Ui::MainWindow *ui;

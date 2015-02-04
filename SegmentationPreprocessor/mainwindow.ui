@@ -23,17 +23,47 @@
       <x>30</x>
       <y>10</y>
       <width>341</width>
-      <height>80</height>
+      <height>128</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout">
      <item>
-      <widget class="QPushButton" name="pushButton">
+      <widget class="QPushButton" name="pushButton_calib">
        <property name="styleSheet">
         <string notr="true">background-color: rgb(177, 172, 154);</string>
        </property>
        <property name="text">
         <string>Calibrate</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButton_preproc">
+       <property name="styleSheet">
+        <string notr="true">background-color: rgb(177, 172, 154);</string>
+       </property>
+       <property name="text">
+        <string>Pre-Process</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButton_save">
+       <property name="styleSheet">
+        <string notr="true">background-color: rgb(100, 172, 200);</string>
+       </property>
+       <property name="text">
+        <string>Save Camera Parameters</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButton_load">
+       <property name="styleSheet">
+        <string notr="true">background-color: rgb(100, 172, 200);</string>
+       </property>
+       <property name="text">
+        <string>Load Camera Parameters</string>
        </property>
       </widget>
      </item>

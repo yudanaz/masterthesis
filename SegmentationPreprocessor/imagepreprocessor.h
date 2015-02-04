@@ -29,12 +29,17 @@ class ImagePreprocessor
 {
 public:
     ImagePreprocessor();
+
     void calib(QStringList calibImgs_RGB, QStringList calibImgs_NIR, QStringList calibImgs_IR, Size chessboardSize);
+
+    void preproc(Mat& RGB, Mat& NIR, Mat& Depth);
+
+    void saveAll(QString saveURL);
+    void loadAll(QString loadURL);
 
 private:
     void make_Intrinsics_and_undistMaps(QList<Mat> calibImgs, Mat& camIntrinsics, Mat& undistMapX, Mat& undistMapY);
-    void make_RectifyMaps(QList<Mat> srcImgs, QList<Mat> dstImgs, Mat& rectifMapX, Mat& rectifMapY);
-
+    void make_RectifyMaps(QList<Mat> srcImgs, QList<Mat> dstImgs, Mat& rectifMapX, Mat& rectifMapY, Mat &Rot, Mat &Transl);
     void getObjectAndImagePoints(QList<Mat> calibImgs, int width, int height,
                                                     vector<Point3f> obj,
                                                     vector<vector<Point3f> >& objectPoints,
@@ -42,8 +47,13 @@ private:
 
     void getImagePoints(QList<Mat> calibImgs, Size chessboardSize, vector<vector<Point2f> > &imagePoints);
 
-    QList<Mat> readImgs2List(QStringList imgNames);
     QList<Mat> undistortImages(QList<Mat> imgs, Mat undistMapX, Mat undistMapY);
+
+    Mat projectDepthTo3DSpace(Mat depth);
+    Mat projectFrom3DSpaceToImage(Mat img3D, Mat rot, Mat transl);
+
+    QList<Mat> readImgs2List(QStringList imgNames);
+
 
     //size of chessboard used for calibration
     Size chessboardSz;
@@ -81,6 +91,12 @@ private:
 
     Mat rectifMapX_IR;
     Mat rectifMapY_IR;
+
+    //translation and rotation
+    Mat rotation_IR2RGB;
+    Mat rotation_NIR2RGB;
+    Mat transl_IR2RGB;
+    Mat transl_NIR2RGB;
 };
 
 #endif // IMAGEPREPROCESSOR_H
