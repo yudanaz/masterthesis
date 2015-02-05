@@ -77,16 +77,17 @@ void ImagePreprocessor::preproc(Mat& RGB, Mat& NIR, Mat& depth)
                                             Size(depth_undist.cols, depth_undist.rows));
 
     //fill gaps in depth map
-    Mat d8bit;
-    depth2D.convertTo(d8bit, CV_8UC1, 255.0/2048.0);
+    Mat depth8bit, RGB_undist_gray;
+    depth2D.convertTo(depth8bit, CV_8UC1, 255.0/2047.0);
+    cvtColor(RGB_undist, RGB_undist_gray, CV_BGR2GRAY);
+    Mat depth_refined = crossbilatFilter.filter(depth8bit, RGB_undist_gray, 16.0, 0.1);
 
-    Mat depth2D_fixed;
-    bilateralFilter(d8bit, depth2D_fixed, 11, 500, 500);
 
-    imshow("depth image", d8bit);
-    imshow("depth image fixed", depth2D_fixed);
-//    imwrite("dingensHier.png", d8bit);
-//    imwrite("dingensHier2.png", RGB_undist);
+    imshow("depth image", depth8bit);
+    imshow("depth image refined", depth_refined);
+
+//    imwrite("depth.png", depth8bit);
+//    imwrite("rgb.png", RGB_undist);
 
     //rectify
 

@@ -5,6 +5,7 @@
 #-------------------------------------------------
 
 QT       += core gui
+QT      += xml
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -30,11 +31,22 @@ LIBS += -lopencv_nonfree
 SOURCES += main.cpp\
         mainwindow.cpp \
     io.cpp \
-    imagepreprocessor.cpp
+    imagepreprocessor.cpp \
+    crossbilateralfilterwrapper.cpp
 
 HEADERS  += mainwindow.h \
     io.h \
-    imagepreprocessor.h
+    imagepreprocessor.h \
+    crossBilateralFilter/array.h \
+    crossBilateralFilter/array_n.h \
+    crossBilateralFilter/chrono.h \
+    crossBilateralFilter/fast_lbf.h \
+    crossBilateralFilter/geom.h \
+    crossBilateralFilter/math_tools.h \
+    crossBilateralFilter/mixed_vector.h \
+    crossBilateralFilter/msg_stream.h \
+    crossbilateralfilterwrapper.h
+
 
 FORMS    += mainwindow.ui
 

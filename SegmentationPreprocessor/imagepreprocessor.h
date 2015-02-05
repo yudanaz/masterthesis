@@ -23,6 +23,8 @@
 #include <opencv2/nonfree/nonfree.hpp>
 #include <opencv2/nonfree/features2d.hpp>
 
+#include "crossbilateralfilterwrapper.h"
+
 using namespace cv;
 using namespace std;
 
@@ -55,6 +57,8 @@ private:
 
     QList<Mat> readImgs2List(QStringList imgNames);
 
+    //cross bilateral filter
+    CrossBilateralFilterWRAPPER crossbilatFilter;
 
     //size of chessboard used for calibration
     Size chessboardSz;
