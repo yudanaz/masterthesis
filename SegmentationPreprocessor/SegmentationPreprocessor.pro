@@ -37,3 +37,6 @@ HEADERS  += mainwindow.h \
     imagepreprocessor.h
 
 FORMS    += mainwindow.ui
+
+OTHER_FILES +=
+

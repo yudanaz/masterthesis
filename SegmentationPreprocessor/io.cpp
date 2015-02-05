@@ -66,7 +66,7 @@ void IO::print1ChMatrixToConsole(Mat mat)
 }
 
 
-QString IO::getTypeName(int type)
+QString IO::getOpenCVTypeName(int type)
 {
     QString r;
 

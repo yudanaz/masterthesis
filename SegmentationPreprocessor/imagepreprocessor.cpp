@@ -9,6 +9,19 @@
 
 ImagePreprocessor::ImagePreprocessor()
 {
+    //try loading last camera parameter file
+    try
+    {
+        FileStorage fs("config/config.txt", FileStorage::READ);
+        std::string url;
+        fs["lastCamParamURL"] >> url;
+        fs.release();
+        if(url != ""){ loadAll(QString::fromStdString(url)); }
+    }
+    catch(cv::Exception e)
+    {
+        QMessageBox::information(NULL, "Error", QString::fromStdString(e.msg), QMessageBox::Ok);
+    }
 }
 
 
@@ -48,18 +61,28 @@ void ImagePreprocessor::calib(QStringList calibImgs_RGB,
 //    make_RectifyMaps(imgsNIR_undist, imgsRGB_undist, rectifMapX_NIR, rectifMapY_NIR, rotation_NIR2RGB, transl_NIR2RGB);
 }
 
-void ImagePreprocessor::preproc(Mat& RGB, Mat& NIR, Mat& Depth)
+void ImagePreprocessor::preproc(Mat& RGB, Mat& NIR, Mat& depth)
 {
     //undistort
-    Mat RGB_undist, NIR_undist, Depth_undist;
+    Mat RGB_undist, NIR_undist, depth_undist;
     remap(RGB, RGB_undist, undistMapX_RGB, undistMapY_RGB, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
 //    remap(NIR, NIR_undist, undistMapX_NIR, undistMapY_NIR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
-    remap(Depth, Depth_undist, undistMapX_IR, undistMapY_IR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
+    remap(depth, depth_undist, undistMapX_IR, undistMapY_IR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
 
     //TODO: resize / crop
 
     //map Kinect depth to RGB
+    vector<Point3f> depth3D = projectDepthTo3DSpace(depth_undist);
+    Mat depth2D = projectFrom3DSpaceToImage(depth3D, rotation_IR2RGB, transl_IR2RGB, cam_RGB,
+                                            Size(depth_undist.cols, depth_undist.rows));
 
+    //fill gaps in depth map
+
+
+    Mat d8bit;
+    depth2D.convertTo(d8bit, CV_8UC1, 255.0/2048.0);
+    imwrite("dingensHier.png", d8bit);
+    imwrite("dingensHier2.png", RGB_undist);
 
     //rectify
 
@@ -99,6 +122,11 @@ void ImagePreprocessor::saveAll(QString saveURL)
     fs << "transl_NIR2RGB" << transl_NIR2RGB;
     fs << "transl_IR2RGB" << transl_IR2RGB;
 
+    //also save URL of last saved parameter file
+    FileStorage fs2("config/config.txt", FileStorage::WRITE);
+    fs2 << "lastCamParamURL" << saveURL.toStdString();
+    fs2.release();
+
     fs.release();
 }
 
@@ -137,6 +165,13 @@ void ImagePreprocessor::loadAll(QString loadURL)
     fs["transl_IR2RGB"] >> transl_IR2RGB;
 
     fs.release();
+
+    //also save URL of last loaded parameter file
+    FileStorage fs2("config/config.txt", FileStorage::WRITE);
+    fs2 << "lastCamParamURL" << loadURL.toStdString();
+    fs2.release();
+
+    qDebug() << "Loaded camera parameter file: " << loadURL;
 }
 
 
@@ -236,7 +271,7 @@ void ImagePreprocessor::getObjectAndImagePoints(QList<Mat> calibImgs, int width,
     getImagePoints(calibImgs, chessboard_sz, imagePoints);
 
     //put as many of the dummy object points in the list as there are image points
-    for (int i = 0; i < imagePoints.size(); ++i)
+    for (uint i = 0; i < imagePoints.size(); ++i)
     {
         objectPoints.push_back(obj);
     }
@@ -256,9 +291,10 @@ void ImagePreprocessor::getImagePoints(QList<Mat> calibImgs, Size chessboardSize
     }
 }
 
-Mat ImagePreprocessor::projectDepthTo3DSpace(Mat depth)
+vector<Point3f> ImagePreprocessor::projectDepthTo3DSpace(Mat depth)
 {
-    Mat depth3D(depth.rows, depth.cols, CV_32FC3);
+    vector<Point3f> points3D(depth.rows * depth.cols);
+    int cnt = 0;
 
     float fx = cam_IR.at<double>(0,0);
     float cx = cam_IR.at<double>(0,2);
@@ -269,29 +305,36 @@ Mat ImagePreprocessor::projectDepthTo3DSpace(Mat depth)
     {
         for (int x = 0; x < depth.cols; ++x)
         {
-            Vec3f coord3D;
+            Point3f coord3D;
             ushort d = depth.at<ushort>(y,x);
-            coord3D[0] = (x - cx) * d / fx; //depth image is 16UC1 = ushort
-            coord3D[1] = (y - cy) * d / fy;
-            coord3D[2] = d;
-            depth3D.at<Vec3f>(y,x) = coord3D;
+            coord3D.x = (x - cx) * d / fx; //depth image is 16UC1 = ushort
+            coord3D.y = (y - cy) * d / fy;
+            coord3D.z = d;
+            points3D[cnt++] = coord3D;
         }
     }
-    return depth3D;
+    return points3D;
 }
 
-Mat ImagePreprocessor::projectFrom3DSpaceToImage(Mat img3D, Mat rot, Mat transl)
+Mat ImagePreprocessor::projectFrom3DSpaceToImage(std::vector<Point3f> points3D, Mat rot, Mat transl, Mat cam_Matrix, Size outImgSz)
 {
-    for (int y = 0; y < img3D.rows; ++y)
-    {
-        for (int x = 0; x < img3D.cols; ++x)
-        {
-            //rotate and translate point
-            Vec3f p = img3D.at<Vec3f>(y,x);
+//    qDebug() << IO::getOpenCVTypeName(img3D.type());
 
-            //reproject from 3d to 2d image plain
-        }
+    vector<Point2f> points2D;
+    projectPoints(points3D, rot, transl, cam_Matrix, noArray(), points2D);
+//    projectPoints(points3D, rot, transl, Mat::zeros(3,3,CV_64F), noArray(), points2D);
+
+    //transform vector holding 2D points into image matrix with depth values as intensity
+    Mat img2D(outImgSz.height, outImgSz.width, CV_16UC1, Scalar(0));
+    for (uint i = 0; i < points2D.size(); ++i)
+    {
+        int x = points2D[i].x;
+        int y = points2D[i].y;
+        int val = points3D[i].z;
+        img2D.at<ushort>(y,x) = val;
     }
+
+    return img2D;
 }
 
 QList<Mat> ImagePreprocessor::readImgs2List(QStringList imgNames)

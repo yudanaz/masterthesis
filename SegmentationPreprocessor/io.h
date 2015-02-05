@@ -27,7 +27,7 @@ public:
     QStringList getFileNames(QString msg2user, QString extension);
 
     static void print1ChMatrixToConsole(Mat mat);
-    static QString getTypeName(int type);
+    static QString getOpenCVTypeName(int type);
 
 private:
     QString lastDir;

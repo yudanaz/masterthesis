@@ -24,6 +24,7 @@
 #include <opencv2/nonfree/features2d.hpp>
 
 using namespace cv;
+using namespace std;
 
 class ImagePreprocessor
 {
@@ -32,7 +33,7 @@ public:
 
     void calib(QStringList calibImgs_RGB, QStringList calibImgs_NIR, QStringList calibImgs_IR, Size chessboardSize);
 
-    void preproc(Mat& RGB, Mat& NIR, Mat& Depth);
+    void preproc(Mat& RGB, Mat& NIR, Mat& depth);
 
     void saveAll(QString saveURL);
     void loadAll(QString loadURL);
@@ -49,8 +50,8 @@ private:
 
     QList<Mat> undistortImages(QList<Mat> imgs, Mat undistMapX, Mat undistMapY);
 
-    Mat projectDepthTo3DSpace(Mat depth);
-    Mat projectFrom3DSpaceToImage(Mat img3D, Mat rot, Mat transl);
+    vector<Point3f> projectDepthTo3DSpace(Mat depth);
+    Mat projectFrom3DSpaceToImage(vector<Point3f> points3D, Mat rot, Mat transl, Mat cam_Matrix, Size outImgSz);
 
     QList<Mat> readImgs2List(QStringList imgNames);
 
