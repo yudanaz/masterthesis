@@ -23,6 +23,9 @@ void MainWindow::on_pushButton_calib_released()
     QStringList irs = io.getFileNames("Open IR calib images", IMGTYPES);
     QStringList nirs; //  = io.getFileNames("Open NIR calib images", IMGTYPES);
 
+    if(rgbs.length() == 0 || irs.length() == 0 /*|| nirs.length() == 0*/)
+    { return; }
+
     preproc.calib(rgbs, nirs, irs, Size(9,6));
 }
 
@@ -31,6 +34,9 @@ void MainWindow::on_pushButton_preproc_released()
     QString img_rgb = io.getFileName("Select RGB image", "*.png");
     QString img_depth = io.getFileName("Select Depth image", "*.png");
 //    QString img_nir = io.getFileName("Select NIR image", "*.png");
+
+    if(img_rgb == "" || img_depth == "" /*|| img_nir == ""*/ ){ return; }
+
     Mat rgb = imread(img_rgb.toStdString(), IMREAD_ANYCOLOR);
     Mat depth = imread(img_depth.toStdString(), IMREAD_ANYDEPTH);
     Mat nir; // = imread(img_nir.toStdString(), IMREAD_UNCHANGED);

@@ -38,5 +38,12 @@ HEADERS  += mainwindow.h \
 
 FORMS    += mainwindow.ui
 
-OTHER_FILES +=
+OTHER_FILES += \
+    config/dummyDoc
 
+#COPY CONFIG DIR FROM SOURCE TO BUILD DIR
+copydata.commands = $(COPY_DIR) $$PWD/config $$OUT_PWD
+first.depends = $(first) copydata
+export(first.depends)
+export(copydata.commands)
+QMAKE_EXTRA_TARGETS += first copydata

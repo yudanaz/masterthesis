@@ -1,9 +1,20 @@
 #include "io.h"
+#include <QTextStream>
+#include <QFile>
 
 IO::IO(QWidget *parent)
     : parent(parent),
       lastDir(QDir::homePath())
 {
+    //try to get last directory
+    QFile file("config/lastDir.txt");
+    if(file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        QTextStream in(&file);
+        QString s = in.readLine();
+        if(s != ""){ lastDir = s; }
+        file.close();
+    }
 }
 
 QString IO::getFileName(QString msg2user, QString extension)
@@ -11,6 +22,7 @@ QString IO::getFileName(QString msg2user, QString extension)
     QString fileName = QFileDialog::getOpenFileName(parent, msg2user, lastDir, extension);
     if(fileName == ""){ return NULL; }
     lastDir = QFileInfo(fileName).path();
+    saveLastDir();
     return fileName;
 }
 
@@ -19,6 +31,7 @@ QString IO::getSaveFile(QString msg2user, QString extension)
     QString fileName = QFileDialog::getSaveFileName(parent, msg2user, lastDir, extension);
     if(fileName == ""){ return NULL; }
     lastDir = QFileInfo(fileName).path();
+    saveLastDir();
     if(!fileName.contains(extension.remove("*"))){ fileName.append(extension); }
     return fileName;
 }
@@ -28,6 +41,7 @@ QStringList IO::getFileNames(QString msg2user, QString extension)
     QStringList fileNames = QFileDialog::getOpenFileNames(parent, msg2user, lastDir, extension);
     if(fileNames.length() == 0) { return fileNames; }
     lastDir = QFileInfo(fileNames.first()).absolutePath();
+    saveLastDir();
     return fileNames;
 }
 
@@ -90,5 +104,14 @@ QString IO::getOpenCVTypeName(int type)
     return r;
 }
 
-
+void IO::saveLastDir()
+{
+    QFile file("config/lastDir.txt");
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        QTextStream out(&file);
+        out << lastDir << "\n";
+        file.close();
+    }
+}
 

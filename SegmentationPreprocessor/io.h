@@ -30,6 +30,7 @@ public:
     static QString getOpenCVTypeName(int type);
 
 private:
+    void saveLastDir();
     QString lastDir;
     QWidget* parent;
 };
