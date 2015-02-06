@@ -1,5 +1,7 @@
 #include "vimbacammanager.h"
 
+QMutex VimbaCamManager::mutex;
+
 void MyImageSource::doWhiteCalib(Mat m, int index)
 {
 	Mat temp;
@@ -21,6 +23,7 @@ VimbaCamManager::VimbaCamManager(VimbaCamType camType):
 	connected_goldeye(false),
 	connected_flashlight(false),
 	flashLightRunning(false),
+	exceptionCnt(0),
 	maxFPS(30), nrOfWavebands(4)
 {
 	myCamType = camType;
@@ -165,16 +168,21 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 	{
 		try
 		{
+//			qDebug() << "Prosilica get CV Frame";
+			mutex.lock(); //avoid network package conflicts between vimba cameras
 			prosilica->triggerViaSoftware();
 			img = prosilica->getCVFrame();
+			usleep(5000); //give some "magic" time to "free" transport layer
+			mutex.unlock();
+
 			camImgs[RGB] = img;
 		}
 		catch(CameraException e)
 		{
-			qDebug() << "Prosilica: Camera Exception:  "<< e.getMessage();
+			mutex.unlock();
+			qDebug() << "Prosilica: Camera Exception " <<  exceptionCnt++ << ": " << e.getMessage();
 			//QMessageBox::information(NULL, "Prosilica: Camera Exception", e.getMessage(), QMessageBox::Ok);
 		}
-
 	}
 
 	else if(myCamType == Vimba_Goldeye && connected_goldeye && connected_flashlight)
@@ -184,6 +192,8 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 
 		try
 		{
+//			qDebug() << "Goldeye get CV Frame";
+
 //			camImgs[NIR_Dark] = goldeye->getCVFrame();
 			bool darkImageSaved = false;
 
@@ -191,13 +201,16 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 			for(i = 0; i < nrOfWavebands + 1; i++)
 			{
 
+				mutex.lock();
 				flashlight->triggerBand(i);
+
 				//get current channel - this waits for the flashlight!
 				quint8 key = flashlight->getFrameKey();
-				//qDebug() << "index: " << i << "frameKey: " << key;
 
 				//get next frame from camera
 				img = goldeye->getCVFrame();
+				usleep(5000); //give some "magic" time to "free" transport layer
+				mutex.unlock();
 
 				//acknowledge flashlight when last waveband is reached
 				if(i == nrOfWavebands)
@@ -237,13 +250,15 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 		}
 		catch(CameraException e)
 		{
+			mutex.unlock();
+
 			//handle problem
 			if(flashLightRunning)
 			{
 				flashlight->halt();
 			}
 
-			qDebug() << "Goldeye acquisition (Frame " << i << "):" << e.getMessage();
+			qDebug() << "Goldeye acquisition (Frame " << i << ") "  << exceptionCnt++ <<  ": " << e.getMessage();
 
 			goldeye->reset();
 
@@ -261,6 +276,8 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 		}
 		catch (SkinCamException e)
 		{
+			mutex.unlock();
+
 			if(flashLightRunning)
 			{
 				flashlight->halt();
@@ -270,6 +287,8 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 		}
 		catch (...)
 		{
+			mutex.unlock();
+
 			if(flashLightRunning)
 			{
 				flashlight->halt();

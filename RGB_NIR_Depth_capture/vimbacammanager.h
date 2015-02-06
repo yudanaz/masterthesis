@@ -6,6 +6,9 @@
 #include<QList>
 #include<QDebug>
 #include<QMessageBox>
+#include<QMutexLocker>
+#include<QMutex>
+
 #include<VimbaCPP/Include/VimbaCPP.h>
 #include<opencv2/opencv.hpp>
 #include"cammanager.h"
@@ -71,8 +74,14 @@ public:
 	bool goldeyeIsConnected();
 	bool prosilicaIsConnected();
 
+
 private:
+
 	VimbaCamType myCamType;
+
+	static QMutex mutex;
+
+	int exceptionCnt;
 
 	void startVimbaAPI();
 	void startFlashlight();

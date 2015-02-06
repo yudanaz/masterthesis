@@ -28,7 +28,7 @@ void GoldeyeWorker::startAcquisition()
 			//forward images to main thread
 			emit imagesReady(images);
 
-			usleep(100000);
+//			usleep(100000); //quick +/- fix for network packet collision -> alternates camera queries by simple timeout
 		}
 		while(acquiring);
 		stopped = true;

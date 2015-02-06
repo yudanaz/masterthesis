@@ -199,7 +199,6 @@ void ProsilicaVimba::configure(double exposureTime, quint8 bufferSize)
 	//set trigger source
 	/*INFO: differently than for the Goldeye, the image acquisition can be started either by the
 	StartContinuousImageAcquisition - feature software command, or through a trigger.
-	Software trigger doesn't seem to work
 	*/
 	res = pProsilica->GetFeatureByName("TriggerSource", pFeature);
 	if(res == VmbErrorSuccess){ res = pFeature->SetValue(2); } //4 = software trigger, but 2 also works...
@@ -209,7 +208,7 @@ void ProsilicaVimba::configure(double exposureTime, quint8 bufferSize)
 							  .arg(convErrToMsg(res)));
 	}
 
-	//set pixel format and image height, width and offset
+	//set pixel format
 	res = pProsilica->GetFeatureByName("PixelFormat", pFeature);
 	if(res == VmbErrorSuccess){ res = pFeature->SetValue("BayerGB8"); } //8bit BGR
 //	if(res == VmbErrorSuccess){ res = pFeature->SetValue("Mono8"); } //8bit Monochromatic
@@ -227,6 +226,7 @@ void ProsilicaVimba::configure(double exposureTime, quint8 bufferSize)
 		throw CameraException(QString("Can't get Pixelformat from camera! Code: %1").arg(convErrToMsg(res)));
 	}
 
+	//set image format to full (2048x2048) and offset to zero
 	res = pProsilica->GetFeatureByName("Height", pFeature);
 	if(res == VmbErrorSuccess){ res = pFeature->SetValue(2048); } //max sensor heigth
 	if(res != VmbErrorSuccess)
@@ -254,6 +254,40 @@ void ProsilicaVimba::configure(double exposureTime, quint8 bufferSize)
 	{
 		throw CameraException(QString("Can't set y-axis offset to zero! Code: %1").arg(convErrToMsg(res)));
 	}
+
+	//set exposure mode to auto - continuous
+	res = pProsilica->GetFeatureByName("ExposureAuto", pFeature);
+	if(res == VmbErrorSuccess){ res = pFeature->SetValue(2); }
+	if(res != VmbErrorSuccess)
+	{
+		throw CameraException(QString("Can't set auto exposure mode to continuous! Code: %1").arg(convErrToMsg(res)));
+	}
+
+	//set Algorithm used for auto-exposure to "Mean"
+	res = pProsilica->GetFeatureByName("ExposureAutoAlg", pFeature);
+	if(res == VmbErrorSuccess){ res = pFeature->SetValue(0); }
+	if(res != VmbErrorSuccess)
+	{
+		throw CameraException(QString("Can't set auto exposure mode to continuous! Code: %1").arg(convErrToMsg(res)));
+	}
+
+	//set exposure auto target to 30%, i.e.
+	//When ExposureAutoAlg is Mean, this is the target image mean value, in percent. Higher values result in brighter images.
+	res = pProsilica->GetFeatureByName("ExposureAutoTarget", pFeature);
+	if(res == VmbErrorSuccess){ res = pFeature->SetValue(30); }
+	if(res != VmbErrorSuccess)
+	{
+		throw CameraException(QString("Can't set auto exposure mode to continuous! Code: %1").arg(convErrToMsg(res)));
+	}
+
+	//set maximal exposure to 30 ms (~30 fps max)
+	res = pProsilica->GetFeatureByName("ExposureAutoMax", pFeature);
+	if(res == VmbErrorSuccess){ res = pFeature->SetValue(30000); }
+	if(res != VmbErrorSuccess)
+	{
+		throw CameraException(QString("Can't set auto exposure mode to continuous! Code: %1").arg(convErrToMsg(res)));
+	}
+
 
 
 	//configure Gain to 1:
