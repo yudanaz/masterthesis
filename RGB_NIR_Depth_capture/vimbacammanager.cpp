@@ -164,22 +164,20 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 	quint8 i;
 	quint8 errorCnt = 0;
 
+	QMutexLocker locker(&mutex); //avoid network package collision
+
 	if(myCamType == Vimba_Prosilica && connected_prosilica)
 	{
 		try
 		{
 //			qDebug() << "Prosilica get CV Frame";
-			mutex.lock(); //avoid network package conflicts between vimba cameras
 			prosilica->triggerViaSoftware();
 			img = prosilica->getCVFrame();
-			usleep(5000); //give some "magic" time to "free" transport layer
-			mutex.unlock();
 
 			camImgs[RGB] = img;
 		}
 		catch(CameraException e)
 		{
-			mutex.unlock();
 			qDebug() << "Prosilica: Camera Exception " <<  exceptionCnt++ << ": " << e.getMessage();
 			//QMessageBox::information(NULL, "Prosilica: Camera Exception", e.getMessage(), QMessageBox::Ok);
 		}
@@ -192,16 +190,12 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 
 		try
 		{
-//			qDebug() << "Goldeye get CV Frame";
-
 //			camImgs[NIR_Dark] = goldeye->getCVFrame();
 			bool darkImageSaved = false;
 
 			//get waveband images from camera (plus dark)
 			for(i = 0; i < nrOfWavebands + 1; i++)
 			{
-
-				mutex.lock();
 				flashlight->triggerBand(i);
 
 				//get current channel - this waits for the flashlight!
@@ -209,8 +203,6 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 
 				//get next frame from camera
 				img = goldeye->getCVFrame();
-				usleep(5000); //give some "magic" time to "free" transport layer
-				mutex.unlock();
 
 				//acknowledge flashlight when last waveband is reached
 				if(i == nrOfWavebands)
@@ -250,8 +242,6 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 		}
 		catch(CameraException e)
 		{
-			mutex.unlock();
-
 			//handle problem
 			if(flashLightRunning)
 			{
@@ -276,8 +266,6 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 		}
 		catch (SkinCamException e)
 		{
-			mutex.unlock();
-
 			if(flashLightRunning)
 			{
 				flashlight->halt();
@@ -287,8 +275,6 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 		}
 		catch (...)
 		{
-			mutex.unlock();
-
 			if(flashLightRunning)
 			{
 				flashlight->halt();
@@ -297,6 +283,8 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 									 "Unknown error during frame acquisition", QMessageBox::Ok);
 		}
 	}
+
+	usleep(10000); //give some "magic" time to "free" transport layer
 }
 
 void VimbaCamManager::closeCameras()
