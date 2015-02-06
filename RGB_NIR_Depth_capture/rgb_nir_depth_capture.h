@@ -11,6 +11,7 @@
 #include<QSound>
 #include<opencv2/opencv.hpp>
 #include"imgacquisitionworker.h"
+#include"saveimgsworker.h"
 #include"vimbacammanager.h"
 
 Q_DECLARE_METATYPE(RGBDNIR_MAP)
@@ -36,6 +37,7 @@ public slots:
 
 signals:
 	void startImgAcquisition();
+	void saveImages(RGBDNIR_MAP);
 
 private slots:
 	void on_btn_startAcquisition_released();
@@ -76,12 +78,15 @@ private:
 	bool triggerSwitchRGB2IR;
 	bool triggerSwitchIR2RGB;
 	bool capturingRGB;
-	QThread workerThread1;
-	QThread workerThread2;
-	QThread workerThread3;
-	ImgAcquisitionWorker *myImgAcqWorker1;
-	ImgAcquisitionWorker *myImgAcqWorker2;
-	ImgAcquisitionWorker *myImgAcqWorker3;
+	QThread workerThread_Prosilica;
+	QThread workerThread_Goldeye;
+	QThread workerThread_Kinect;
+	QThread workerThread_SaveImgs;
+	ImgAcquisitionWorker *myImgAcqWorker_Prosilica;
+	ImgAcquisitionWorker *myImgAcqWorker_Goldeye;
+	ImgAcquisitionWorker *myImgAcqWorker_Kinect;
+	SaveImgsWorker *mySaveImgsWorker;
+
 	QMutex threadLock;
 
 	QSharedPointer<QGraphicsScene> ptr_RGBScene;

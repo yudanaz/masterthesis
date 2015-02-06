@@ -117,6 +117,7 @@ public:
 
 	//Methods by Maurice
 	virtual void triggerViaSoftware();
+	bool is_P_model(){ return isPmodel; }
 	//endof methods by Maurice
 
 

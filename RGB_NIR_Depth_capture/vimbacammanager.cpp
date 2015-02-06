@@ -213,8 +213,11 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 				//return if image empty to avoid runtime errors
 				if(img.rows == 0 || img.cols == 0){ continue; }
 
-				//apply fixed pattern noise calibration
-//				myImageSource.doFPNCalib(img);
+				//apply fixed pattern noise calibration if old goldeye
+				if( ((GoldeyeVimba*)goldeye)->is_P_model()) // if old goldeye
+				{
+					myImageSource.doFPNCalib(img);
+				}
 
 				//if waveband, subtract dark image to get "pure" waveband image
 				//and do white calibration
@@ -270,8 +273,8 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 			{
 				flashlight->halt();
 			}
-			QMessageBox::information(NULL, "Goldeye: Error during frame acquisition ("
-									 + QString::number(i) + "):", e.getMessage(), QMessageBox::Ok);
+			qDebug() << "Goldeye: Error during frame acquisition (" << i << "):" << e.getMessage();
+//			QMessageBox::information(NULL, "Goldeye: Error during frame acquisition (" + QString::number(i) + "):", e.getMessage(), QMessageBox::Ok);
 		}
 		catch (...)
 		{
@@ -279,8 +282,8 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 			{
 				flashlight->halt();
 			}
-			QMessageBox::information(NULL, "Goldeye: Unknown error",
-									 "Unknown error during frame acquisition", QMessageBox::Ok);
+			qDebug() << "Goldeye: Unknown error during frame acquisition";
+//			QMessageBox::information(NULL, "Goldeye: Unknown error", "Unknown error during frame acquisition", QMessageBox::Ok);
 		}
 	}
 

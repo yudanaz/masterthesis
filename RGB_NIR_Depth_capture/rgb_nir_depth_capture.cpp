@@ -23,31 +23,39 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	qRegisterMetaType<RGBDNIR_MAP>();
 
 	//Prosilica worker
-	myImgAcqWorker1 = new ProsilicaWorker();
-	myImgAcqWorker1->moveToThread(&workerThread1);
-	connect(&workerThread1, SIGNAL(finished()), myImgAcqWorker1, SLOT(deleteLater()));
-	connect(this, SIGNAL(startImgAcquisition()), myImgAcqWorker1, SLOT(startAcquisition()));
-	connect(myImgAcqWorker1, SIGNAL(imagesReady(RGBDNIR_MAP)), this, SLOT(imagesReady(RGBDNIR_MAP)));
-	connect(&workerThread1, SIGNAL(finished()), &workerThread1, SLOT(deleteLater()));
-	workerThread1.start(QThread::HighPriority);
+	myImgAcqWorker_Prosilica = new ProsilicaWorker();
+	myImgAcqWorker_Prosilica->moveToThread(&workerThread_Prosilica);
+	connect(&workerThread_Prosilica, SIGNAL(finished()), myImgAcqWorker_Prosilica, SLOT(deleteLater()));
+	connect(this, SIGNAL(startImgAcquisition()), myImgAcqWorker_Prosilica, SLOT(startAcquisition()));
+	connect(myImgAcqWorker_Prosilica, SIGNAL(imagesReady(RGBDNIR_MAP)), this, SLOT(imagesReady(RGBDNIR_MAP)));
+	connect(&workerThread_Prosilica, SIGNAL(finished()), &workerThread_Prosilica, SLOT(deleteLater()));
+	workerThread_Prosilica.start(QThread::HighPriority);
 
 	//Goldeye worker
-	myImgAcqWorker2 = new GoldeyeWorker();
-	myImgAcqWorker2->moveToThread(&workerThread2);
-	connect(&workerThread2, SIGNAL(finished()), myImgAcqWorker2, SLOT(deleteLater()));
-	connect(this, SIGNAL(startImgAcquisition()), myImgAcqWorker2, SLOT(startAcquisition()));
-	connect(myImgAcqWorker2, SIGNAL(imagesReady(RGBDNIR_MAP)), this, SLOT(imagesReady(RGBDNIR_MAP)));
-	connect(&workerThread2, SIGNAL(finished()), &workerThread2, SLOT(deleteLater()));
-	workerThread2.start(QThread::HighPriority);
+	myImgAcqWorker_Goldeye = new GoldeyeWorker();
+	myImgAcqWorker_Goldeye->moveToThread(&workerThread_Goldeye);
+	connect(&workerThread_Goldeye, SIGNAL(finished()), myImgAcqWorker_Goldeye, SLOT(deleteLater()));
+	connect(this, SIGNAL(startImgAcquisition()), myImgAcqWorker_Goldeye, SLOT(startAcquisition()));
+	connect(myImgAcqWorker_Goldeye, SIGNAL(imagesReady(RGBDNIR_MAP)), this, SLOT(imagesReady(RGBDNIR_MAP)));
+	connect(&workerThread_Goldeye, SIGNAL(finished()), &workerThread_Goldeye, SLOT(deleteLater()));
+	workerThread_Goldeye.start(QThread::HighPriority);
 
 	//Kinect worker
-	myImgAcqWorker3 = new KinectWorker();
-	myImgAcqWorker3->moveToThread(&workerThread3);
-	connect(&workerThread3, SIGNAL(finished()), myImgAcqWorker3, SLOT(deleteLater()));
-	connect(this, SIGNAL(startImgAcquisition()), myImgAcqWorker3, SLOT(startAcquisition()));
-	connect(myImgAcqWorker3, SIGNAL(imagesReady(RGBDNIR_MAP)), this, SLOT(imagesReady(RGBDNIR_MAP)));
-	connect(&workerThread3, SIGNAL(finished()), &workerThread3, SLOT(deleteLater()));
-	workerThread3.start(QThread::HighPriority);
+	myImgAcqWorker_Kinect = new KinectWorker();
+	myImgAcqWorker_Kinect->moveToThread(&workerThread_Kinect);
+	connect(&workerThread_Kinect, SIGNAL(finished()), myImgAcqWorker_Kinect, SLOT(deleteLater()));
+	connect(this, SIGNAL(startImgAcquisition()), myImgAcqWorker_Kinect, SLOT(startAcquisition()));
+	connect(myImgAcqWorker_Kinect, SIGNAL(imagesReady(RGBDNIR_MAP)), this, SLOT(imagesReady(RGBDNIR_MAP)));
+	connect(&workerThread_Kinect, SIGNAL(finished()), &workerThread_Kinect, SLOT(deleteLater()));
+	workerThread_Kinect.start(QThread::HighPriority);
+
+	//Thread that saves images
+	mySaveImgsWorker = new SaveImgsWorker();
+	mySaveImgsWorker->moveToThread(&workerThread_SaveImgs);
+	connect(&workerThread_SaveImgs, SIGNAL(finished()), mySaveImgsWorker, SLOT(deleteLater()));
+	connect(this, SIGNAL(saveImages(RGBDNIR_MAP)), mySaveImgsWorker, SLOT(saveImgs(RGBDNIR_MAP)));
+	connect(&workerThread_SaveImgs, SIGNAL(finished()), &workerThread_SaveImgs, SLOT(deleteLater()));
+	workerThread_SaveImgs.start(QThread::HighPriority);
 
 	//get image widget sizes for display (-2 because of widget borders)
 	width_rgb = ui->graphicsView_RGB->width()-2;
@@ -61,18 +69,18 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 
 RGB_NIR_Depth_Capture::~RGB_NIR_Depth_Capture()
 {
-	if(!myImgAcqWorker1->isStopped()){ myImgAcqWorker1->setAcquiring(false); }
-	if(!myImgAcqWorker2->isStopped()){ myImgAcqWorker2->setAcquiring(false); }
-	if(!myImgAcqWorker3->isStopped()){ myImgAcqWorker3->setAcquiring(false); }
+	if(!myImgAcqWorker_Prosilica->isStopped()){ myImgAcqWorker_Prosilica->setAcquiring(false); }
+	if(!myImgAcqWorker_Goldeye->isStopped()){ myImgAcqWorker_Goldeye->setAcquiring(false); }
+	if(!myImgAcqWorker_Kinect->isStopped()){ myImgAcqWorker_Kinect->setAcquiring(false); }
 
-	workerThread1.quit();
-	workerThread1.wait();
+	workerThread_Prosilica.quit();
+	workerThread_Prosilica.wait();
 
-	workerThread2.quit();
-	workerThread2.wait();
+	workerThread_Goldeye.quit();
+	workerThread_Goldeye.wait();
 
-	workerThread3.quit();
-	workerThread3.wait();
+	workerThread_Kinect.quit();
+	workerThread_Kinect.wait();
 
 	delete ui;
 }
@@ -84,16 +92,19 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 {
 	threadLock.lock();
 
-	//first join the images from sent by the thread to this slot with all images (by all threads)
-	if(capturedImgs.contains(RGB)){ allCapturedImgs[RGB] = capturedImgs[RGB]; }
+	//join the images sent by the thread to this slot with all images (by all threads)
+	//also remember which images have been sent now, to repaint only those
+	vector<RGBDNIR_captureType> sentNow;
 
-	if(capturedImgs.contains(NIR_Dark)){ allCapturedImgs[NIR_Dark] = capturedImgs[NIR_Dark]; }
-	if(capturedImgs.contains(NIR_935)){ allCapturedImgs[NIR_935] = capturedImgs[NIR_935]; }
-	if(capturedImgs.contains(NIR_1060)){ allCapturedImgs[NIR_1060] = capturedImgs[NIR_1060]; }
-	if(capturedImgs.contains(NIR_1300)){ allCapturedImgs[NIR_1300] = capturedImgs[NIR_1300]; }
-	if(capturedImgs.contains(NIR_1550)){ allCapturedImgs[NIR_1550] = capturedImgs[NIR_1550]; }
+	if(capturedImgs.contains(RGB)){ allCapturedImgs[RGB] = capturedImgs[RGB]; sentNow.push_back(RGB); }
 
-	if(capturedImgs.contains(Kinect_Depth)){ allCapturedImgs[Kinect_Depth] = capturedImgs[Kinect_Depth]; }
+	if(capturedImgs.contains(NIR_Dark)){ allCapturedImgs[NIR_Dark] = capturedImgs[NIR_Dark]; sentNow.push_back(NIR_Dark); }
+	if(capturedImgs.contains(NIR_935)){ allCapturedImgs[NIR_935] = capturedImgs[NIR_935]; sentNow.push_back(NIR_935); }
+	if(capturedImgs.contains(NIR_1060)){ allCapturedImgs[NIR_1060] = capturedImgs[NIR_1060]; sentNow.push_back(NIR_1060); }
+	if(capturedImgs.contains(NIR_1300)){ allCapturedImgs[NIR_1300] = capturedImgs[NIR_1300]; sentNow.push_back(NIR_1300); }
+	if(capturedImgs.contains(NIR_1550)){ allCapturedImgs[NIR_1550] = capturedImgs[NIR_1550]; sentNow.push_back(NIR_1550); }
+
+	if(capturedImgs.contains(Kinect_Depth)){ allCapturedImgs[Kinect_Depth] = capturedImgs[Kinect_Depth]; sentNow.push_back(Kinect_Depth); }
 	if(capturedImgs.contains(Kinect_RGB))
 	{
 		if(triggerSwitchIR2RGB)
@@ -103,6 +114,7 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 			triggerSwitchIR2RGB = false;
 		}
 		allCapturedImgs[Kinect_RGB] = capturedImgs[Kinect_RGB];
+		sentNow.push_back(Kinect_RGB);
 	}
 	if(capturedImgs.contains(Kinect_IR))
 	{
@@ -113,14 +125,14 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 			triggerSwitchRGB2IR = false;
 		}
 		allCapturedImgs[Kinect_IR] = capturedImgs[Kinect_IR];
+		sentNow.push_back(Kinect_IR);
 	}
 
-	QMapIterator<RGBDNIR_captureType, Mat> i(allCapturedImgs);
-	while(i.hasNext())
+	//repaint the channels that have been sent now
+	for (int i = 0; i < sentNow.size(); ++i)
 	{
-		i.next();
-		Mat img = i.value();
-		RGBDNIR_captureType type = (RGBDNIR_captureType)i.key();
+		RGBDNIR_captureType type = (RGBDNIR_captureType)sentNow[i];
+		Mat img = allCapturedImgs[type];
 		QString windowName = VimbaCamManager::getRGBDNIR_captureTypeString( type );
 
 		//show the "most important" images in the GUI
@@ -189,19 +201,22 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 	{
 		sound_click.play();
 
-		QDir dir;
-		if(!dir.exists(QDir::currentPath()+"/out")){ dir.mkdir(QDir::currentPath()+"/out"); }
-		i.toFront();
-		QString dateTime_str = getUniquePrefixFromDateAndTime();
+		emit saveImages(allCapturedImgs);
 
-		while(i.hasNext())
-		{
-			i.next();
-			QString nm = QDir::currentPath() + "/out/" +
-						 dateTime_str + "_" +
-						 VimbaCamManager::getRGBDNIR_captureTypeString( (RGBDNIR_captureType)i.key() ) + ".png";
-			imwrite(nm.toStdString().c_str(), i.value());
-		}
+//		QDir dir;
+//		if(!dir.exists(QDir::currentPath()+"/out")){ dir.mkdir(QDir::currentPath()+"/out"); }
+//		QString dateTime_str = getUniquePrefixFromDateAndTime();
+
+//		while(i.hasNext())
+//		{
+//			i.next();
+//			QString nm = QDir::currentPath() + "/out/" +
+//						 dateTime_str + "_" +
+//						 VimbaCamManager::getRGBDNIR_captureTypeString( (RGBDNIR_captureType)i.key() ) + ".png";
+//			imwrite(nm.toStdString().c_str(), i.value());
+//		}
+
+
 		triggerSave = false;
 	}
 
@@ -286,9 +301,9 @@ QString RGB_NIR_Depth_Capture::getUniquePrefixFromDateAndTime()
 ************************************************/
 void RGB_NIR_Depth_Capture::on_btn_startAcquisition_released()
 {
-	myImgAcqWorker1->setAcquiring(true);
-	myImgAcqWorker2->setAcquiring(true);
-	myImgAcqWorker3->setAcquiring(true);
+	myImgAcqWorker_Prosilica->setAcquiring(true);
+	myImgAcqWorker_Goldeye->setAcquiring(true);
+	myImgAcqWorker_Kinect->setAcquiring(true);
 	emit startImgAcquisition();
 }
 
@@ -299,9 +314,9 @@ void RGB_NIR_Depth_Capture::on_btn_saveImgs_released()
 
 void RGB_NIR_Depth_Capture::on_btn_stopAcquisition_released()
 {
-	myImgAcqWorker1->setAcquiring(false);
-	myImgAcqWorker2->setAcquiring(false);
-	myImgAcqWorker3->setAcquiring(false);
+	myImgAcqWorker_Prosilica->setAcquiring(false);
+	myImgAcqWorker_Goldeye->setAcquiring(false);
+	myImgAcqWorker_Kinect->setAcquiring(false);
 }
 
 void RGB_NIR_Depth_Capture::on_checkBox_showAllChannels_clicked()
@@ -330,13 +345,13 @@ void RGB_NIR_Depth_Capture::on_pushButton_saveSeries_released()
 void RGB_NIR_Depth_Capture::on_btn_saveIR_RGB_pair_released()
 {
 	triggerSaveIR_RGB_pair = true;
-	((KinectWorker*)myImgAcqWorker3)->triggerIRcapture();
+	((KinectWorker*)myImgAcqWorker_Kinect)->triggerIRcapture();
 }
 
 void RGB_NIR_Depth_Capture::on_pushButton_switchRGB_IR_released()
 {
-	bool capturingRGB = ((KinectWorker*)myImgAcqWorker3)->isCapturingRGB();
+	bool capturingRGB = ((KinectWorker*)myImgAcqWorker_Kinect)->isCapturingRGB();
 	triggerSwitchRGB2IR = capturingRGB;
 	triggerSwitchIR2RGB = !capturingRGB;
-	((KinectWorker*)myImgAcqWorker3)->switch_RGB_IR(!capturingRGB);
+	((KinectWorker*)myImgAcqWorker_Kinect)->switch_RGB_IR(!capturingRGB);
 }

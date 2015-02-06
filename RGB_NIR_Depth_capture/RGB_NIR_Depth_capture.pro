@@ -44,7 +44,8 @@ SOURCES += \
 	kinectcammanager.cpp \
 	prosilicaworker.cpp \
 	goldeyeworker.cpp \
-	kinectworker.cpp
+	kinectworker.cpp \
+    saveimgsworker.cpp
 HEADERS += \
 	vimbacammanager.h \
 	rgb_nir_depth_capture.h \
@@ -64,7 +65,8 @@ HEADERS += \
 	kinectcammanager.h \
 	prosilicaworker.h \
 	goldeyeworker.h \
-	kinectworker.h
+	kinectworker.h \
+    saveimgsworker.h
 
 DEFINES += AVT_VIMBA
 
