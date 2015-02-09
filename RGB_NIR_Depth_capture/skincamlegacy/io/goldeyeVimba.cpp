@@ -117,7 +117,7 @@ void GoldeyeVimba::connect(QString IPaddress)
 
 		if( res == VmbErrorSuccess )
 		{
-			res = pCmd->SetValue(8096);
+			res = pCmd->SetValue(1492); //MTU for PoE-switch
 		}
 	}
 	else

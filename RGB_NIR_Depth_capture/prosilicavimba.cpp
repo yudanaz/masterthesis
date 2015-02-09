@@ -92,8 +92,7 @@ void ProsilicaVimba::connect(QString IPaddress)
 
 	if( res == VmbErrorSuccess )
 	{
-		res = pCmd->SetValue(8096);
-//		qDebug() << "Set Prosilica packet size successfuly";
+		res = pCmd->SetValue(1492);  //MTU for PoE-switch
 	}
 	else
 	{
