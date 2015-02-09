@@ -8,7 +8,7 @@ SaveImgsWorker::SaveImgsWorker(QObject *parent) :
 }
 
 
-void SaveImgsWorker::saveImgs(RGBDNIR_MAP imgs)
+void SaveImgsWorker::saveImgs(RGBDNIR_MAP imgs, bool RGB_img, bool NIR_DarkImg, bool NIR_channels, bool kinect_depth, bool kinect_ir, bool kinect_rgb)
 {
 	QMapIterator<RGBDNIR_captureType, Mat> i(imgs);
 
@@ -19,10 +19,31 @@ void SaveImgsWorker::saveImgs(RGBDNIR_MAP imgs)
 	while(i.hasNext())
 	{
 		i.next();
-		QString nm = QDir::currentPath() + "/out/" +
-					 dateTime_str + "_" +
-					 VimbaCamManager::getRGBDNIR_captureTypeString( (RGBDNIR_captureType)i.key() ) + ".png";
-		imwrite(nm.toStdString().c_str(), i.value());
+
+		//check if this image is supposed to be save to disk
+		bool save = false;
+		RGBDNIR_captureType type = i.key();
+		switch (type)
+		{
+			case RGB: if(RGB_img) save = true; break;
+			case NIR_Dark: if(NIR_DarkImg) save = true; break;
+			case NIR_935:
+			case NIR_1060:
+			case NIR_1300:
+			case NIR_1550: if(NIR_channels) save = true; break;
+			case Kinect_Depth: if(kinect_depth) save = true; break;
+			case Kinect_IR: if(kinect_depth) save = true; break;
+			case Kinect_RGB: if(kinect_rgb) save = true; break;
+			default: break;
+		}
+
+		if(save)
+		{
+			QString nm = QDir::currentPath() + "/out/" +
+						 dateTime_str + "_" +
+						 VimbaCamManager::getRGBDNIR_captureTypeString( (RGBDNIR_captureType)i.key() ) + ".png";
+			imwrite(nm.toStdString().c_str(), i.value());
+		}
 	}
 }
 

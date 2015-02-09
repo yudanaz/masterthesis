@@ -5,12 +5,14 @@
 
 class GoldeyeWorker : public ImgAcquisitionWorker
 {
+	Q_OBJECT
 public:
 	GoldeyeWorker();
 	~GoldeyeWorker();
 
 public slots:
 	void startAcquisition();
+	void toggleMultiChannelCapture(bool captureMulti);
 
 private:
 	VimbaCamManager vimbaCamManager;

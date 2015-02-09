@@ -36,3 +36,10 @@ void GoldeyeWorker::startAcquisition()
 		lock.unlock();
 	}
 }
+
+
+void GoldeyeWorker::toggleMultiChannelCapture(bool captureMulti)
+{
+	vimbaCamManager.toggleMultichannelCapture(captureMulti);
+}
+

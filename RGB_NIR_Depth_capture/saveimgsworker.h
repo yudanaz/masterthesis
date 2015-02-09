@@ -13,7 +13,7 @@ public:
 signals:
 
 public slots:
-	void saveImgs(RGBDNIR_MAP imgs);
+	void saveImgs(RGBDNIR_MAP imgs, bool RGB_img, bool NIR_DarkImg, bool NIR_channels, bool kinect_depth, bool kinect_ir, bool kinect_rgb);
 
 private:
 	QString getUniquePrefixFromDateAndTime();

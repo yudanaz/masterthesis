@@ -2,9 +2,6 @@
 #include <QDateTime>
 #include "rgb_nir_depth_capture.h"
 #include "ui_rgbnird_mainwindow.h"
-#include "prosilicaworker.h"
-#include "goldeyeworker.h"
-#include "kinectworker.h"
 
 RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	QMainWindow(parent),
@@ -36,6 +33,7 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	myImgAcqWorker_Goldeye->moveToThread(&workerThread_Goldeye);
 	connect(&workerThread_Goldeye, SIGNAL(finished()), myImgAcqWorker_Goldeye, SLOT(deleteLater()));
 	connect(this, SIGNAL(startImgAcquisition()), myImgAcqWorker_Goldeye, SLOT(startAcquisition()));
+	connect(this, SIGNAL(toggleNIR_MultiChannelCapture(bool)), myImgAcqWorker_Goldeye, SLOT(toggleMultiChannelCapture(bool)));
 	connect(myImgAcqWorker_Goldeye, SIGNAL(imagesReady(RGBDNIR_MAP)), this, SLOT(imagesReady(RGBDNIR_MAP)));
 	connect(&workerThread_Goldeye, SIGNAL(finished()), &workerThread_Goldeye, SLOT(deleteLater()));
 	workerThread_Goldeye.start(QThread::HighPriority);
@@ -53,7 +51,7 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	mySaveImgsWorker = new SaveImgsWorker();
 	mySaveImgsWorker->moveToThread(&workerThread_SaveImgs);
 	connect(&workerThread_SaveImgs, SIGNAL(finished()), mySaveImgsWorker, SLOT(deleteLater()));
-	connect(this, SIGNAL(saveImages(RGBDNIR_MAP)), mySaveImgsWorker, SLOT(saveImgs(RGBDNIR_MAP)));
+	connect(this, SIGNAL(saveImages(RGBDNIR_MAP,bool,bool,bool,bool,bool,bool)), mySaveImgsWorker, SLOT(saveImgs(RGBDNIR_MAP,bool,bool,bool,bool,bool,bool)));
 	connect(&workerThread_SaveImgs, SIGNAL(finished()), &workerThread_SaveImgs, SLOT(deleteLater()));
 	workerThread_SaveImgs.start(QThread::HighPriority);
 
@@ -185,8 +183,8 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 			ui->graphicsView_Depth->setScene(ptr_depthScene.data());
 		}
 
-		//show all channels in extra windows if user wants that
-		if(ui->checkBox_showAllChannels->isChecked())
+		//show the other channels in extra windows if user wants that
+		else if(ui->checkBox_showAllChannels->isChecked())
 		{
 			namedWindow(windowName.toStdString(), CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO | CV_GUI_EXPANDED);
 			imshow(windowName.toStdString(), img);
@@ -201,21 +199,8 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 	{
 		sound_click.play();
 
-		emit saveImages(allCapturedImgs);
-
-//		QDir dir;
-//		if(!dir.exists(QDir::currentPath()+"/out")){ dir.mkdir(QDir::currentPath()+"/out"); }
-//		QString dateTime_str = getUniquePrefixFromDateAndTime();
-
-//		while(i.hasNext())
-//		{
-//			i.next();
-//			QString nm = QDir::currentPath() + "/out/" +
-//						 dateTime_str + "_" +
-//						 VimbaCamManager::getRGBDNIR_captureTypeString( (RGBDNIR_captureType)i.key() ) + ".png";
-//			imwrite(nm.toStdString().c_str(), i.value());
-//		}
-
+		emit saveImages(allCapturedImgs, ui->actionRGB->isChecked(), ui->actionNIR_Dark->isChecked(), ui->actionNIR_channels->isChecked(),
+						ui->actionKinect_Depth->isChecked(), ui->actionKinect_Depth->isChecked(), ui->actionKinect_RGB->isChecked());
 
 		triggerSave = false;
 	}
@@ -297,6 +282,16 @@ QString RGB_NIR_Depth_Capture::getUniquePrefixFromDateAndTime()
 
 
 /***********************************************
+** Keyboard events:
+************************************************/
+void RGB_NIR_Depth_Capture::keyPressEvent(QKeyEvent *event)
+{
+	//save image when "s" is pressed, ascii[83] = s
+	if(event->key() == 83){ triggerSave = true; }
+}
+
+
+/***********************************************
 ** GUI Methods:
 ************************************************/
 void RGB_NIR_Depth_Capture::on_btn_startAcquisition_released()
@@ -354,4 +349,10 @@ void RGB_NIR_Depth_Capture::on_pushButton_switchRGB_IR_released()
 	triggerSwitchRGB2IR = capturingRGB;
 	triggerSwitchIR2RGB = !capturingRGB;
 	((KinectWorker*)myImgAcqWorker_Kinect)->switch_RGB_IR(!capturingRGB);
+}
+
+
+void RGB_NIR_Depth_Capture::on_actionNIR_multi_channel_capture_changed()
+{
+	emit toggleNIR_MultiChannelCapture(ui->actionNIR_multi_channel_capture->isChecked());
 }

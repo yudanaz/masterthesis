@@ -74,6 +74,8 @@ public:
 	bool goldeyeIsConnected();
 	bool prosilicaIsConnected();
 
+	void toggleMultichannelCapture(bool captureMultiChannel);
+
 
 private:
 
@@ -98,6 +100,7 @@ private:
 	CameraInterface *prosilica;
 
 	int nrOfWavebands;
+	int nrOfWavebands2Trigger;
 
 	bool connected_prosilica;
 	bool connected_goldeye;

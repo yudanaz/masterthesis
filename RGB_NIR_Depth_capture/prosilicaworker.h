@@ -4,6 +4,7 @@
 
 class ProsilicaWorker : public ImgAcquisitionWorker
 {
+	Q_OBJECT
 public:
 	ProsilicaWorker();
 	~ProsilicaWorker();

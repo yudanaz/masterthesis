@@ -9,8 +9,12 @@
 #include<QMutex>
 #include<QTime>
 #include<QSound>
+#include<QKeyEvent>
 #include<opencv2/opencv.hpp>
 #include"imgacquisitionworker.h"
+#include "prosilicaworker.h"
+#include "goldeyeworker.h"
+#include "kinectworker.h"
 #include"saveimgsworker.h"
 #include"vimbacammanager.h"
 
@@ -37,7 +41,8 @@ public slots:
 
 signals:
 	void startImgAcquisition();
-	void saveImages(RGBDNIR_MAP);
+	void toggleNIR_MultiChannelCapture(bool captureMulti);
+	void saveImages(RGBDNIR_MAP imgs, bool RGBImg, bool NIR_DarkImg, bool NIR_channels, bool kinect_depth, bool kinect_ir, bool kinect_rgb);
 
 private slots:
 	void on_btn_startAcquisition_released();
@@ -53,6 +58,11 @@ private slots:
 	void on_btn_saveIR_RGB_pair_released();
 
 	void on_pushButton_switchRGB_IR_released();
+
+	void on_actionNIR_multi_channel_capture_changed();
+
+protected:
+	void keyPressEvent(QKeyEvent *event);
 
 private:
 	QString getUniquePrefixFromDateAndTime();
@@ -82,9 +92,9 @@ private:
 	QThread workerThread_Goldeye;
 	QThread workerThread_Kinect;
 	QThread workerThread_SaveImgs;
-	ImgAcquisitionWorker *myImgAcqWorker_Prosilica;
-	ImgAcquisitionWorker *myImgAcqWorker_Goldeye;
-	ImgAcquisitionWorker *myImgAcqWorker_Kinect;
+	ProsilicaWorker *myImgAcqWorker_Prosilica;
+	GoldeyeWorker *myImgAcqWorker_Goldeye;
+	KinectWorker *myImgAcqWorker_Kinect;
 	SaveImgsWorker *mySaveImgsWorker;
 
 	QMutex threadLock;

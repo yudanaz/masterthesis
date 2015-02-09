@@ -24,7 +24,7 @@ VimbaCamManager::VimbaCamManager(VimbaCamType camType):
 	connected_flashlight(false),
 	flashLightRunning(false),
 	exceptionCnt(0),
-	maxFPS(30), nrOfWavebands(4)
+	maxFPS(30), nrOfWavebands(4), nrOfWavebands2Trigger(4)
 {
 	myCamType = camType;
 
@@ -194,7 +194,7 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 			bool darkImageSaved = false;
 
 			//get waveband images from camera (plus dark)
-			for(i = 0; i < nrOfWavebands + 1; i++)
+			for(i = 0; i < nrOfWavebands2Trigger + 1; i++)
 			{
 				flashlight->triggerBand(i);
 
@@ -330,3 +330,11 @@ bool VimbaCamManager::prosilicaIsConnected()
 {
 	return connected_prosilica;
 }
+
+void VimbaCamManager::toggleMultichannelCapture(bool captureMultiChannel)
+{
+	if(captureMultiChannel){ nrOfWavebands2Trigger = nrOfWavebands; }
+	else{ nrOfWavebands2Trigger = 0; }
+}
+
+

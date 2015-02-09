@@ -41,7 +41,7 @@
      <item>
       <widget class="QPushButton" name="btn_saveImgs">
        <property name="text">
-        <string>Save Images</string>
+        <string>Save Images (S)</string>
        </property>
       </widget>
      </item>
@@ -187,6 +187,29 @@
      <height>20</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menuConfig">
+    <property name="title">
+     <string>Config</string>
+    </property>
+    <widget class="QMenu" name="menuImages_to_Save">
+     <property name="tearOffEnabled">
+      <bool>true</bool>
+     </property>
+     <property name="title">
+      <string>Images to Save</string>
+     </property>
+     <addaction name="actionRGB"/>
+     <addaction name="actionNIR_Dark"/>
+     <addaction name="actionNIR_channels"/>
+     <addaction name="actionKinect_Depth"/>
+     <addaction name="actionKinect_IR"/>
+     <addaction name="actionKinect_RGB"/>
+    </widget>
+    <addaction name="separator"/>
+    <addaction name="menuImages_to_Save"/>
+    <addaction name="actionNIR_multi_channel_capture"/>
+   </widget>
+   <addaction name="menuConfig"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <attribute name="toolBarArea">
@@ -197,6 +220,88 @@
    </attribute>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
+  <action name="actionImages_to_Show">
+   <property name="text">
+    <string>Images to Show</string>
+   </property>
+  </action>
+  <action name="actionRGB">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>RGB</string>
+   </property>
+  </action>
+  <action name="actionNIR_Dark">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>NIR Dark</string>
+   </property>
+  </action>
+  <action name="actionNIR_channels">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>NIR channels</string>
+   </property>
+  </action>
+  <action name="actionKinect_Depth">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Kinect Depth</string>
+   </property>
+  </action>
+  <action name="actionKinect_IR">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Kinect IR</string>
+   </property>
+  </action>
+  <action name="actionKinect_RGB">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Kinect RGB</string>
+   </property>
+  </action>
+  <action name="actionNIR_multi_channel_capture">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>NIR multi-channel capture</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

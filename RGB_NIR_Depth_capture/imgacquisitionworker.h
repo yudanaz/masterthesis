@@ -10,7 +10,6 @@
 class ImgAcquisitionWorker : public QObject
 {
 	Q_OBJECT
-//	QThread workerThread;
 public:
 	ImgAcquisitionWorker();
 	~ImgAcquisitionWorker();
