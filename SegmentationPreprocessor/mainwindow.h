@@ -18,13 +18,15 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_pushButton_calib_released();
+    void on_pushButton_calibCams_released();
 
     void on_pushButton_preproc_released();
 
     void on_pushButton_save_released();
 
     void on_pushButton_load_released();
+
+    void on_pushButton_calibCamRig_released();
 
 private:
     Ui::MainWindow *ui;

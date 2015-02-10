@@ -23,17 +23,27 @@
       <x>30</x>
       <y>10</y>
       <width>341</width>
-      <height>156</height>
+      <height>161</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout">
      <item>
-      <widget class="QPushButton" name="pushButton_calib">
+      <widget class="QPushButton" name="pushButton_calibCams">
        <property name="styleSheet">
         <string notr="true">background-color: rgb(177, 172, 154);</string>
        </property>
        <property name="text">
-        <string>Calibrate</string>
+        <string>Calibrate Cameras</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButton_calibCamRig">
+       <property name="styleSheet">
+        <string notr="true">background-color: rgb(177, 172, 154);</string>
+       </property>
+       <property name="text">
+        <string>Calibrate Cam Rig</string>
        </property>
       </widget>
      </item>

@@ -17,7 +17,7 @@ MainWindow::~MainWindow()
 
 }
 
-void MainWindow::on_pushButton_calib_released()
+void MainWindow::on_pushButton_calibCams_released()
 {
     QStringList rgbs = io.getFileNames("Open RGB calib images", IMGTYPES);
     QStringList irs = io.getFileNames("Open IR calib images", IMGTYPES);
@@ -26,11 +26,36 @@ void MainWindow::on_pushButton_calib_released()
     if(rgbs.length() == 0 || irs.length() == 0 /*|| nirs.length() == 0*/)
     { return; }
 
-    preproc.calib(rgbs, nirs, irs, Size(9,6));
+    preproc.calibCams(rgbs, nirs, irs, Size(9,6));
+}
+
+void MainWindow::on_pushButton_calibCamRig_released()
+{
+    if(!preproc.cams_are_calibrated())
+    {
+        QMessageBox::information(this, "Error", "Cameras not calibrated individually yet", QMessageBox::Ok);
+        return;
+    }
+
+    QStringList rgbs = io.getFileNames("Open RGB calib images", IMGTYPES);
+    QStringList irs = io.getFileNames("Open IR calib images", IMGTYPES);
+    QStringList nirs; //  = io.getFileNames("Open NIR calib images", IMGTYPES);
+
+    if(rgbs.length() == 0 || irs.length() == 0 /*|| nirs.length() == 0*/)
+    { return; }
+
+    preproc.calibRig(rgbs, nirs, irs, Size(9,6));
+
 }
 
 void MainWindow::on_pushButton_preproc_released()
 {
+    if(!preproc.rig_is_calibrated())
+    {
+        QMessageBox::information(this, "Error", "Camera rig not calibrated yet", QMessageBox::Ok);
+        return;
+    }
+
     QString img_rgb = io.getFileName("Select RGB image", "*.png");
     QString img_depth = io.getFileName("Select Depth image", "*.png");
 //    QString img_nir = io.getFileName("Select NIR image", "*.png");
@@ -55,3 +80,5 @@ void MainWindow::on_pushButton_load_released()
     QString sv = io.getFileName("Select camera parameters file", "*.camparam");
     preproc.loadAll(sv);
 }
+
+

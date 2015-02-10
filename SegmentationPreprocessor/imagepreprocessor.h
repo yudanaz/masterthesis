@@ -33,16 +33,22 @@ class ImagePreprocessor
 public:
     ImagePreprocessor();
 
-    void calib(QStringList calibImgs_RGB, QStringList calibImgs_NIR, QStringList calibImgs_IR, Size chessboardSize);
+    void calibCams(QStringList calibImgs_RGB, QStringList calibImgs_NIR, QStringList calibImgs_IR, Size chessboardSize);
+    void calibRig(QStringList calibImgs_RGB, QStringList calibImgs_NIR, QStringList calibImgs_IR, Size chessboardSize);
 
     void preproc(Mat& RGB, Mat& NIR, Mat& depth);
 
     void saveAll(QString saveURL);
     void loadAll(QString loadURL);
 
+    //get status
+    bool cams_are_calibrated(){ return cams_are_calibrated_; }
+    bool rig_is_calibrated(){ return rig_is_calibrated_; }
+
 private:
-    void make_Intrinsics_and_undistMaps(QList<Mat> calibImgs, Mat& camIntrinsics, Mat& undistMapX, Mat& undistMapY);
-    void make_RectifyMaps(QList<Mat> srcImgs, QList<Mat> dstImgs, Mat& rectifMapX, Mat& rectifMapY, Mat &Rot, Mat &Transl);
+    void make_Intrinsics_and_undistCoeffs(QList<Mat> calibImgs, Mat& camIntrinsics, Mat& distCoeff);
+    void make_RectifyMaps(QList<Mat> srcImgs, QList<Mat> dstImgs, Mat distCoeff_src, Mat distCoeff_dst, Mat cam_src, Mat cam_dst,
+                          Mat& out_rectifMapX, Mat& out_rectifMapY, Mat &out_Rot, Mat &out_Transl);
     void getObjectAndImagePoints(QList<Mat> calibImgs, int width, int height,
                                                     vector<Point3f> obj,
                                                     vector<vector<Point3f> >& objectPoints,
@@ -69,14 +75,9 @@ private:
     Mat cam_IR;
 
     //undistortion maps
-    Mat undistMapX_RGB;
-    Mat undistMapY_RGB;
-
-    Mat undistMapX_NIR;
-    Mat undistMapY_NIR;
-
-    Mat undistMapX_IR;
-    Mat undistMapY_IR;
+    Mat distCoeff_RGB;
+    Mat distCoeff_NIR;
+    Mat distCoeff_IR;
 
     //resize and crop parameters
     double resizeFac_RGB;
@@ -102,6 +103,10 @@ private:
     Mat rotation_NIR2RGB;
     Mat transl_IR2RGB;
     Mat transl_NIR2RGB;
+
+    //flags:
+    bool cams_are_calibrated_;
+    bool rig_is_calibrated_;
 };
 
 #endif // IMAGEPREPROCESSOR_H
