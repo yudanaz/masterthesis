@@ -4,10 +4,15 @@
 
 
 //#################################################################################################
-// PUBLIC:
+//#################################################################################################
+//#################################################################################################
+//#### PUBLIC:
+//#################################################################################################
+//#################################################################################################
 //#################################################################################################
 
 ImagePreprocessor::ImagePreprocessor():
+    resizeFac_RGB(0.0),
     cams_are_calibrated_(false),
     rig_is_calibrated_(false)
 {
@@ -31,6 +36,9 @@ void ImagePreprocessor::calibCams(QStringList calibImgs_RGB,
                                   QStringList calibImgs_NIR,
                                   QStringList calibImgs_IR, Size chessboardSize)
 {
+    QProgressDialog progress("Calibrating Cameras", "Cancel", 0, 0, NULL);
+    progress.setValue(0);
+
     //Note: the calibration images used here should be recorded for each cam separately
     //in order to provide max accuracy for inidividual cams. the whole cam rig is calibrated
     //separately in calibRig()
@@ -39,13 +47,13 @@ void ImagePreprocessor::calibCams(QStringList calibImgs_RGB,
 
     //read calibration images from disk
     QList<Mat> imgsRGB = readImgs2List(calibImgs_RGB);
-//    QList<Mat> imgsNIR = readImgs2List(calibImgs_NIR);
-    QList<Mat> imgsIR = readImgs2List(calibImgs_IR);
+    QList<Mat> imgsNIR = readImgs2List(calibImgs_NIR);
+//    QList<Mat> imgsIR = readImgs2List(calibImgs_IR);
 
     //compute intrinsics and undistortion map
     make_Intrinsics_and_undistCoeffs(imgsRGB, cam_RGB, distCoeff_RGB);
-//    make_Intrinsics_and_undistMaps(imgsNIR, cam_NIR, distCoeff_NIR);
-    make_Intrinsics_and_undistCoeffs(imgsIR, cam_IR, distCoeff_IR);
+    make_Intrinsics_and_undistCoeffs(imgsNIR, cam_NIR, distCoeff_NIR);
+//    make_Intrinsics_and_undistCoeffs(imgsIR, cam_IR, distCoeff_IR);
 
     cams_are_calibrated_ = true;
 }
@@ -61,153 +69,96 @@ void ImagePreprocessor::calibRig(QStringList calibImgs_RGB, QStringList calibImg
 
     //read calibration images from disk
     QList<Mat> imgsRGB = readImgs2List(calibImgs_RGB);
-//    QList<Mat> imgsNIR = readImgs2List(calibImgs_NIR);
-    QList<Mat> imgsIR = readImgs2List(calibImgs_IR);
+    QList<Mat> imgsNIR = readImgs2List(calibImgs_NIR);
+//    QList<Mat> imgsIR = readImgs2List(calibImgs_IR);
 
-    //TODO: make resize and crop parameters
+    //TODO: undistort and store as temp images
+    QList<Mat> imgsRGB_undist;
+    QList<Mat> imgsNIR_undist;
+    for (int i = 0; i < imgsRGB.size(); ++i)
+    {
+        Mat rgb_ = imgsRGB[i];
+        Mat nir_ = imgsNIR[i];
+        Mat rgb_undist, nir_undist;
 
-    //TODO: resize calibration images
+        undistort(rgb_, rgb_undist, cam_RGB, distCoeff_RGB);
+        undistort(nir_, nir_undist, cam_NIR, distCoeff_NIR);
+        imgsRGB_undist.append(rgb_undist);
+        imgsNIR_undist.append(nir_undist);
+    }
+
+    //make resize and crop parameters based on rectified images
+    fitRGBimgs2NIRimgs(imgsNIR_undist, imgsRGB_undist);
+
+    //resize calibration images
+    QList<Mat> imgsRGB_resized;
+    foreach (Mat img, imgsRGB)
+    {
+        imgsRGB_resized.append( resizeAndCropRGBImg(img) );
+    }
 
     //make rectify maps
-    make_RectifyMaps(imgsIR, imgsRGB, distCoeff_IR, distCoeff_RGB, cam_IR, cam_RGB,
-                     rectifMapX_IR, rectifMapY_IR, rotation_IR2RGB, transl_IR2RGB);
-//    make_RectifyMaps(imgsNIR, imgsRGB, distCoeff_NIR, distCoeff_RGB, cam_NIR, cam_RGB,
-//                     rectifMapX_NIR, rectifMapY_NIR, rotation_NIR2RGB, transl_NIR2RGB);
+//    make_RectifyMaps(imgsIR, imgsRGB, distCoeff_IR, distCoeff_RGB, cam_IR, cam_RGB,
+//                     rectifMapX_IR, rectifMapY_IR, rotation_IR2RGB, transl_IR2RGB);
+    make_RectifyMaps(imgsNIR, imgsRGB_resized, distCoeff_NIR, distCoeff_RGB, cam_NIR, cam_RGB,
+                     rectifMapX_NIR, rectifMapY_NIR, rotation_NIR2RGB, transl_NIR2RGB);
+
 
     rig_is_calibrated_ = true;
 }
 
-void ImagePreprocessor::preproc(Mat& RGB, Mat& NIR, Mat& depth)
+void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth, Mat& RGB_out, Mat& NIR_out, Mat& depth_stereo_out, Mat& depth_remapped_out)
 {
     if(!rig_is_calibrated_){ return; }
 
-    ///////////////////////////////////////////////////////////////////////////////////////////////
-    // [!] TODO: its probably better not to undistort IR and RGB images before mapping, or rather
-    // all images should maybe be recitified first, than the mapping from depth -> RGB takes place
-    // I'll have to think about that...
-    ///////////////////////////////////////////////////////////////////////////////////////////////
-//    //undistort
+    //resize and crop RGB img
+    Mat RGB_resized = resizeAndCropRGBImg(RGB);
+
+    //map depth to RGB
+    //undistort
 //    Mat RGB_undist, NIR_undist, depth_undist;
 //    remap(RGB, RGB_undist, distCoeff_RGB, undistMapY_RGB, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
 ////    remap(NIR, NIR_undist, undistMapX_NIR, undistMapY_NIR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
 //    remap(depth, depth_undist, distCoeff_IR, undistMapY_IR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
 
-//    //TODO: resize / crop
-
 //    //map Kinect depth to RGB
-//    vector<Point3f> depth3D = projectDepthTo3DSpace(depth_undist);
+//    vector<Point3f> depth3D = projectDepthTo3DSpace(depth);
 //    Mat depth2D = projectFrom3DSpaceToImage(depth3D, rotation_IR2RGB, transl_IR2RGB, cam_RGB,
-//                                            Size(depth_undist.cols, depth_undist.rows));
+//                                            Size(depth.cols, depth.rows));
 
 //    //fill gaps in depth map
 //    Mat depth8bit, RGB_undist_gray;
 //    depth2D.convertTo(depth8bit, CV_8UC1, 255.0/2047.0);
-//    cvtColor(RGB_undist, RGB_undist_gray, CV_BGR2GRAY);
+//    cvtColor(RGB, RGB_undist_gray, CV_BGR2GRAY);
 //    Mat depth_refined = crossbilatFilter.filter(depth8bit, RGB_undist_gray, 16.0, 0.1);
 
-
-//    imshow("depth image", depth8bit);
-//    imshow("depth image refined", depth_refined);
-
-
-
-//    imwrite("depth.png", depth8bit);
-//    imwrite("rgb.png", RGB_undist);
-
     //rectify
+    Mat RGB_rect, NIR_rect, depth_rect;
+    remap(RGB_resized, RGB_rect, rectifMapX_RGB, rectifMapY_RGB, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
+    remap(NIR, NIR_rect, rectifMapX_NIR, rectifMapY_NIR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
+//    remap(depth_refined, depth_rect, rectifMapX_IR, rectifMapY_IR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
 
+    //multispectral stereo matching
+    Mat disp;
+
+    //put results in output imgs
+    RGB_out = RGB_rect;
+    NIR_out = NIR_rect;
+//    depth_remapped_out = depth_rect;
+    depth_stereo_out = disp;
 }
 
-void ImagePreprocessor::saveAll(QString saveURL)
-{
-    FileStorage fs(saveURL.toStdString(), FileStorage::WRITE);
-    fs << "cam_RGB" << cam_RGB;
-    fs << "cam_NIR" << cam_NIR;
-    fs << "cam_IR" << cam_IR;
 
-    fs << "distCoeff_RGB" << distCoeff_RGB;
-    fs << "distCoeff_NIR" << distCoeff_NIR;
-    fs << "distCoeff_IR" << distCoeff_IR;
 
-    fs << "resizeFac_RGB" << resizeFac_RGB;
-    fs << "resizeFac_NIR" << resizeFac_NIR;
-    fs << "resizeFac_IR" << resizeFac_IR;
 
-    fs << "cropRect_RGB" << cropRect_RGB;
-    fs << "cropRect_NIR" << cropRect_NIR;
-    fs << "cropRect_IR" << cropRect_IR;
-
-    fs << "rectifMapX_RGB" << rectifMapX_RGB;
-    fs << "rectifMapY_RGB" << rectifMapY_RGB;
-    fs << "rectifMapX_NIR" << rectifMapX_NIR;
-    fs << "rectifMapY_NIR" << rectifMapY_NIR;
-    fs << "rectifMapX_IR" << rectifMapX_IR;
-    fs << "rectifMapY_IR" << rectifMapY_IR;
-
-    fs << "rotation_NIR2RGB" << rotation_NIR2RGB;
-    fs << "rotation_IR2RGB" << rotation_IR2RGB;
-    fs << "transl_NIR2RGB" << transl_NIR2RGB;
-    fs << "transl_IR2RGB" << transl_IR2RGB;
-
-    fs << "cams_are_calibrated_" << cams_are_calibrated_;
-    fs << "rig_is_calibrated_" << rig_is_calibrated_;
-
-    fs.release();
-
-    //also save URL of last saved parameter file
-    FileStorage fs2("config/config.txt", FileStorage::WRITE);
-    fs2 << "lastCamParamURL" << saveURL.toStdString();
-    fs2.release();
-
-}
-
-void ImagePreprocessor::loadAll(QString loadURL)
-{
-    FileStorage fs(loadURL.toStdString(), FileStorage::READ);
-    fs["cam_RGB"] >> cam_RGB;
-    fs["cam_NIR"] >> cam_NIR;
-    fs["cam_IR"] >> cam_IR;
-
-    fs["distCoeff_RGB"] >> distCoeff_RGB;
-    fs["distCoeff_NIR"] >> distCoeff_NIR;
-    fs["distCoeff_IR"] >> distCoeff_IR;
-
-    fs["resizeFac_RGB"] >> resizeFac_RGB;
-    fs["resizeFac_NIR"] >> resizeFac_NIR;
-    fs["resizeFac_IR"] >> resizeFac_IR;
-
-    fs["cropRect_RGB"] >> cropRect_RGB;
-    fs["cropRect_NIR"] >> cropRect_NIR;
-    fs["cropRect_IR"] >> cropRect_IR;
-
-    fs["rectifMapX_RGB"] >> rectifMapX_RGB;
-    fs["rectifMapY_RGB"] >> rectifMapY_RGB;
-    fs["rectifMapX_NIR"] >> rectifMapX_NIR;
-    fs["rectifMapY_NIR"] >> rectifMapY_NIR;
-    fs["rectifMapX_IR"] >> rectifMapX_IR;
-    fs["rectifMapY_IR"] >> rectifMapY_IR;
-
-    fs["rotation_NIR2RGB"] >> rotation_NIR2RGB;
-    fs["rotation_IR2RGB"] >> rotation_IR2RGB;
-    fs["transl_NIR2RGB"] >> transl_NIR2RGB;
-    fs["transl_IR2RGB"] >> transl_IR2RGB;
-
-    fs["cams_are_calibrated_"] >> cams_are_calibrated_;
-    fs["rig_is_calibrated_"] >> rig_is_calibrated_;
-
-    fs.release();
-
-    //also save URL of last loaded parameter file
-    FileStorage fs2("config/config.txt", FileStorage::WRITE);
-    fs2 << "lastCamParamURL" << loadURL.toStdString();
-    fs2.release();
-
-    qDebug() << "Loaded camera parameter file: " << loadURL;
-}
 
 
 //#################################################################################################
-// PRIVATE:
+//#################################################################################################
+//#################################################################################################
+//#### PRIVATE:
+//#################################################################################################
+//#################################################################################################
 //#################################################################################################
 
 void ImagePreprocessor::make_Intrinsics_and_undistCoeffs(QList<Mat> calibImgs, Mat &camIntrinsics, Mat &distCoeff)
@@ -250,6 +201,15 @@ void ImagePreprocessor::make_RectifyMaps(QList<Mat> srcImgs, QList<Mat> dstImgs,
     getObjectAndImagePoints(srcImgs, chessboardSz.width, chessboardSz.height, obj, objPoints_src, imgPoints_src);
     getObjectAndImagePoints(dstImgs, chessboardSz.width, chessboardSz.height, obj, objPoints_dst, imgPoints_dst);
 
+
+    //check wether all points have been found for left and right images
+    if(imgPoints_src.size() != imgPoints_dst.size())
+    {
+        QMessageBox::information(NULL, "Error", "Couldnt find all chessboard corners", QMessageBox::Ok);
+        return;
+    }
+
+
     ///////////////////////////////////////////////////////////////////
     //TODO: its kinda stupid to calibrate the camera two times!!!
     //here the intrinsic values and dist params from make_Intrinsics_and_undistMaps should be used
@@ -278,17 +238,17 @@ void ImagePreprocessor::make_RectifyMaps(QList<Mat> srcImgs, QList<Mat> dstImgs,
 }
 
 
-QList<Mat> ImagePreprocessor::undistortImages(QList<Mat> imgs, Mat undistMapX, Mat undistMapY)
-{
-    QList<Mat> imgs_undist;
-    foreach (Mat img, imgs)
-    {
-        Mat undist;
-        remap(img, undist, undistMapX, undistMapY, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
-        imgs_undist.append(undist);
-    }
-    return imgs_undist;
-}
+//QList<Mat> ImagePreprocessor::undistortImages(QList<Mat> imgs, Mat undistMapX, Mat undistMapY)
+//{
+//    QList<Mat> imgs_undist;
+//    foreach (Mat img, imgs)
+//    {
+//        Mat undist;
+//        remap(img, undist, undistMapX, undistMapY, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
+//        imgs_undist.append(undist);
+//    }
+//    return imgs_undist;
+//}
 
 
 
@@ -323,6 +283,91 @@ void ImagePreprocessor::getImagePoints(QList<Mat> calibImgs, Size chessboardSize
     }
 }
 
+void ImagePreprocessor::fitRGBimgs2NIRimgs(QList<Mat> origNirs, QList<Mat> origRGBs)
+{
+//    QList<Mat> resizedRGBs, fittedRGBs;
+
+    // 1) find chessboard corners
+    if(origNirs.count() != origRGBs.count()) //amount of both lists must be equal
+    {
+        QMessageBox::information(NULL, "Error while fitting RGB to NIR image", "Not same amount of RGB and NIR images.", QMessageBox::Ok);
+        return;
+    }
+
+    vector<vector<Point2f> > cornersNIR_L;
+    vector<vector<Point2f> > cornersRGB_R;
+
+    for (int i = 0; i < origNirs.count(); ++i)
+    {
+        Mat imgGrayL, imgGrayR;
+        vector<Point2f> cornersL, cornersR;
+
+        //NIR, left:
+        cvtColor(origNirs.at(i), imgGrayL, CV_BGR2GRAY); //must be gray scale
+        bool success = findChessboardCorners(imgGrayL, chessboardSz, cornersL, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
+        if(success){ cornersNIR_L.push_back(cornersL); }
+
+        //RGB, right:
+        cvtColor(origRGBs.at(i), imgGrayR, CV_BGR2GRAY); //must be gray scale
+        success = findChessboardCorners(imgGrayR, chessboardSz, cornersR, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
+        if(success){ cornersRGB_R.push_back(cornersR); }
+    }
+    //check wether all points have been found for left and right images
+    if(cornersRGB_R.size() != cornersNIR_L.size())
+    {
+        QMessageBox::information(NULL, "Error while fitting RGB to NIR image", "Couldnt find all chessboard corners", QMessageBox::Ok);
+        return;
+    }
+
+
+    // 2) get average resize factor by comparing corner distances for NIR and RGB images
+    int nrOfImages = cornersNIR_L.size();
+    int nrOfCorners = cornersNIR_L[0].size();
+    double avgResizeFactor = 0.0;
+    for(int i = 0; i < nrOfImages; ++i)
+    {
+        //get distances between chessboard corners for each image type (NIR and RGB)
+        //and compute the relationship / resize factor
+        for (int j = 0; j < nrOfCorners-1; ++j)
+        {
+            Point2f diff_NIR = cornersNIR_L[i][j] - cornersNIR_L[i][j+1];
+            double euclDist_NIR = sqrt(diff_NIR.x * diff_NIR.x + diff_NIR.y * diff_NIR.y);
+
+            Point2f diff_RGB = cornersRGB_R[i][j] - cornersRGB_R[i][j+1];
+            double euclDist_RGB = sqrt(diff_RGB.x * diff_RGB.x + diff_RGB.y * diff_RGB.y);
+
+            double resizeFactor = euclDist_NIR / euclDist_RGB;
+            avgResizeFactor += resizeFactor;
+        }
+    }
+    //get average
+    avgResizeFactor /= (nrOfImages * nrOfCorners);
+
+    // 3) resize one of the the RGB images
+    Mat resized;
+    resize(origRGBs.at(0), resized, Size(), avgResizeFactor, avgResizeFactor, INTER_CUBIC);
+
+    // 4) with the resized RGB image, compute the crop rectangle
+    int nirw = origNirs.at(0).cols;
+    int nirh = origNirs.at(0).rows;
+    int rgbw = resized.cols;
+    int rgbh = resized.rows;
+    Rect cropRect( (rgbw-nirw)/2, (rgbh-nirh)/2, nirw, nirh );
+
+    //save resize and drop params for later and return resized rgb image
+    resizeFac_RGB = avgResizeFactor;
+    cropRect_RGB = cropRect;
+    return;
+}
+
+Mat ImagePreprocessor::resizeAndCropRGBImg(Mat rgbImg)
+{
+    Mat resized, cropped;
+    resize(rgbImg, resized, Size(), resizeFac_RGB, resizeFac_RGB, INTER_CUBIC);
+    resized(cropRect_RGB).copyTo(cropped);
+    return cropped;
+}
+
 vector<Point3f> ImagePreprocessor::projectDepthTo3DSpace(Mat depth)
 {
     vector<Point3f> points3D(depth.rows * depth.cols);
@@ -338,8 +383,8 @@ vector<Point3f> ImagePreprocessor::projectDepthTo3DSpace(Mat depth)
         for (int x = 0; x < depth.cols; ++x)
         {
             Point3f coord3D;
-            ushort d = depth.at<ushort>(y,x);
-            coord3D.x = (x - cx) * d / fx; //depth image is 16UC1 = ushort
+            ushort d = depth.at<ushort>(y,x); //depth image is 16UC1 = ushort
+            coord3D.x = (x - cx) * d / fx;
             coord3D.y = (y - cy) * d / fy;
             coord3D.z = d;
             points3D[cnt++] = coord3D;
@@ -380,6 +425,101 @@ QList<Mat> ImagePreprocessor::readImgs2List(QStringList imgNames)
 }
 
 
+
+//#################################################################################################
+//#################################################################################################
+//#################################################################################################
+//#### PUBLIC LOAD & SAVE METHODS:
+//#################################################################################################
+//#################################################################################################
+//#################################################################################################
+
+void ImagePreprocessor::saveAll(QString saveURL)
+{
+    FileStorage fs(saveURL.toStdString(), FileStorage::WRITE);
+    fs << "cam_RGB" << cam_RGB;
+    fs << "cam_NIR" << cam_NIR;
+    fs << "cam_IR" << cam_IR;
+
+    fs << "distCoeff_RGB" << distCoeff_RGB;
+    fs << "distCoeff_NIR" << distCoeff_NIR;
+    fs << "distCoeff_IR" << distCoeff_IR;
+
+    fs << "resizeFac_RGB" << resizeFac_RGB;
+//    fs << "resizeFac_NIR" << resizeFac_NIR;
+//    fs << "resizeFac_IR" << resizeFac_IR;
+
+    fs << "cropRect_RGB" << cropRect_RGB;
+//    fs << "cropRect_NIR" << cropRect_NIR;
+//    fs << "cropRect_IR" << cropRect_IR;
+
+    fs << "rectifMapX_RGB" << rectifMapX_RGB;
+    fs << "rectifMapY_RGB" << rectifMapY_RGB;
+    fs << "rectifMapX_NIR" << rectifMapX_NIR;
+    fs << "rectifMapY_NIR" << rectifMapY_NIR;
+    fs << "rectifMapX_IR" << rectifMapX_IR;
+    fs << "rectifMapY_IR" << rectifMapY_IR;
+
+    fs << "rotation_NIR2RGB" << rotation_NIR2RGB;
+    fs << "rotation_IR2RGB" << rotation_IR2RGB;
+    fs << "transl_NIR2RGB" << transl_NIR2RGB;
+    fs << "transl_IR2RGB" << transl_IR2RGB;
+
+    fs << "cams_are_calibrated_" << cams_are_calibrated_;
+    fs << "rig_is_calibrated_" << rig_is_calibrated_;
+
+    fs.release();
+
+    //also save URL of last saved parameter file
+    FileStorage fs2("config/config.txt", FileStorage::WRITE);
+    fs2 << "lastCamParamURL" << saveURL.toStdString();
+    fs2.release();
+
+}
+
+void ImagePreprocessor::loadAll(QString loadURL)
+{
+    FileStorage fs(loadURL.toStdString(), FileStorage::READ);
+    fs["cam_RGB"] >> cam_RGB;
+    fs["cam_NIR"] >> cam_NIR;
+    fs["cam_IR"] >> cam_IR;
+
+    fs["distCoeff_RGB"] >> distCoeff_RGB;
+    fs["distCoeff_NIR"] >> distCoeff_NIR;
+    fs["distCoeff_IR"] >> distCoeff_IR;
+
+    fs["resizeFac_RGB"] >> resizeFac_RGB;
+//    fs["resizeFac_NIR"] >> resizeFac_NIR;
+//    fs["resizeFac_IR"] >> resizeFac_IR;
+
+    fs["cropRect_RGB"] >> cropRect_RGB;
+//    fs["cropRect_NIR"] >> cropRect_NIR;
+//    fs["cropRect_IR"] >> cropRect_IR;
+
+    fs["rectifMapX_RGB"] >> rectifMapX_RGB;
+    fs["rectifMapY_RGB"] >> rectifMapY_RGB;
+    fs["rectifMapX_NIR"] >> rectifMapX_NIR;
+    fs["rectifMapY_NIR"] >> rectifMapY_NIR;
+    fs["rectifMapX_IR"] >> rectifMapX_IR;
+    fs["rectifMapY_IR"] >> rectifMapY_IR;
+
+    fs["rotation_NIR2RGB"] >> rotation_NIR2RGB;
+    fs["rotation_IR2RGB"] >> rotation_IR2RGB;
+    fs["transl_NIR2RGB"] >> transl_NIR2RGB;
+    fs["transl_IR2RGB"] >> transl_IR2RGB;
+
+    fs["cams_are_calibrated_"] >> cams_are_calibrated_;
+    fs["rig_is_calibrated_"] >> rig_is_calibrated_;
+
+    fs.release();
+
+    //also save URL of last loaded parameter file
+    FileStorage fs2("config/config.txt", FileStorage::WRITE);
+    fs2 << "lastCamParamURL" << loadURL.toStdString();
+    fs2.release();
+
+    qDebug() << "Loaded camera parameter file: " << loadURL;
+}
 
 
 
