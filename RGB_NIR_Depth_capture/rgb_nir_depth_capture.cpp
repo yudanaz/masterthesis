@@ -7,7 +7,7 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::RGBNIRD_MainWindow),
 	triggerSave(false), triggerSaveIR_RGB_pair(false),
-	triggerSwitchRGB2IR(false), triggerSwitchIR2RGB(false), capturingRGB(true),
+    triggerSwitch_kinectRGB2IR(false), triggerSwitch_kinectIR2RGB(false), capturing_kinectRGB(true),
 	capturingSeries(false), countingDown(false), countdownSeconds(0), countdownTime(0), seriesCnt(0), seriesMax(0), seriesInterval(0),
 	ptr_RGBScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene)),
 	ptr_NIRScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene)),
@@ -62,6 +62,20 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	height_nir = ui->graphicsView_NIR->height()-2;
 	width_depth = ui->graphicsView_Depth->width()-2;
 	height_depth = ui->graphicsView_Depth->height()-2;
+
+    //load parameters for resizing / cropping RGB image
+    FileStorage fs("misc/rgbCam.config", FileStorage::READ);
+    fs["cam_RGB"] >> cam_RGB;
+    fs["distCoeff_RGB"] >> distCoeff_RGB;
+    fs["resizeFac_RGB"] >> resizeFac_RGB;
+    fs["cropRect_RGB"] >> cropRect_RGB;
+    fs.release();
+
+    //compute the rectangle to be drawn on the rgb image, indicating the are which will remain after calibration
+    drawRect_RGB.x = cropRect_RGB.x / resizeFac_RGB;
+    drawRect_RGB.y = cropRect_RGB.y / resizeFac_RGB;
+    drawRect_RGB.width = cropRect_RGB.width / resizeFac_RGB;
+    drawRect_RGB.height = cropRect_RGB.height / resizeFac_RGB;
 }
 
 
@@ -105,22 +119,22 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 	if(capturedImgs.contains(Kinect_Depth)){ allCapturedImgs[Kinect_Depth] = capturedImgs[Kinect_Depth]; sentNow.push_back(Kinect_Depth); }
 	if(capturedImgs.contains(Kinect_RGB))
 	{
-		if(triggerSwitchIR2RGB)
+        if(triggerSwitch_kinectIR2RGB)
 		{
 			allCapturedImgs.clear();
-			capturingRGB = true;
-			triggerSwitchIR2RGB = false;
+            capturing_kinectRGB = true;
+            triggerSwitch_kinectIR2RGB = false;
 		}
 		allCapturedImgs[Kinect_RGB] = capturedImgs[Kinect_RGB];
 		sentNow.push_back(Kinect_RGB);
 	}
 	if(capturedImgs.contains(Kinect_IR))
 	{
-		if(triggerSwitchRGB2IR)
+        if(triggerSwitch_kinectRGB2IR)
 		{
 			allCapturedImgs.clear();
-			capturingRGB = false;
-			triggerSwitchRGB2IR = false;
+            capturing_kinectRGB = false;
+            triggerSwitch_kinectRGB2IR = false;
 		}
 		allCapturedImgs[Kinect_IR] = capturedImgs[Kinect_IR];
 		sentNow.push_back(Kinect_IR);
@@ -138,7 +152,12 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 
 		if(type == RGB)
 		{
-			//make a resized copy of the image according to graphic widget size
+            //make undistored copy of RGB image and draw rectangle indicating effective area after calibration
+            Mat rgbWithRect;
+            undistort(img, rgbWithRect, cam_RGB, distCoeff_RGB);
+            cv::rectangle(rgbWithRect, drawRect_RGB, Scalar(255,0,0), 3);
+
+            //make a resized copy of the image according to graphic widget size
 			cv::resize(img, imgSmall, Size(width_rgb,height_rgb));
 
 			//show in widget width inverted channels (because Mat is BGR and QImage is RGB)
@@ -167,11 +186,11 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 			ptr_NIRScene->addPixmap(QPixmap::fromImage(qimg));
 			ui->graphicsView_NIR->setScene(ptr_NIRScene.data());
 		}
-		else if(capturingRGB && type == Kinect_Depth || !capturingRGB && type == Kinect_IR)
+        else if(capturing_kinectRGB && type == Kinect_Depth || !capturing_kinectRGB && type == Kinect_IR)
 		{
 			//make a resized copy of the image according to graphic widget size
 			Mat img8bit;
-			if(capturingRGB){ img.convertTo(img8bit, CV_8UC1, 255.0/2047.0); }//scaling for depth image
+            if(capturing_kinectRGB){ img.convertTo(img8bit, CV_8UC1, 255.0/2047.0); }//scaling for depth image
 			else{ img8bit = img; }//no scaling for IR image
 			cv::resize(img8bit, imgSmall, Size(width_depth,height_depth));
 			cvtColor(imgSmall, imgSmall, CV_GRAY2RGB);
@@ -346,8 +365,8 @@ void RGB_NIR_Depth_Capture::on_btn_saveIR_RGB_pair_released()
 void RGB_NIR_Depth_Capture::on_pushButton_switchRGB_IR_released()
 {
 	bool capturingRGB = ((KinectWorker*)myImgAcqWorker_Kinect)->isCapturingRGB();
-	triggerSwitchRGB2IR = capturingRGB;
-	triggerSwitchIR2RGB = !capturingRGB;
+    triggerSwitch_kinectRGB2IR = capturingRGB;
+    triggerSwitch_kinectIR2RGB = !capturingRGB;
 	((KinectWorker*)myImgAcqWorker_Kinect)->switch_RGB_IR(!capturingRGB);
 }
 

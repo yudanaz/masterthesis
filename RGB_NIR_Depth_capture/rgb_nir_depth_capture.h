@@ -85,9 +85,9 @@ private:
 	Ui::RGBNIRD_MainWindow *ui;
 	bool triggerSave;
 	bool triggerSaveIR_RGB_pair;
-	bool triggerSwitchRGB2IR;
-	bool triggerSwitchIR2RGB;
-	bool capturingRGB;
+    bool triggerSwitch_kinectRGB2IR;
+    bool triggerSwitch_kinectIR2RGB;
+    bool capturing_kinectRGB;
 	QThread workerThread_Prosilica;
 	QThread workerThread_Goldeye;
 	QThread workerThread_Kinect;
@@ -105,6 +105,13 @@ private:
 
 
 	int width_rgb, height_rgb, width_nir, height_nir, width_depth, height_depth;
+
+    //params to show the RGB image the way it's gonna be after pre-processing
+    Mat cam_RGB;
+    Mat distCoeff_RGB;
+    double resizeFac_RGB;
+    Rect cropRect_RGB;
+    Rect drawRect_RGB;
 };
 
 #endif // RGBNIRD_MAINWINDOW_H

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>913</width>
+    <width>863</width>
     <height>704</height>
    </rect>
   </property>
@@ -19,7 +19,7 @@
      <rect>
       <x>10</x>
       <y>10</y>
-      <width>891</width>
+      <width>821</width>
       <height>41</height>
      </rect>
     </property>
@@ -48,7 +48,14 @@
      <item>
       <widget class="QCheckBox" name="checkBox_showAllChannels">
        <property name="text">
-        <string>Show all Channels</string>
+        <string>Show All</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="checkBox_simulateRGBcalib">
+       <property name="text">
+        <string>simulate RGB calib.</string>
        </property>
       </widget>
      </item>
@@ -183,8 +190,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>913</width>
-     <height>20</height>
+     <width>863</width>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuConfig">

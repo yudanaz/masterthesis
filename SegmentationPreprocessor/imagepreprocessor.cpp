@@ -134,8 +134,10 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth, Mat& RGB_out, Mat& 
 {
     if(!rig_is_calibrated_){ return; }
 
-    //resize and crop RGB img
-    Mat RGB_resized = resizeAndCropRGBImg(RGB);
+    //undistort, resize and crop RGB img
+    Mat RGB_undist;
+    undistort(RGB, RGB_undist, cam_RGB, distCoeff_RGB);
+    Mat RGB_resized = resizeAndCropRGBImg(RGB_undist);
 
 //    //map Kinect depth to RGB
 //    vector<Point3f> depth3D = projectDepthTo3DSpace(depth);

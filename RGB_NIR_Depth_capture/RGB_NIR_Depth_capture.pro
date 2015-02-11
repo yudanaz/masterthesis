@@ -77,12 +77,13 @@ HEADERS  +=
 FORMS    += rgbnird_mainwindow.ui
 
 OTHER_FILES += \
-	sound/beep.wav \
-	sound/cameraClick.wav \
-    sound/beep2.wav
+        misc/beep.wav \
+        misc/cameraClick.wav \
+        misc/beep2.wav \
+        misc/rgbCam.config
 
 #COPY SOUNDS FROM SOURCE TO BUILD DIR
-copydata.commands = $(COPY_DIR) $$PWD/sound $$OUT_PWD
+copydata.commands = $(COPY_DIR) $$PWD/misc $$OUT_PWD
 first.depends = $(first) copydata
 export(first.depends)
 export(copydata.commands)
