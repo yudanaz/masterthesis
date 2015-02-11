@@ -77,25 +77,31 @@ void MainWindow::on_pushButton_preproc_released()
 
     Mat rgb = imread(img_rgb.toStdString(), IMREAD_ANYCOLOR);
     Mat depth;// = imread(img_depth.toStdString(), IMREAD_ANYDEPTH);
-    Mat nir = imread(img_nir.toStdString(), IMREAD_UNCHANGED);
+    Mat nir = imread(img_nir.toStdString(), IMREAD_GRAYSCALE);
 
     Mat rgb_, depth_, depthStereo_, nir_;
     preproc.preproc(rgb, nir, depth, rgb_, nir_, depthStereo_, depth_);
 
+
+    //for now...
+    equalizeHist(nir_, nir_);
     imshow("RGB", rgb_);
     imshow("NIR", nir_);
-
+    imwrite("rectified_rgb.png", rgb_);
+    imwrite("rectified_nir.png", nir_);
 }
 
 void MainWindow::on_pushButton_save_released()
 {
     QString sv = io.getSaveFile("Select file for saving camera parameters", "*.camparam");
+    if(sv == "") { return; }
     preproc.saveAll(sv);
 }
 
 void MainWindow::on_pushButton_load_released()
 {
     QString sv = io.getFileName("Select camera parameters file", "*.camparam");
+    if(sv == "") { return; }
     preproc.loadAll(sv);
 }
 

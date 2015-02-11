@@ -48,7 +48,8 @@ public:
 private:
     void make_Intrinsics_and_undistCoeffs(QList<Mat> calibImgs, Mat& camIntrinsics, Mat& distCoeff, QString imgType);
     void make_RectifyMaps(QList<Mat> srcImgs, QList<Mat> dstImgs, Mat distCoeff_src, Mat distCoeff_dst, Mat cam_src, Mat cam_dst,
-                          Mat& out_rectifMapX, Mat& out_rectifMapY, Mat &out_Rot, Mat &out_Transl, QString imgTypeSrc, QString imgTypeDst);
+                          Mat& out_rectifMapX_src, Mat& out_rectifMapY_src, Mat& out_rectifMapX_dst, Mat& out_rectifMapY_dst,
+                          Mat &out_Rot, Mat &out_Transl, QString imgTypeSrc, QString imgTypeDst);
 
     bool fitRGBimgs2NIRimgs(QList<Mat> origNirs, QList<Mat> origRGBs);
     Mat resizeAndCropRGBImg(Mat rgbImg);
@@ -57,14 +58,14 @@ private:
 
     Mat projectFrom3DSpaceToImage(vector<Point3f> points3D, Mat rot, Mat transl, Mat cam_Matrix, Size outImgSz);
 
-    //    QList<Mat> undistortImages(QList<Mat> imgs, Mat undistMapX, Mat undistMapY);
-
     void getObjectAndImagePoints(QList<Mat> calibImgs, int width, int height,
                                                     vector<Point3f> obj,
                                                     vector<vector<Point3f> >& objectPoints,
-                                                    vector<vector<Point2f> >& imagePoints, QString imgType);
+                                                    vector<vector<Point2f> >& imagePoints, QString imgType,
+                                                    QList<int> &blacklist, bool useBlacklist = false);
 
-    void getImagePoints(QList<Mat> calibImgs, Size chessboardSize, vector<vector<Point2f> > &imagePoints, QString imgType);
+    void getImagePoints(QList<Mat> calibImgs, Size chessboardSize, vector<vector<Point2f> > &imagePoints, QString imgType,
+                        bool useBlacklist, QList<int> &blacklist);
 
 
     QList<Mat> readImgs2List(QStringList imgNames);
@@ -83,11 +84,13 @@ private:
 
     //camera instrinsics
     Mat cam_RGB;
+    Mat cam_RGB_resized;
     Mat cam_NIR;
     Mat cam_IR;
 
     //undistortion maps
     Mat distCoeff_RGB;
+    Mat distCoeff_RGB_resized;
     Mat distCoeff_NIR;
     Mat distCoeff_IR;
 
@@ -101,11 +104,11 @@ private:
 //    Rect cropRect_IR;
 
     //rectification maps
-    Mat rectifMapX_RGB;
-    Mat rectifMapY_RGB;
+    Mat rectifyMapX_RGB;
+    Mat rectifyMapY_RGB;
 
-    Mat rectifMapX_NIR;
-    Mat rectifMapY_NIR;
+    Mat rectifyMapX_NIR;
+    Mat rectifyMapY_NIR;
 
     Mat rectifMapX_IR;
     Mat rectifMapY_IR;
