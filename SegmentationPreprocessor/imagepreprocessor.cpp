@@ -1,6 +1,7 @@
 #include <QProgressDialog>
 #include "imagepreprocessor.h"
 #include "io.h"
+#include "opencv2/objdetect/objdetect.hpp"
 
 
 //#################################################################################################
@@ -11,11 +12,12 @@
 //#################################################################################################
 //#################################################################################################
 
-ImagePreprocessor::ImagePreprocessor():
+ImagePreprocessor::ImagePreprocessor(QWidget *parent):
     resizeFac_RGB(0.0),
     cams_are_calibrated_(false),
     rig_is_calibrated_(false)
 {
+    this->parent = parent;
     //try loading last camera parameter file
     try
     {
@@ -27,7 +29,7 @@ ImagePreprocessor::ImagePreprocessor():
     }
     catch(cv::Exception e)
     {
-        QMessageBox::information(NULL, "Error", QString::fromStdString(e.msg), QMessageBox::Ok);
+        QMessageBox::information(parent, "Error", QString::fromStdString(e.msg), QMessageBox::Ok);
     }
 }
 
@@ -36,9 +38,6 @@ void ImagePreprocessor::calibCams(QStringList calibImgs_RGB,
                                   QStringList calibImgs_NIR,
                                   QStringList calibImgs_IR, Size chessboardSize)
 {
-    QProgressDialog progress("Calibrating Cameras", "Cancel", 0, 0, NULL);
-    progress.setValue(0);
-
     //Note: the calibration images used here should be recorded for each cam separately
     //in order to provide max accuracy for inidividual cams. the whole cam rig is calibrated
     //separately in calibRig()
@@ -51,9 +50,9 @@ void ImagePreprocessor::calibCams(QStringList calibImgs_RGB,
 //    QList<Mat> imgsIR = readImgs2List(calibImgs_IR);
 
     //compute intrinsics and undistortion map
-    make_Intrinsics_and_undistCoeffs(imgsRGB, cam_RGB, distCoeff_RGB);
-    make_Intrinsics_and_undistCoeffs(imgsNIR, cam_NIR, distCoeff_NIR);
-//    make_Intrinsics_and_undistCoeffs(imgsIR, cam_IR, distCoeff_IR);
+    make_Intrinsics_and_undistCoeffs(imgsRGB, cam_RGB, distCoeff_RGB, "RGB");
+    make_Intrinsics_and_undistCoeffs(imgsNIR, cam_NIR, distCoeff_NIR, "NIR");
+//    make_Intrinsics_and_undistCoeffs(imgsIR, cam_IR, distCoeff_IR, "IR");
 
     cams_are_calibrated_ = true;
 }
@@ -72,9 +71,12 @@ void ImagePreprocessor::calibRig(QStringList calibImgs_RGB, QStringList calibImg
     QList<Mat> imgsNIR = readImgs2List(calibImgs_NIR);
 //    QList<Mat> imgsIR = readImgs2List(calibImgs_IR);
 
-    //TODO: undistort and store as temp images
+    //undistort RGB and NIR and store as temp images
+    QProgressDialog progress("Temporarily undistorting RGB and NIR images", "Cancel", 0, imgsRGB.size(), parent);
+    progress.setMinimumWidth(300); progress.setMinimumDuration(50); progress.setValue(0);
     QList<Mat> imgsRGB_undist;
     QList<Mat> imgsNIR_undist;
+
     for (int i = 0; i < imgsRGB.size(); ++i)
     {
         Mat rgb_ = imgsRGB[i];
@@ -85,10 +87,17 @@ void ImagePreprocessor::calibRig(QStringList calibImgs_RGB, QStringList calibImg
         undistort(nir_, nir_undist, cam_NIR, distCoeff_NIR);
         imgsRGB_undist.append(rgb_undist);
         imgsNIR_undist.append(nir_undist);
-    }
 
-    //make resize and crop parameters based on rectified images
-    fitRGBimgs2NIRimgs(imgsNIR_undist, imgsRGB_undist);
+        QCoreApplication::processEvents(); //make qt app responsive
+        progress.setValue(i);
+    }
+    progress.setValue(imgsRGB.size());
+
+    //make resize and crop parameters based on undistorted temp images
+    if(!fitRGBimgs2NIRimgs(imgsNIR_undist, imgsRGB_undist))
+    {
+        return;
+    }
 
     //resize calibration images
     QList<Mat> imgsRGB_resized;
@@ -99,9 +108,9 @@ void ImagePreprocessor::calibRig(QStringList calibImgs_RGB, QStringList calibImg
 
     //make rectify maps
 //    make_RectifyMaps(imgsIR, imgsRGB, distCoeff_IR, distCoeff_RGB, cam_IR, cam_RGB,
-//                     rectifMapX_IR, rectifMapY_IR, rotation_IR2RGB, transl_IR2RGB);
+//                     rectifMapX_IR, rectifMapY_IR, rotation_IR2RGB, transl_IR2RGB, "IR", "RGB");
     make_RectifyMaps(imgsNIR, imgsRGB_resized, distCoeff_NIR, distCoeff_RGB, cam_NIR, cam_RGB,
-                     rectifMapX_NIR, rectifMapY_NIR, rotation_NIR2RGB, transl_NIR2RGB);
+                     rectifMapX_NIR, rectifMapY_NIR, rotation_NIR2RGB, transl_NIR2RGB, "NIR", "RGB");
 
 
     rig_is_calibrated_ = true;
@@ -113,13 +122,6 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth, Mat& RGB_out, Mat& 
 
     //resize and crop RGB img
     Mat RGB_resized = resizeAndCropRGBImg(RGB);
-
-    //map depth to RGB
-    //undistort
-//    Mat RGB_undist, NIR_undist, depth_undist;
-//    remap(RGB, RGB_undist, distCoeff_RGB, undistMapY_RGB, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
-////    remap(NIR, NIR_undist, undistMapX_NIR, undistMapY_NIR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
-//    remap(depth, depth_undist, distCoeff_IR, undistMapY_IR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
 
 //    //map Kinect depth to RGB
 //    vector<Point3f> depth3D = projectDepthTo3DSpace(depth);
@@ -138,7 +140,16 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth, Mat& RGB_out, Mat& 
     remap(NIR, NIR_rect, rectifMapX_NIR, rectifMapY_NIR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
 //    remap(depth_refined, depth_rect, rectifMapX_IR, rectifMapY_IR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
 
-    //multispectral stereo matching
+    //multispectral stereo matching with HOG descriptors like in
+    //"On cross-spectral stereo matching using dense gradient features" [Pinggera]
+    HOGDescriptor d;
+    vector<float> descriptorsValues_RGB;
+    vector<Point> locations_RGB;
+    vector<float> descriptorsValues_NIR;
+    vector<Point> locations_NIR;
+    d.compute(RGB_rect, descriptorsValues_RGB, Size(0,0), Size(0,0), locations_RGB);
+    d.compute(NIR_rect, descriptorsValues_NIR, Size(0,0), Size(0,0), locations_NIR);
+
     Mat disp;
 
     //put results in output imgs
@@ -161,7 +172,7 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth, Mat& RGB_out, Mat& 
 //#################################################################################################
 //#################################################################################################
 
-void ImagePreprocessor::make_Intrinsics_and_undistCoeffs(QList<Mat> calibImgs, Mat &camIntrinsics, Mat &distCoeff)
+void ImagePreprocessor::make_Intrinsics_and_undistCoeffs(QList<Mat> calibImgs, Mat &camIntrinsics, Mat &distCoeff, QString imgType)
 {
     Size imgSize = calibImgs.first().size();
     int nrOfCorners = chessboardSz.width * chessboardSz.height;  //total number of inner corners
@@ -174,7 +185,7 @@ void ImagePreprocessor::make_Intrinsics_and_undistCoeffs(QList<Mat> calibImgs, M
     //get the object and image points
     vector<vector<Point3f> > objectPoints;
     vector<vector<Point2f> > imagePoints;
-    getObjectAndImagePoints(calibImgs, chessboardSz.width, chessboardSz.height, obj, objectPoints, imagePoints);
+    getObjectAndImagePoints(calibImgs, chessboardSz.width, chessboardSz.height, obj, objectPoints, imagePoints, imgType);
 
 
     //get intrinsics
@@ -185,7 +196,8 @@ void ImagePreprocessor::make_Intrinsics_and_undistCoeffs(QList<Mat> calibImgs, M
 
 void ImagePreprocessor::make_RectifyMaps(QList<Mat> srcImgs, QList<Mat> dstImgs,
                                          Mat distCoeff_src, Mat distCoeff_dst, Mat cam_src, Mat cam_dst,
-                                         Mat &out_rectifMapX, Mat &out_rectifMapY, Mat &out_Rot, Mat &out_Transl)
+                                         Mat &out_rectifMapX, Mat &out_rectifMapY, Mat &out_Rot, Mat &out_Transl,
+                                         QString imgTypeSrc, QString imgTypeDst)
 {
     Size imgSize = srcImgs.first().size();
     int nrOfCorners = chessboardSz.width * chessboardSz.height;  //total number of inner corners
@@ -198,14 +210,14 @@ void ImagePreprocessor::make_RectifyMaps(QList<Mat> srcImgs, QList<Mat> dstImgs,
     vector<vector<Point2f> > imgPoints_src;
     vector<vector<Point2f> > imgPoints_dst;
 
-    getObjectAndImagePoints(srcImgs, chessboardSz.width, chessboardSz.height, obj, objPoints_src, imgPoints_src);
-    getObjectAndImagePoints(dstImgs, chessboardSz.width, chessboardSz.height, obj, objPoints_dst, imgPoints_dst);
+    getObjectAndImagePoints(srcImgs, chessboardSz.width, chessboardSz.height, obj, objPoints_src, imgPoints_src, imgTypeSrc);
+    getObjectAndImagePoints(dstImgs, chessboardSz.width, chessboardSz.height, obj, objPoints_dst, imgPoints_dst, imgTypeDst);
 
 
     //check wether all points have been found for left and right images
     if(imgPoints_src.size() != imgPoints_dst.size())
     {
-        QMessageBox::information(NULL, "Error", "Couldnt find all chessboard corners", QMessageBox::Ok);
+        QMessageBox::information(parent, "Error", "Couldn't find all chessboard corners", QMessageBox::Ok);
         return;
     }
 
@@ -255,12 +267,13 @@ void ImagePreprocessor::make_RectifyMaps(QList<Mat> srcImgs, QList<Mat> dstImgs,
 void ImagePreprocessor::getObjectAndImagePoints(QList<Mat> calibImgs, int width, int height,
                                                 vector<Point3f> obj,
                                                 vector<vector<Point3f> >& objectPoints,
-                                                vector<vector<Point2f> >& imagePoints)
+                                                vector<vector<Point2f> >& imagePoints,
+                                                QString imgType)
 {
     Size chessboard_sz = Size(width, height);
 
     //get chessboard corners for all images
-    getImagePoints(calibImgs, chessboard_sz, imagePoints);
+    getImagePoints(calibImgs, chessboard_sz, imagePoints, imgType);
 
     //put as many of the dummy object points in the list as there are image points
     for (uint i = 0; i < imagePoints.size(); ++i)
@@ -269,9 +282,15 @@ void ImagePreprocessor::getObjectAndImagePoints(QList<Mat> calibImgs, int width,
     }
 }
 
-void ImagePreprocessor::getImagePoints(QList<Mat> calibImgs, Size chessboardSize, vector<vector<Point2f> > &imagePoints)
+void ImagePreprocessor::getImagePoints(QList<Mat> calibImgs, Size chessboardSize, vector<vector<Point2f> > &imagePoints, QString imgType)
 {
+    QProgressDialog progress("Getting image points", "Cancel", 0, calibImgs.size(), parent);
+    progress.setMinimumWidth(300);
+    progress.setMinimumDuration(100);
+    progress.setValue(0);
+
     //get chessboard corners for all images
+    uint cnt = 0;
     bool success = false;
     foreach(Mat img, calibImgs)
     {
@@ -280,60 +299,101 @@ void ImagePreprocessor::getImagePoints(QList<Mat> calibImgs, Size chessboardSize
                                         CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
 
         if(success){ imagePoints.push_back(corners); }
+        else
+        {
+            makeImgRelatedMsg(img, "Error getting image points", "Couldn't get image points in " + imgType + " img " + QString::number(cnt+1));
+            destroyAllWindows();
+        }
+
+        QCoreApplication::processEvents(); //make qt app responsive
+        progress.setValue(cnt++);
+        if(progress.wasCanceled()){ return; }
     }
+    progress.setValue(calibImgs.size());
 }
 
-void ImagePreprocessor::fitRGBimgs2NIRimgs(QList<Mat> origNirs, QList<Mat> origRGBs)
+bool ImagePreprocessor::fitRGBimgs2NIRimgs(QList<Mat> origNirs, QList<Mat> origRGBs)
 {
-//    QList<Mat> resizedRGBs, fittedRGBs;
-
-    // 1) find chessboard corners
     if(origNirs.count() != origRGBs.count()) //amount of both lists must be equal
     {
-        QMessageBox::information(NULL, "Error while fitting RGB to NIR image", "Not same amount of RGB and NIR images.", QMessageBox::Ok);
-        return;
+        QMessageBox::information(parent, "Error while fitting RGB to NIR image", "Not same amount of RGB and NIR images.", QMessageBox::Ok);
+        return false;
     }
 
-    vector<vector<Point2f> > cornersNIR_L;
-    vector<vector<Point2f> > cornersRGB_R;
+    QProgressDialog progress("Fitting RGB to NIR image", "Cancel", 0, origNirs.size(), parent);
+    progress.setMinimumWidth(300);
+    progress.setMinimumDuration(100);
+    progress.setValue(0);
+
+    // 1) find chessboard corners
+    vector<vector<Point2f> > cornersNIR;
+    vector<vector<Point2f> > cornersRGB;
+    bool all_is_well = true;
+    int foundInNIR = origNirs.count();
+    int foundInRGB = origRGBs.count();
+    QList<int> badImgs; //images in which the chessboard corners couldnt be found either in RGB or NIR
 
     for (int i = 0; i < origNirs.count(); ++i)
     {
-        Mat imgGrayL, imgGrayR;
-        vector<Point2f> cornersL, cornersR;
+        Mat imgNIR, imgNIR_gray, imgRGB, imgRGB_gray;
+        vector<Point2f> imgCornersNIR, imgCornersRGB;
 
-        //NIR, left:
-        cvtColor(origNirs.at(i), imgGrayL, CV_BGR2GRAY); //must be gray scale
-        bool success = findChessboardCorners(imgGrayL, chessboardSz, cornersL, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
-        if(success){ cornersNIR_L.push_back(cornersL); }
+        //NIR:
+        imgNIR = origNirs.at(i);
+        if(imgNIR.channels() > 1){ cvtColor(imgNIR, imgNIR_gray, CV_BGR2GRAY); }//must be gray scale
+        else{ imgNIR_gray = imgNIR; }
 
-        //RGB, right:
-        cvtColor(origRGBs.at(i), imgGrayR, CV_BGR2GRAY); //must be gray scale
-        success = findChessboardCorners(imgGrayR, chessboardSz, cornersR, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
-        if(success){ cornersRGB_R.push_back(cornersR); }
+        bool success = findChessboardCorners(imgNIR_gray, chessboardSz, imgCornersNIR, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
+        if(!success)
+        {
+            all_is_well = false;
+            badImgs.append(i);
+            foundInNIR--;
+        }
+        cornersNIR.push_back(imgCornersNIR);//store cornery anyways, if not found, this index will be jumped later because of badImgs list
+
+        //RGB:
+        imgRGB = origRGBs.at(i);
+        if(imgRGB.channels() > 1){ cvtColor(imgRGB, imgRGB_gray, CV_BGR2GRAY); }//must be gray scale
+        else{ imgRGB_gray = imgRGB; }
+
+        success = findChessboardCorners(imgRGB_gray, chessboardSz, imgCornersRGB, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
+        if(!success)
+        {
+            all_is_well = false;
+            if(!badImgs.contains(i)){ badImgs.append(i); }
+            foundInRGB--;
+        }
+        cornersRGB.push_back(imgCornersRGB);//store corners anyways, ...
+
+        QCoreApplication::processEvents(); //make qt app responsive
+        progress.setValue(i);
+        if(progress.wasCanceled()){ return false; }
     }
-    //check wether all points have been found for left and right images
-    if(cornersRGB_R.size() != cornersNIR_L.size())
+    progress.setValue(origNirs.size());
+    if(!all_is_well)
     {
-        QMessageBox::information(NULL, "Error while fitting RGB to NIR image", "Couldnt find all chessboard corners", QMessageBox::Ok);
-        return;
+        makeMsg("Not all corners found", "OK only in "+QString::number(foundInRGB)+"/"+QString::number(origRGBs.size())
+                +" RGB and "+QString::number(foundInNIR)+"/"+QString::number(origNirs.size())+" NIR images");
     }
-
 
     // 2) get average resize factor by comparing corner distances for NIR and RGB images
-    int nrOfImages = cornersNIR_L.size();
-    int nrOfCorners = cornersNIR_L[0].size();
+    int nrOfImages = cornersNIR.size();
+    int nrOfCorners = chessboardSz.height * chessboardSz.width;//cornersNIR[0].size();
     double avgResizeFactor = 0.0;
     for(int i = 0; i < nrOfImages; ++i)
     {
+        //images in which corners couldn't be found must be skipped
+        if(badImgs.contains(i)){ continue; }
+
         //get distances between chessboard corners for each image type (NIR and RGB)
         //and compute the relationship / resize factor
         for (int j = 0; j < nrOfCorners-1; ++j)
         {
-            Point2f diff_NIR = cornersNIR_L[i][j] - cornersNIR_L[i][j+1];
+            Point2f diff_NIR = cornersNIR[i][j] - cornersNIR[i][j+1];
             double euclDist_NIR = sqrt(diff_NIR.x * diff_NIR.x + diff_NIR.y * diff_NIR.y);
 
-            Point2f diff_RGB = cornersRGB_R[i][j] - cornersRGB_R[i][j+1];
+            Point2f diff_RGB = cornersRGB[i][j] - cornersRGB[i][j+1];
             double euclDist_RGB = sqrt(diff_RGB.x * diff_RGB.x + diff_RGB.y * diff_RGB.y);
 
             double resizeFactor = euclDist_NIR / euclDist_RGB;
@@ -341,7 +401,8 @@ void ImagePreprocessor::fitRGBimgs2NIRimgs(QList<Mat> origNirs, QList<Mat> origR
         }
     }
     //get average
-    avgResizeFactor /= (nrOfImages * nrOfCorners);
+    int nrOfGoodImgs = nrOfImages - badImgs.size();
+    avgResizeFactor /= (nrOfGoodImgs * nrOfCorners); //divide by all corners in all (good) imgs
 
     // 3) resize one of the the RGB images
     Mat resized;
@@ -357,7 +418,7 @@ void ImagePreprocessor::fitRGBimgs2NIRimgs(QList<Mat> origNirs, QList<Mat> origR
     //save resize and drop params for later and return resized rgb image
     resizeFac_RGB = avgResizeFactor;
     cropRect_RGB = cropRect;
-    return;
+    return true;
 }
 
 Mat ImagePreprocessor::resizeAndCropRGBImg(Mat rgbImg)
@@ -416,12 +477,36 @@ Mat ImagePreprocessor::projectFrom3DSpaceToImage(std::vector<Point3f> points3D, 
 
 QList<Mat> ImagePreprocessor::readImgs2List(QStringList imgNames)
 {
+    QProgressDialog progress("Loading images", "Cancel Load", 0, imgNames.size(), parent);
+    progress.setMinimumWidth(300);
+    progress.setMinimumDuration(100);
+    progress.setValue(0);
+
+    int cnt = 0;
     QList<Mat> imgs;
     foreach (QString s, imgNames)
     {
         imgs.append(imread(s.toStdString(), IMREAD_GRAYSCALE));
+
+        QCoreApplication::processEvents(); //make qt app responsive
+        progress.setValue(cnt++);
+        if(progress.wasCanceled()){ return imgs; }
     }
+    progress.setValue(imgNames.size());
     return imgs;
+}
+
+void ImagePreprocessor::makeMsg(QString title, QString msg)
+{
+    QMessageBox::information(parent, title, msg, QMessageBox::Ok);
+}
+
+void ImagePreprocessor::makeImgRelatedMsg(Mat img, QString title, QString msg)
+{
+    namedWindow(title.toStdString(), CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO | CV_GUI_EXPANDED);
+    imshow(title.toStdString(), img);
+    QMessageBox::information(parent, title, msg, QMessageBox::Ok);
+    destroyWindow(title.toStdString());
 }
 
 

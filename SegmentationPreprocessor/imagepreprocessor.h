@@ -31,7 +31,7 @@ using namespace std;
 class ImagePreprocessor
 {
 public:
-    ImagePreprocessor();
+    ImagePreprocessor(QWidget* parent);
 
     void calibCams(QStringList calibImgs_RGB, QStringList calibImgs_NIR, QStringList calibImgs_IR, Size chessboardSize);
     void calibRig(QStringList calibImgs_RGB, QStringList calibImgs_NIR, QStringList calibImgs_IR, Size chessboardSize);
@@ -46,11 +46,11 @@ public:
     bool rig_is_calibrated(){ return rig_is_calibrated_; }
 
 private:
-    void make_Intrinsics_and_undistCoeffs(QList<Mat> calibImgs, Mat& camIntrinsics, Mat& distCoeff);
+    void make_Intrinsics_and_undistCoeffs(QList<Mat> calibImgs, Mat& camIntrinsics, Mat& distCoeff, QString imgType);
     void make_RectifyMaps(QList<Mat> srcImgs, QList<Mat> dstImgs, Mat distCoeff_src, Mat distCoeff_dst, Mat cam_src, Mat cam_dst,
-                          Mat& out_rectifMapX, Mat& out_rectifMapY, Mat &out_Rot, Mat &out_Transl);
+                          Mat& out_rectifMapX, Mat& out_rectifMapY, Mat &out_Rot, Mat &out_Transl, QString imgTypeSrc, QString imgTypeDst);
 
-    void fitRGBimgs2NIRimgs(QList<Mat> origNirs, QList<Mat> origRGBs);
+    bool fitRGBimgs2NIRimgs(QList<Mat> origNirs, QList<Mat> origRGBs);
     Mat resizeAndCropRGBImg(Mat rgbImg);
 
     vector<Point3f> projectDepthTo3DSpace(Mat depth);
@@ -62,12 +62,18 @@ private:
     void getObjectAndImagePoints(QList<Mat> calibImgs, int width, int height,
                                                     vector<Point3f> obj,
                                                     vector<vector<Point3f> >& objectPoints,
-                                                    vector<vector<Point2f> >& imagePoints);
+                                                    vector<vector<Point2f> >& imagePoints, QString imgType);
 
-    void getImagePoints(QList<Mat> calibImgs, Size chessboardSize, vector<vector<Point2f> > &imagePoints);
+    void getImagePoints(QList<Mat> calibImgs, Size chessboardSize, vector<vector<Point2f> > &imagePoints, QString imgType);
 
 
     QList<Mat> readImgs2List(QStringList imgNames);
+
+    void makeMsg(QString title, QString msg);
+    void makeImgRelatedMsg(Mat img, QString title, QString msg);
+
+    //ref to parent widget
+    QWidget *parent;
 
     //cross bilateral filter
     CrossBilateralFilterWRAPPER crossbilatFilter;

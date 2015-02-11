@@ -6,7 +6,8 @@
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
-    io(this)
+    io(this),
+    preproc(parent)
 {
     ui->setupUi(this);
 }
@@ -23,9 +24,9 @@ void MainWindow::on_pushButton_calibCams_released()
     QStringList irs;// = io.getFileNames("Open images for IR camera calibration", IMGTYPES);
     QStringList nirs = io.getFileNames("Open images for NIR camera calibration", IMGTYPES);
 
-    if(rgbs.length() != nirs.length()  /*|| rgbs.length() != irs.length() || irs.length() != nirs.length()*/)
+    if(rgbs.length() == 0 || nirs.length() == 0 /*|| irs.length() == 0*/ )
     {
-        QMessageBox::information(this, "Error", "Not same amount of calibration images for each camera", QMessageBox::Ok);
+        QMessageBox::information(this, "Error", "Calibration images missing for one of the cameras", QMessageBox::Ok);
         return;
     }
 
@@ -43,6 +44,12 @@ void MainWindow::on_pushButton_calibCamRig_released()
     QStringList rgbs = io.getFileNames("Open RGB images for camera rig calibration", IMGTYPES);
     QStringList irs;// = io.getFileNames("Open IR calib images", IMGTYPES);
     QStringList nirs  = io.getFileNames("Open NIR images for camera rig calibration", IMGTYPES);
+
+    if(rgbs.length() == 0 || nirs.length() == 0 /*|| irs.length() == 0*/ )
+    {
+        QMessageBox::information(this, "Error", "Calibration images missing for one of the cameras", QMessageBox::Ok);
+        return;
+    }
 
     if(rgbs.length() != nirs.length()  /*|| rgbs.length() != irs.length() || irs.length() != nirs.length()*/)
     {
@@ -74,6 +81,10 @@ void MainWindow::on_pushButton_preproc_released()
 
     Mat rgb_, depth_, depthStereo_, nir_;
     preproc.preproc(rgb, nir, depth, rgb_, nir_, depthStereo_, depth_);
+
+    imshow("RGB", rgb_);
+    imshow("NIR", nir_);
+
 }
 
 void MainWindow::on_pushButton_save_released()
