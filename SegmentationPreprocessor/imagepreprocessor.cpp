@@ -4,18 +4,20 @@
 #include "opencv2/objdetect/objdetect.hpp"
 
 
-//#################################################################################################
-//#################################################################################################
-//#################################################################################################
-//#### PUBLIC:
-//#################################################################################################
-//#################################################################################################
-//#################################################################################################
+/**************************************************************************
+ **************************************************************************
+ **************************************************************************
+ * PUBLIC:
+ **************************************************************************
+ **************************************************************************
+ *************************************************************************/
 
 ImagePreprocessor::ImagePreprocessor(QWidget *parent):
     resizeFac_RGB(0.0),
     cams_are_calibrated_(false),
-    rig_is_calibrated_(false)
+    rig_is_calibrated_(false),
+    output_image_size_set_(false),
+    stereo_Type_(crossSpectrSt_HOG)
 {
     this->parent = parent;
     //try loading last camera parameter file
@@ -156,17 +158,17 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth, Mat& RGB_out, Mat& 
     remap(NIR, NIR_rect, rectifyMapX_NIR, rectifyMapY_NIR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
 //    remap(depth_refined, depth_rect, rectifMapX_IR, rectifMapY_IR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
 
-    //multispectral stereo matching with HOG descriptors like in
-    //"On cross-spectral stereo matching using dense gradient features" [Pinggera]
-//    HOGDescriptor d;
-//    vector<float> descriptorsValues_RGB;
-//    vector<Point> locations_RGB;
-//    vector<float> descriptorsValues_NIR;
-//    vector<Point> locations_NIR;
-//    d.compute(RGB_rect, descriptorsValues_RGB, Size(0,0), Size(0,0), locations_RGB);
-//    d.compute(NIR_rect, descriptorsValues_NIR, Size(0,0), Size(0,0), locations_NIR);
+    //if set, resize the images to a new output size (might be better/faster for CNN learning)
+    if(output_image_size_set_)
+    {
+        resize(RGB_rect, RGB_rect, outputImgSz, 0, 0, INTER_CUBIC);
+        resize(NIR_rect, NIR_rect, outputImgSz, 0, 0, INTER_CUBIC);
+//        resize(depth_refined, depth_refined, outputImgSz, 0, 0, INTER_CUBIC);
+    }
 
+    //make disparity image from RGB and NIR images (cross/multi - spectral)
     Mat disp;
+    makeCrossSpectralStereo(RGB_rect, NIR_rect, disp);
 
     //put results in output imgs
     RGB_out = RGB_rect;
@@ -177,20 +179,19 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth, Mat& RGB_out, Mat& 
 
 
 
-
-
-
-//#################################################################################################
-//#################################################################################################
-//#################################################################################################
-//#### PRIVATE:
-//#################################################################################################
-//#################################################################################################
-//#################################################################################################
+/**************************************************************************
+ **************************************************************************
+ **************************************************************************
+ * PRIVATE:
+ **************************************************************************
+ **************************************************************************
+ *************************************************************************/
 
 void ImagePreprocessor::make_Intrinsics_and_undistCoeffs(QList<Mat> calibImgs, Mat &camIntrinsics, Mat &distCoeff, QString imgType)
 {
+    //if set, use output image size, else use size of input image
     Size imgSize = calibImgs.first().size();
+
     int nrOfCorners = chessboardSz.width * chessboardSz.height;  //total number of inner corners
 
     //objectPoints should contain physical location of each corners but
@@ -217,7 +218,9 @@ void ImagePreprocessor::make_RectifyMaps(QList<Mat> srcImgs, QList<Mat> dstImgs,
                                          Mat &out_Rot, Mat &out_Transl,
                                          QString imgTypeSrc, QString imgTypeDst)
 {
+    //if set, use output image size, else use size of input image
     Size imgSize = srcImgs.first().size();
+
     int nrOfCorners = chessboardSz.width * chessboardSz.height;  //total number of inner corners
     vector<Point3f> obj;
     for (int i = 0; i < nrOfCorners; i++){ obj.push_back(Point3f(i / chessboardSz.width, i % chessboardSz.width, 0.0f)); }
@@ -278,58 +281,6 @@ void ImagePreprocessor::make_RectifyMaps(QList<Mat> srcImgs, QList<Mat> dstImgs,
     //make the rectify maps (rgb is computed every time, because all other images are mapped to RGB)
     initUndistortRectifyMap(cam_src, distCoeff_src, Rect_src, Proj_src, imgSize, CV_32FC1, out_rectifMapX_src, out_rectifMapY_src);
     initUndistortRectifyMap(cam_dst, distCoeff_dst, Rect_dst, Proj_dst, imgSize, CV_32FC1, out_rectifMapX_dst, out_rectifMapY_dst);
-}
-
-void ImagePreprocessor::getObjectAndImagePoints(QList<Mat> calibImgs, int width, int height,
-                                                vector<Point3f> obj,
-                                                vector<vector<Point3f> >& objectPoints,
-                                                vector<vector<Point2f> >& imagePoints,
-                                                QString imgType, QList<int>& blacklist, bool useBlacklist)
-{
-    Size chessboard_sz = Size(width, height);
-
-    //get chessboard corners for all images
-    getImagePoints(calibImgs, chessboard_sz, imagePoints, imgType, useBlacklist, blacklist);
-
-    //put as many of the dummy object points in the list as there are image points
-    for (uint i = 0; i < imagePoints.size(); ++i)
-    {
-        objectPoints.push_back(obj);
-    }
-}
-
-void ImagePreprocessor::getImagePoints(QList<Mat> calibImgs, Size chessboardSize, vector<vector<Point2f> > &imagePoints,
-                                       QString imgType, bool useBlacklist, QList<int> &blacklist)
-{
-    QProgressDialog progress("Getting image points for " + imgType + " image", "Cancel", 0, calibImgs.size(), parent);
-    progress.setMinimumWidth(300);
-    progress.setMinimumDuration(100);
-    progress.setValue(0);
-
-    //get chessboard corners for all images
-    uint cnt = 0;
-    bool success = false;
-    foreach(Mat img, calibImgs)
-    {
-        vector<Point2f> corners;
-        success = findChessboardCorners(img, chessboardSize, corners,
-                                        CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
-        if(success){ imagePoints.push_back(corners); }
-        else
-        {
-            makeImgRelatedMsg(img, "Error getting image points", "Couldn't get image points in " + imgType + " img " + QString::number(cnt+1));
-            if(useBlacklist)
-            {
-                if(!blacklist.contains(cnt)){ blacklist.append(cnt); }
-                imagePoints.push_back(corners); //push back anyways, entry is gonna be skipped using blacklist later
-            }
-        }
-
-        QCoreApplication::processEvents(); //make qt app responsive
-        progress.setValue(cnt++);
-        if(progress.wasCanceled()){ return; }
-    }
-    progress.setValue(calibImgs.size());
 }
 
 bool ImagePreprocessor::fitRGBimgs2NIRimgs(QList<Mat> origNirs, QList<Mat> origRGBs)
@@ -495,6 +446,174 @@ Mat ImagePreprocessor::projectFrom3DSpaceToImage(std::vector<Point3f> points3D, 
     return img2D;
 }
 
+void ImagePreprocessor::makeCrossSpectralStereo(Mat imgRGB_L, Mat imgNIR_R, Mat& out_disp)
+{
+    Mat rgb_gray; //rgb to grayscale
+    cvtColor(imgRGB_L, rgb_gray, CV_BGR2GRAY);
+
+    if(stereo_Type_ == crossSpectrSt_HOG)
+    {
+        crossSpectralStereo_HOG(imgRGB_L, imgNIR_R, out_disp);
+    }
+    else if(stereo_Type_ == crossSpectrSt_LocNorm)
+    {
+        crossSpectralStereo_LocNorm(imgRGB_L, imgNIR_R, out_disp);
+    }
+
+}
+
+void ImagePreprocessor::crossSpectralStereo_HOG(Mat imgRGB_L, Mat imgNIR_R, Mat& out_disp)
+{
+    //multispectral stereo matching with HOG descriptors like in
+    //"On cross-spectral stereo matching using dense gradient features" [Pinggera]
+    HOGDescriptor d;
+    d.blockSize = Size(16, 16);
+    d.blockStride = Size(8, 8);
+    d.cellSize = Size(8, 8);// n x n subcells, n = 2
+    d.nbins = 9;
+    vector<float> descriptorsValues_RGB;
+    vector<Point> locations_RGB;
+    vector<float> descriptorsValues_NIR;
+    vector<Point> locations_NIR;
+    d.compute(RGB_rect, descriptorsValues_RGB, Size(0,0), Size(0,0), locations_RGB);
+    d.compute(NIR_rect, descriptorsValues_NIR, Size(0,0), Size(0,0), locations_NIR);
+
+    qDebug() << d.getDescriptorSize();
+    qDebug() << "it should be: " << QString::number(RGB_rect.cols/8 * RGB_rect.rows/8 );
+}
+
+void ImagePreprocessor::crossSpectralStereo_LocNorm(Mat imgRGB_L, Mat imgNIR_R, Mat& out_disp)
+{
+    Mat rgb_norm = NormalizeLocally(imgRGB_L, 11, 171);
+    Mat nir_norm = NormalizeLocally(imgNIR_R, 11, 171);
+//    Mat rgb_norm = rgb_gray;
+//    Mat nir_norm = imgNIR_R;
+
+    //try to make both image the same brightness
+    double rgb_mean = mean(rgb_norm)[0];
+    double nir_mean = mean(nir_norm)[0];
+    double multi = rgb_mean > nir_mean ? rgb_mean / nir_mean : nir_mean / rgb_mean;
+    if(rgb_mean > nir_mean)
+        { nir_norm *= multi; }
+    else
+        { rgb_norm *= multi; }
+
+    imshow("rgb norm", rgb_norm);
+    imshow("nir norm", nir_norm);
+    imwrite("rgb norm.png", rgb_norm);
+    imwrite("nir norm.png", nir_norm);
+
+    Mat rgb_sobel, nir_sobel;
+    Sobel(rgb_norm, rgb_sobel, CV_16U, 1, 1, 7);
+    Sobel(nir_norm, nir_sobel, CV_16U, 1, 1, 7);
+
+    //normalize
+    Mat rgb_sobelNorm, nir_sobelNorm;
+    double min, max;
+    minMaxLoc(rgb_sobel, &min, &max);
+    rgb_sobel -= min;
+    rgb_sobel.convertTo(rgb_sobelNorm, CV_8U, 255/(max-min));
+    minMaxLoc(nir_sobel, &min, &max);
+    nir_sobel -= min;
+    nir_sobel.convertTo(nir_sobelNorm, CV_8U, 255/(max-min));
+
+    imshow("rgb sobel", rgb_sobelNorm);
+    imshow("nir sobel", nir_sobelNorm);
+    imwrite("rgb sobel.png", rgb_sobelNorm);
+    imwrite("nir sobel.png", nir_sobelNorm);
+}
+
+Mat ImagePreprocessor::NormalizeLocally(Mat img, int meanKernel, int stdDevKernel, bool outputAs8bit)
+{
+    Mat floatImg, mean, stdDev, out;
+
+    //convert to float image
+    img.convertTo(floatImg, CV_32F);//, 0.003921569); // 1/255 = 0.003921569
+
+    //estimate image mean with gaussian blur
+    GaussianBlur(floatImg, mean, Size(meanKernel, meanKernel), 0);
+    floatImg = floatImg - mean;
+
+    //estimate standard deviation with gaussian blur by doing sqrt( gauss_blur(img²) )
+    GaussianBlur(floatImg.mul(floatImg), mean, Size(stdDevKernel, stdDevKernel), 0); //re-use mean matrix
+    cv::pow(mean, 0.5, stdDev);
+    floatImg = floatImg / stdDev;
+
+    if(outputAs8bit)
+    {
+        //cast back to [0, 255] interval, so it can be saved as a JPG image (or other lossy compression)
+        cv::normalize(floatImg, floatImg, 0, 1, NORM_MINMAX, -1);
+        floatImg.convertTo(out, CV_8U, 255);
+        return out;
+    }
+    else
+    {
+        return floatImg;
+    }
+}
+
+
+
+/**************************************************************************
+ **************************************************************************
+ **************************************************************************
+ * HELPER:
+ **************************************************************************
+ **************************************************************************
+ *************************************************************************/
+void ImagePreprocessor::getObjectAndImagePoints(QList<Mat> calibImgs, int width, int height,
+                                                vector<Point3f> obj,
+                                                vector<vector<Point3f> >& objectPoints,
+                                                vector<vector<Point2f> >& imagePoints,
+                                                QString imgType, QList<int>& blacklist, bool useBlacklist)
+{
+    Size chessboard_sz = Size(width, height);
+
+    //get chessboard corners for all images
+    getImagePoints(calibImgs, chessboard_sz, imagePoints, imgType, useBlacklist, blacklist);
+
+    //put as many of the dummy object points in the list as there are image points
+    for (uint i = 0; i < imagePoints.size(); ++i)
+    {
+        objectPoints.push_back(obj);
+    }
+}
+
+void ImagePreprocessor::getImagePoints(QList<Mat> calibImgs, Size chessboardSize, vector<vector<Point2f> > &imagePoints,
+                                       QString imgType, bool useBlacklist, QList<int> &blacklist)
+{
+    QProgressDialog progress("Getting image points for " + imgType + " image", "Cancel", 0, calibImgs.size(), parent);
+    progress.setMinimumWidth(300);
+    progress.setMinimumDuration(100);
+    progress.setValue(0);
+
+    //get chessboard corners for all images
+    uint cnt = 0;
+    bool success = false;
+    foreach(Mat img, calibImgs)
+    {
+        vector<Point2f> corners;
+        success = findChessboardCorners(img, chessboardSize, corners,
+                                        CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
+        if(success){ imagePoints.push_back(corners); }
+        else
+        {
+            makeImgRelatedMsg(img, "Error getting image points", "Couldn't get image points in " + imgType + " img " + QString::number(cnt+1));
+            if(useBlacklist)
+            {
+                if(!blacklist.contains(cnt)){ blacklist.append(cnt); }
+                imagePoints.push_back(corners); //push back anyways, entry is gonna be skipped using blacklist later
+            }
+        }
+
+        QCoreApplication::processEvents(); //make qt app responsive
+        progress.setValue(cnt++);
+        if(progress.wasCanceled()){ return; }
+    }
+    progress.setValue(calibImgs.size());
+}
+
+
 QList<Mat> ImagePreprocessor::readImgs2List(QStringList imgNames)
 {
     QProgressDialog progress("Loading images", "Cancel Load", 0, imgNames.size(), parent);
@@ -530,13 +649,14 @@ void ImagePreprocessor::makeImgRelatedMsg(Mat img, QString title, QString msg)
 }
 
 
-//#################################################################################################
-//#################################################################################################
-//#################################################################################################
-//#### PUBLIC LOAD & SAVE METHODS:
-//#################################################################################################
-//#################################################################################################
-//#################################################################################################
+
+/**************************************************************************
+ **************************************************************************
+ **************************************************************************
+ * PUBLIC LOAD & SAVE METHODS:
+ **************************************************************************
+ **************************************************************************
+ *************************************************************************/
 void ImagePreprocessor::saveAll(QString saveURL)
 {
     FileStorage fs(saveURL.toStdString(), FileStorage::WRITE);

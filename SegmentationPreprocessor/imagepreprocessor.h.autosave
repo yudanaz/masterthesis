@@ -28,6 +28,8 @@
 using namespace cv;
 using namespace std;
 
+enum CrossSpectralStereoType { crossSpectrSt_HOG, crossSpectrSt_LocNorm };
+
 class ImagePreprocessor
 {
 public:
@@ -50,6 +52,7 @@ public:
      * GETTER & SETTER:
      *************************************************************************/
     void OutputImageSize(int w, int h){ outputImgSz.width = w; outputImgSz.height = h; output_image_size_set_ = true;}
+    void StereoType(CrossSpectralStereoType type){ stereo_Type_ = type; }
 
 
 
@@ -66,6 +69,8 @@ private:
     Mat projectFrom3DSpaceToImage(vector<Point3f> points3D, Mat rot, Mat transl, Mat cam_Matrix, Size outImgSz);
 
     void makeCrossSpectralStereo(Mat imgRGB_L, Mat imgNIR_R, Mat out_disp);
+    void crossSpectralStereo_HOG(Mat imgRGB_L, Mat imgNIR_R, Mat out_disp);
+    void crossSpectralStereo_LocNorm(Mat imgRGB_L, Mat imgNIR_R, Mat out_disp);
 
     /*!
      * \brief Pre-processes an image to zero mean and unit variance
@@ -146,6 +151,7 @@ private:
     bool cams_are_calibrated_;
     bool rig_is_calibrated_;
     bool output_image_size_set_;
+    CrossSpectralStereoType stereo_Type_;
 };
 
 #endif // IMAGEPREPROCESSOR_H

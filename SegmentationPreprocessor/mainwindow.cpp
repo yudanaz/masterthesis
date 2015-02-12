@@ -10,6 +10,7 @@ MainWindow::MainWindow(QWidget *parent) :
     preproc(parent)
 {
     ui->setupUi(this);
+    //preproc.OutputImageSize(320, 256); // ~ 636x508 (native goldeye res.) * 0,5
 }
 
 MainWindow::~MainWindow()
@@ -84,11 +85,11 @@ void MainWindow::on_pushButton_preproc_released()
 
 
     //for now...
-    equalizeHist(nir_, nir_);
-    imshow("RGB", rgb_);
-    imshow("NIR", nir_);
-    imwrite("rectified_rgb.png", rgb_);
-    imwrite("rectified_nir.png", nir_);
+//    equalizeHist(nir_, nir_);
+//    imshow("RGB", rgb_);
+//    imshow("NIR", nir_);
+//    imwrite("rectified_rgb.png", rgb_);
+//    imwrite("rectified_nir.png", nir_);
 }
 
 void MainWindow::on_pushButton_save_released()
