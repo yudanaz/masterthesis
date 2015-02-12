@@ -32,7 +32,10 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     io.cpp \
     imagepreprocessor.cpp \
-    crossbilateralfilterwrapper.cpp
+    crossbilateralfilterwrapper.cpp \
+    helper.cpp \
+    hog_crossspectralstereomatcher.cpp \
+    locnorm_crossspectralstereomatcher.cpp
 
 HEADERS  += mainwindow.h \
     io.h \
@@ -45,7 +48,11 @@ HEADERS  += mainwindow.h \
     crossBilateralFilter/math_tools.h \
     crossBilateralFilter/mixed_vector.h \
     crossBilateralFilter/msg_stream.h \
-    crossbilateralfilterwrapper.h
+    crossbilateralfilterwrapper.h \
+    helper.h \
+    hog_crossspectralstereomatcher.h \
+    crossspectralstereomatcher.h \
+    locnorm_crossspectralstereomatcher.h
 
 
 FORMS    += mainwindow.ui

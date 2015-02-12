@@ -18,15 +18,19 @@
 #include <QInputDialog>
 #include <QProcess>
 #include <QVector>
+#include <QPointer>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/nonfree/nonfree.hpp>
 #include <opencv2/nonfree/features2d.hpp>
 
 #include "crossbilateralfilterwrapper.h"
+#include "crossspectralstereomatcher.h"
 
 using namespace cv;
 using namespace std;
+
+enum CrossSpectralStereoType { crossSpectrSt_HOG, crossSpectrSt_LocNorm };
 
 class ImagePreprocessor
 {
@@ -49,7 +53,8 @@ public:
     /**************************************************************************
      * GETTER & SETTER:
      *************************************************************************/
-    void OutputImageSize(int w, int h){ outputImgSz.width = w; outputImgSz.height = h; output_image_size_set_ = true;}
+    void OutputImageSize(int w, int h);
+    void StereoType(CrossSpectralStereoType type);
 
 
 
@@ -65,17 +70,7 @@ private:
     vector<Point3f> projectDepthTo3DSpace(Mat depth);
     Mat projectFrom3DSpaceToImage(vector<Point3f> points3D, Mat rot, Mat transl, Mat cam_Matrix, Size outImgSz);
 
-    void makeCrossSpectralStereo(Mat imgRGB_L, Mat imgNIR_R, Mat out_disp);
-
-    /*!
-     * \brief Pre-processes an image to zero mean and unit variance
-     * (standard deviation) for local neighborhoods in order to make
-     * it more machine-learning-friendly.
-     * inspired by
-     * http://bigwww.epfl.ch/demo/jlocalnormalization/
-     */
-    Mat NormalizeLocally(Mat img, int meanKernel, int stdDevKernel, bool outputAs8bit = true);
-
+    void makeCrossSpectralStereo(Mat imgRGB_L, Mat imgNIR_R, Mat &out_disp);
 
 
     /**************************************************************************
@@ -102,6 +97,7 @@ private:
      *************************************************************************/
     QWidget *parent; //ref to parent widget
     CrossBilateralFilterWRAPPER crossbilatFilter;
+    QPointer<CrossSpectralStereoMatcher> CSstereoMatcher;
     Size chessboardSz; //size of chessboard used for calibration
     Size outputImgSz; //desired size of output image (e.g. for CNN sth. like 320x240 would be nice)
 
@@ -146,6 +142,7 @@ private:
     bool cams_are_calibrated_;
     bool rig_is_calibrated_;
     bool output_image_size_set_;
+    CrossSpectralStereoType stereo_Type_;
 };
 
 #endif // IMAGEPREPROCESSOR_H

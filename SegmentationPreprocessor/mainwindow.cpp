@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "hog_crossspectralstereomatcher.h"
 
 #define IMGTYPES "*.jpg *.png *.ppm"
 
@@ -10,7 +11,9 @@ MainWindow::MainWindow(QWidget *parent) :
     preproc(parent)
 {
     ui->setupUi(this);
-    //preproc.OutputImageSize(320, 256); // ~ 636x508 (native goldeye res.) * 0,5
+//    preproc.OutputImageSize(50, 40); // ~ 636x508 (native goldeye res.) * 0,5
+    preproc.OutputImageSize(320, 256); // ~ 636x508 (native goldeye res.) * 0,5
+    preproc.StereoType(crossSpectrSt_HOG);
 }
 
 MainWindow::~MainWindow()
@@ -70,9 +73,9 @@ void MainWindow::on_pushButton_preproc_released()
         return;
     }
 
-    QString img_rgb = io.getFileName("Select RGB image", "*.png");
+    QString img_rgb = io.getFileName("Select RGB image", IMGTYPES);
 //    QString img_depth = io.getFileName("Select Depth image", "*.png");
-    QString img_nir = io.getFileName("Select NIR image", "*.png");
+    QString img_nir = io.getFileName("Select NIR image", IMGTYPES);
 
     if(img_rgb == "" /*|| img_depth == "" */|| img_nir == "" ){ return; }
 
@@ -81,13 +84,18 @@ void MainWindow::on_pushButton_preproc_released()
     Mat nir = imread(img_nir.toStdString(), IMREAD_GRAYSCALE);
 
     Mat rgb_, depth_, depthStereo_, nir_;
+
+    //for cross spectral stereo GRID SEARCH:
+    HOG_crossSpectralStereoMatcher::setParams(ui->lineEdit_dispRange->text().toInt());
+
     preproc.preproc(rgb, nir, depth, rgb_, nir_, depthStereo_, depth_);
 
 
     //for now...
 //    equalizeHist(nir_, nir_);
-//    imshow("RGB", rgb_);
-//    imshow("NIR", nir_);
+    imshow("RGB", rgb_);
+    imshow("NIR", nir_);
+    imshow("cross-spectral Stereo", depthStereo_);
 //    imwrite("rectified_rgb.png", rgb_);
 //    imwrite("rectified_nir.png", nir_);
 }
