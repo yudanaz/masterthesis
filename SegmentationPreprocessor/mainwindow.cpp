@@ -11,8 +11,8 @@ MainWindow::MainWindow(QWidget *parent) :
     preproc(parent)
 {
     ui->setupUi(this);
-//    preproc.OutputImageSize(50, 40); // ~ 636x508 (native goldeye res.) * 0,5
-    preproc.OutputImageSize(320, 256); // ~ 636x508 (native goldeye res.) * 0,5
+    preproc.OutputImageSize(200, 160); //for test purposes
+//    preproc.OutputImageSize(320, 256); // ~ 636x508 (native goldeye res.) * 0,5
     preproc.StereoType(crossSpectrSt_HOG);
 }
 
@@ -85,7 +85,7 @@ void MainWindow::on_pushButton_preproc_released()
 
     Mat rgb_, depth_, depthStereo_, nir_;
 
-    //for cross spectral stereo GRID SEARCH:
+    //set HOG parameters through static function (not very elegant, i know, but wtf...)
     HOG_crossSpectralStereoMatcher::setParams(ui->lineEdit_dispRange->text().toInt());
 
     preproc.preproc(rgb, nir, depth, rgb_, nir_, depthStereo_, depth_);

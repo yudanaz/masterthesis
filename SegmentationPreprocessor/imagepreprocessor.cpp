@@ -136,7 +136,7 @@ void ImagePreprocessor::calibRig(QStringList calibImgs_RGB, QStringList calibImg
     makeMsg("Success!", "Camera rig has been calibrated.");
 }
 
-void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth, Mat& RGB_out, Mat& NIR_out, Mat& depth_stereo_out, Mat& depth_remapped_out)
+void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out, Mat& NIR_out, Mat& depth_stereo_out, Mat& depth_remapped_out)
 {
     //make disparity image from RGB and NIR images (cross/multi - spectral)
     Mat disp2;
@@ -185,25 +185,29 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth, Mat& RGB_out, Mat& 
     Mat RGB_rect, NIR_rect, depth_rect;
     remap(RGB_resized, RGB_rect, rectifyMapX_RGB, rectifyMapY_RGB, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
     remap(NIR, NIR_rect, rectifyMapX_NIR, rectifyMapY_NIR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
-//    remap(depth_refined, depth_rect, rectifMapX_IR, rectifMapY_IR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
-
-    //if set, resize the images to a new output size (might be better/faster for CNN learning)
-    if(output_image_size_set_)
-    {
-        resize(RGB_rect, RGB_rect, outputImgSz, 0, 0, INTER_CUBIC);
-        resize(NIR_rect, NIR_rect, outputImgSz, 0, 0, INTER_CUBIC);
-//        resize(depth_refined, depth_refined, outputImgSz, 0, 0, INTER_CUBIC);
-    }
+//    remap(depth_refined, depth_rect, rectifMapX_RGB, rectifMapY_RGB, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
+        //(rectify kinect depth  with RGB params, because it was mapped to RGB)
 
     //make disparity image from RGB and NIR images (cross/multi - spectral)
     Mat disp;
     makeCrossSpectralStereo(RGB_rect, NIR_rect, disp);
 
-    //put results in output imgs
-    RGB_out = RGB_rect;
-    NIR_out = NIR_rect;
-//    depth_remapped_out = depth_rect;
-    depth_stereo_out = disp;
+    //if set, resize the images to a new output (smaller) size (might be better/faster for CNN learning)
+    if(output_image_size_set_)
+    {
+        resize(RGB_rect, RGB_out, outputImgSz, 0, 0, INTER_AREA); //area averaging best for downsampling
+        resize(NIR_rect, NIR_out, outputImgSz, 0, 0, INTER_AREA);
+        resize(depth_rect, depth_remapped_out, outputImgSz, 0, 0, INTER_NEAREST); //for depth no in-between interpolation!
+        resize(disp, depth_stereo_out, outputImgSz, 0, 0, INTER_NEAREST);
+    }
+    else
+    {
+        //put results in output imgs
+        RGB_out = RGB_rect;
+        NIR_out = NIR_rect;
+        //    depth_remapped_out = depth_rect;
+        depth_stereo_out = disp;
+    }
 }
 
 /**************************************************************************
@@ -430,9 +434,9 @@ bool ImagePreprocessor::fitRGBimgs2NIRimgs(QList<Mat> origNirs, QList<Mat> origR
     int nrOfGoodImgs = nrOfImages - badImgs.size();
     avgResizeFactor /= (nrOfGoodImgs * nrOfCorners); //divide by all corners in all (good) imgs
 
-    // 3) resize one of the the RGB images
+    // 3) resize on of the RGB images
     Mat resized;
-    resize(origRGBs.at(0), resized, Size(), avgResizeFactor, avgResizeFactor, INTER_CUBIC);
+    resize(origRGBs.at(0), resized, Size(), avgResizeFactor, avgResizeFactor, INTER_AREA);
 
     // 4) with the resized RGB image, compute the crop rectangle
     int nirw = origNirs.at(0).cols;
@@ -450,7 +454,7 @@ bool ImagePreprocessor::fitRGBimgs2NIRimgs(QList<Mat> origNirs, QList<Mat> origR
 Mat ImagePreprocessor::resizeAndCropRGBImg(Mat rgbImg)
 {
     Mat resized, cropped;
-    resize(rgbImg, resized, Size(), resizeFac_RGB, resizeFac_RGB, INTER_CUBIC);
+    resize(rgbImg, resized, Size(), resizeFac_RGB, resizeFac_RGB, INTER_AREA); //for downsampling, area averaging is best
     resized(cropRect_RGB).copyTo(cropped);
     return cropped;
 }
@@ -506,7 +510,7 @@ void ImagePreprocessor::makeCrossSpectralStereo(Mat imgRGB_L, Mat imgNIR_R, Mat&
     Mat rgb_gray; //rgb to grayscale
     cvtColor(imgRGB_L, rgb_gray, CV_BGR2GRAY);
 
-    CSstereoMatcher->process(imgRGB_L, imgNIR_R, out_disp);
+    CSstereoMatcher->process(rgb_gray, imgNIR_R, out_disp);
 }
 
 

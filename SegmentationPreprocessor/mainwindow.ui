@@ -36,7 +36,7 @@
         </sizepolicy>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color: rgb(255, 203, 58)</string>
+        <string notr="true">background-color: rgb(255, 185, 84)</string>
        </property>
        <property name="text">
         <string>Calibrate Cameras</string>
@@ -46,7 +46,7 @@
      <item>
       <widget class="QPushButton" name="pushButton_calibCamRig">
        <property name="styleSheet">
-        <string notr="true">background-color: rgb(255, 203, 58)</string>
+        <string notr="true">background-color: rgb(255, 185, 84)</string>
        </property>
        <property name="text">
         <string>Calibrate Cam Rig</string>
@@ -56,7 +56,7 @@
      <item>
       <widget class="QPushButton" name="pushButton_preproc">
        <property name="styleSheet">
-        <string notr="true">background-color: rgb(255, 203, 58)</string>
+        <string notr="true">background-color: rgb(255, 185, 84)</string>
        </property>
        <property name="text">
         <string>Pre-Process</string>
@@ -75,7 +75,7 @@
        <item>
         <widget class="QLineEdit" name="lineEdit_dispRange">
          <property name="text">
-          <string>8</string>
+          <string>1</string>
          </property>
         </widget>
        </item>

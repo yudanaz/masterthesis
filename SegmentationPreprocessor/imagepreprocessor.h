@@ -40,7 +40,7 @@ public:
     void calibCams(QStringList calibImgs_RGB, QStringList calibImgs_NIR, QStringList calibImgs_IR, Size chessboardSize);
     void calibRig(QStringList calibImgs_RGB, QStringList calibImgs_NIR, QStringList calibImgs_IR, Size chessboardSize);
 
-    void preproc(Mat RGB, Mat NIR, Mat depth, Mat &RGB_out, Mat &NIR_out, Mat &depth_stereo_out, Mat &depth_remapped_out);
+    void preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat &RGB_out, Mat &NIR_out, Mat &depth_stereo_out, Mat &depth_remapped_out);
 
     void saveAll(QString saveURL);
     void loadAll(QString loadURL);
