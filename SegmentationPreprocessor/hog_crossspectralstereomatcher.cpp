@@ -1,4 +1,5 @@
 #include "hog_crossspectralstereomatcher.h"
+#include "stereosgbm_hog.h"
 #include <QDebug>
 
 HOG_crossSpectralStereoMatcher::HOG_crossSpectralStereoMatcher():
@@ -11,8 +12,8 @@ void HOG_crossSpectralStereoMatcher::process(Mat imgRGB_L, Mat imgNIR_R, Mat& ou
     //HOG works top down, so we'll transpose the image matrices
 //    flip(imgRGB_L, imgRGB_L,0);
 //    flip(imgNIR_R, imgNIR_R,0);
-    transpose(imgRGB_L, imgRGB_L);
-    transpose(imgNIR_R, imgNIR_R);
+//    transpose(imgNIR_R, imgNIR_R);
+//    transpose(imgRGB_L, imgRGB_L);
 
     int orig_w = imgRGB_L.cols;
     int orig_h = imgRGB_L.rows;
@@ -44,6 +45,7 @@ void HOG_crossSpectralStereoMatcher::process(Mat imgRGB_L, Mat imgNIR_R, Mat& ou
     resize(imgRGB_L, rgb_resized, d1.winSize, INTER_AREA);
     resize(imgNIR_R, nir_resized, d1.winSize, INTER_AREA);
 
+    //compute the HOG descriptors
     d1.compute(rgb_resized, descriptorsValues_RGB, Size(0,0), Size(0,0), locations_RGB);
     d1.compute(nir_resized, descriptorsValues_NIR, Size(0,0), Size(0,0), locations_NIR);
 
@@ -52,8 +54,32 @@ void HOG_crossSpectralStereoMatcher::process(Mat imgRGB_L, Mat imgNIR_R, Mat& ou
 //    qDebug() << INT_MAX;
 //    qDebug() << ULONG_MAX;
 
-    Mat disp = makeDisparity_WTA(descriptorsValues_RGB, descriptorsValues_NIR, d1.winSize, blockSize,
-                                 blockSize/cellSize * blockSize/cellSize, d1.nbins);
+
+//    Mat disp = makeDisparity_WTA(descriptorsValues_RGB, descriptorsValues_NIR, d1.winSize, blockSize,
+//                                 blockSize/cellSize * blockSize/cellSize, d1.nbins);
+
+    StereoSGBM sgbm;
+    int SAD_window = 3;
+    sgbm.SADWindowSize = SAD_window;
+    sgbm.minDisparity = 0;
+    sgbm.numberOfDisparities = 32;
+    sgbm.preFilterCap = 11;
+    sgbm.uniquenessRatio = 1;
+    sgbm.speckleWindowSize = 7;
+    sgbm.speckleRange = 4;
+    sgbm.fullDP = true;
+    sgbm.P1 = 8 * SAD_window * SAD_window;
+    sgbm.P2 = 32 * SAD_window * SAD_window;
+    sgbm.disp12MaxDiff = 1;
+
+    StereoSGBM_HOG sgbm_hog;
+    Mat disp16, disp;
+    sgbm_hog(imgRGB_L, imgNIR_R, disp16, sgbm);
+//    sgbm(imgRGB_L, imgNIR_R, disp16);
+//    normalize(disp16, disp, 0, 255, CV_MINMAX, CV_8U);
+    double min, max;
+    minMaxLoc(disp16, &min, &max);
+    disp16.convertTo(disp, CV_8U, 255/max);
 
     //resize back to input image size; use NEAREST NEIGHBOR INTERPOLATION because in-between interpolation doesn't make sense for disparity
     if(!resizing_output_images_)
@@ -66,7 +92,7 @@ void HOG_crossSpectralStereoMatcher::process(Mat imgRGB_L, Mat imgNIR_R, Mat& ou
     }
 
     //transpose the result back
-    transpose(out_disp, out_disp);
+//    transpose(out_disp, out_disp);
 
 //    Mat hogDescrImg = Helper::get_hogdescriptor_visual_image(rgb_resized, descriptorsValues_RGB, d.winSize, d.cellSize, 1, 1.0);
 //    imshow("hog descriptors", hogDescrImg);
@@ -96,11 +122,11 @@ Mat HOG_crossSpectralStereoMatcher::makeDisparity_WTA(vector<float> &values_L, v
 
     //go through all descriptors of left image and compare with <range> of descriptors in right image
     //(every descriptor stands for one image pixel)
-    for(int y = range; y < h_descr; ++y)
+    for(int x = 0; x < w_descr; ++x) //respect horizontal border caused by disparity-range (we're looking for pixels to the left)
     {
-        for(int x = 0; x < w_descr; ++x) //respect horizontal border caused by disparity-range (we're looking for pixels to the left)
+        for(int y = range; y < h_descr; ++y)
         {
-            ulong i = y * w_descr + x;// the real index into descriptor vector
+            ulong i = x * h_descr + y;// the real index into descriptor vector
 
             //get left descriptor
             getDescriptor(values_L, descr_L, binsInDescriptor, i);
@@ -134,7 +160,7 @@ Mat HOG_crossSpectralStereoMatcher::makeDisparity_WTA(vector<float> &values_L, v
                 }
             }
 
-//            qDebug() << i << " dist: " << smallestDistance << " best match: " << bestMatch;
+//            if(bestMatch != 0) qDebug() << i << " dist: " << smallestDistance << " best match: " << bestMatch;
 
             //write the disparity for the best match to disparity image
             uchar dispValue = (uchar)(bestMatch/(float)range * 255.0 + 0.5); //cast to 8bit range, 255 = closest, 0 = farest

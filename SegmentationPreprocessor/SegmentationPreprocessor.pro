@@ -35,7 +35,8 @@ SOURCES += main.cpp\
     crossbilateralfilterwrapper.cpp \
     helper.cpp \
     hog_crossspectralstereomatcher.cpp \
-    locnorm_crossspectralstereomatcher.cpp
+    locnorm_crossspectralstereomatcher.cpp \
+    stereosgbm_hog.cpp
 
 HEADERS  += mainwindow.h \
     io.h \
@@ -52,7 +53,8 @@ HEADERS  += mainwindow.h \
     helper.h \
     hog_crossspectralstereomatcher.h \
     crossspectralstereomatcher.h \
-    locnorm_crossspectralstereomatcher.h
+    locnorm_crossspectralstereomatcher.h \
+    stereosgbm_hog.h
 
 
 FORMS    += mainwindow.ui

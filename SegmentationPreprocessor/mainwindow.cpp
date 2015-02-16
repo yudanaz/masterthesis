@@ -11,8 +11,8 @@ MainWindow::MainWindow(QWidget *parent) :
     preproc(parent)
 {
     ui->setupUi(this);
-    preproc.OutputImageSize(200, 160); //for test purposes
-//    preproc.OutputImageSize(320, 256); // ~ 636x508 (native goldeye res.) * 0,5
+//    preproc.OutputImageSize(200, 160); //for test purposes
+    preproc.OutputImageSize(320, 256); // ~ 636x508 (native goldeye res.) * 0,5
     preproc.StereoType(crossSpectrSt_HOG);
 }
 
