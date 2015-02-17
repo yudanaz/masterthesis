@@ -138,20 +138,20 @@ void ImagePreprocessor::calibRig(QStringList calibImgs_RGB, QStringList calibImg
 
 void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out, Mat& NIR_out, Mat& depth_stereo_out, Mat& depth_remapped_out)
 {
-    ////////////////////////////////////////////////////////////////////////////////////////
-    /// TEST CROSS SPECTRAL STEREO MATCHING ON TEST STEREO IMAGES WITHOUT RECTIFICATION
-    //make disparity image from RGB and NIR images (cross/multi - spectral)
-    Mat disp2;
-    makeCrossSpectralStereo(RGB, NIR, disp2);
+//    ////////////////////////////////////////////////////////////////////////////////////////
+//    /// TEST CROSS SPECTRAL STEREO MATCHING ON TEST STEREO IMAGES WITHOUT RECTIFICATION
+//    //make disparity image from RGB and NIR images (cross/multi - spectral)
+//    Mat disp2;
+//    makeCrossSpectralStereo(RGB, NIR, disp2);
 
-    //put results in output imgs
-    RGB_out = RGB;
-    NIR_out = NIR;
-//    depth_remapped_out = depth_rect;
-    depth_stereo_out = disp2;
-    return;
-    ///endof TEST CROSS SPECTRAL STEREO MATCHING ON TEST STEREO IMAGES WITHOUT RECTIFICATION
-    /////////////////////////////////////////////////////////////////////////////////////////
+//    //put results in output imgs
+//    RGB_out = RGB;
+//    NIR_out = NIR;
+////    depth_remapped_out = depth_rect;
+//    depth_stereo_out = disp2;
+//    return;
+//    ///endof TEST CROSS SPECTRAL STEREO MATCHING ON TEST STEREO IMAGES WITHOUT RECTIFICATION
+//    /////////////////////////////////////////////////////////////////////////////////////////
 
     if(!rig_is_calibrated_){ return; }
 
