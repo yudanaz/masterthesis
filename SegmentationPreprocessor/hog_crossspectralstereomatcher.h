@@ -16,9 +16,6 @@ public:
 
     static void setParams(int disparityRange);
 
-    //get&setter:
-    void set_resizingOutputImages(bool b){ resizing_output_images_ = b; }
-
 
 private:
     Mat makeDisparity_WTA(vector<float>& values_L, vector<float>& values_R, Size imgSize, int blockSize, int nCells, int nBins);
@@ -26,8 +23,6 @@ private:
     void getDescriptor(vector<float> &allDescriptors, vector<float> &descriptor, int binsInDescriptor, int currentDescriptor);
 
     float getL1Distance(vector<float> a, vector<float> b);
-
-    bool resizing_output_images_;
 
     static int dispRange;
 

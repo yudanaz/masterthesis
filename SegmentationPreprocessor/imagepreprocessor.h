@@ -54,7 +54,7 @@ public:
      * GETTER & SETTER:
      *************************************************************************/
     void OutputImageSize(int w, int h);
-    void StereoType(CrossSpectralStereoType type);
+    void set_CSstereoType(CrossSpectralStereoType type);
 
 
 

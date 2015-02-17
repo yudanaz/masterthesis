@@ -1,3 +1,4 @@
+#include <QDebug>
 #include "stereosgbm_hog.h"
 
 //#define CV_SSE2 1
@@ -91,6 +92,7 @@ void StereoSGBM_HOG::calcPixelCostBT( const Mat& img1, const Mat& img2, int y,
     }
 
     memset( cost, 0, width1*D*sizeof(cost[0]) );
+//    qDebug() << QString::number(width1*D);
 
     buffer -= minX2;
     cost -= minX1*D + minD; // simplify the cost indices inside the loop
@@ -370,6 +372,18 @@ void StereoSGBM_HOG::computeDisparitySGBM(const Mat& img1, const Mat& img2,
                     if( k < height )
                     {
                         calcPixelCostBT( img1, img2, k, minD, maxD, pixDiff, tempBuf, clipTab, TAB_OFS, ftzero );
+
+
+                        /** DEBUG **/
+//                        int costVals = img1.cols * (maxD - minD);
+//                        qDebug() << "cost vals per row: " << QString::number(costVals);
+//                        for (int i = 0; i < costVals ; ++i)
+//                        {
+//                            qDebug() << QString::number(pixDiff[i]);
+//                        }
+//                        qDebug() << "=======================";
+                        /** DEBUG **/
+
 
                         memset(hsumAdd, 0, D*sizeof(CostType));
                         for( x = 0; x <= SW2*D; x += D )

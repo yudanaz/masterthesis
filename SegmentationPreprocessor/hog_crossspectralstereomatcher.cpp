@@ -2,8 +2,7 @@
 #include "stereosgbm_hog.h"
 #include <QDebug>
 
-HOG_crossSpectralStereoMatcher::HOG_crossSpectralStereoMatcher():
-    resizing_output_images_(false)
+HOG_crossSpectralStereoMatcher::HOG_crossSpectralStereoMatcher()
 {
 }
 
@@ -26,7 +25,8 @@ void HOG_crossSpectralStereoMatcher::process(Mat imgRGB_L, Mat imgNIR_R, Mat& ou
     d1.blockSize = Size(blockSize, blockSize); //param from paper
     d1.cellSize = Size(cellSize, cellSize);// n x n subcells, n = 3, nCells = 3*3 = 9, param from paper
 
-    //define a dynamic window size, must be aligned with blocksize and should be close to original size
+    //define a dynamic window size used for HOG descriptors computation. Resize to lower resolution if set.
+    //must be aligned with blocksize and should be close to original size
     int win_w = ((int)(orig_w / blockSize)) * blockSize;
     int win_h = ((int)(orig_h / blockSize)) * blockSize;
     d1.winSize = Size(win_w, win_h);
@@ -46,8 +46,8 @@ void HOG_crossSpectralStereoMatcher::process(Mat imgRGB_L, Mat imgNIR_R, Mat& ou
     resize(imgNIR_R, nir_resized, d1.winSize, INTER_AREA);
 
     //compute the HOG descriptors
-    d1.compute(rgb_resized, descriptorsValues_RGB, Size(0,0), Size(0,0), locations_RGB);
-    d1.compute(nir_resized, descriptorsValues_NIR, Size(0,0), Size(0,0), locations_NIR);
+//    d1.compute(rgb_resized, descriptorsValues_RGB, Size(0,0), Size(0,0), locations_RGB);
+//    d1.compute(nir_resized, descriptorsValues_NIR, Size(0,0), Size(0,0), locations_NIR);
 
 //    qDebug() << "image size: " << win_w << "x" << win_h;
 //    qDebug() << "total nr of bins: " << descriptorsValues_RGB.size();
@@ -58,7 +58,7 @@ void HOG_crossSpectralStereoMatcher::process(Mat imgRGB_L, Mat imgNIR_R, Mat& ou
 //    Mat disp = makeDisparity_WTA(descriptorsValues_RGB, descriptorsValues_NIR, d1.winSize, blockSize,
 //                                 blockSize/cellSize * blockSize/cellSize, d1.nbins);
 
-    StereoSGBM sgbm;
+    StereoSGBM sgbm; //use the original opencv sgbm as parameter to our modified version
     int SAD_window = 3;
     sgbm.SADWindowSize = SAD_window;
     sgbm.minDisparity = 0;
@@ -75,27 +75,16 @@ void HOG_crossSpectralStereoMatcher::process(Mat imgRGB_L, Mat imgNIR_R, Mat& ou
     StereoSGBM_HOG sgbm_hog;
     Mat disp16, disp;
     sgbm_hog(imgRGB_L, imgNIR_R, disp16, sgbm);
-//    sgbm(imgRGB_L, imgNIR_R, disp16);
-//    normalize(disp16, disp, 0, 255, CV_MINMAX, CV_8U);
-    double min, max;
-    minMaxLoc(disp16, &min, &max);
-    disp16.convertTo(disp, CV_8U, 255/max);
+    normalize(disp16, disp, 0, 255, CV_MINMAX, CV_8U);
+//    double min, max;
+//    minMaxLoc(disp16, &min, &max);
+//    disp16.convertTo(disp, CV_8U, 255/max);
 
-    //resize back to input image size; use NEAREST NEIGHBOR INTERPOLATION because in-between interpolation doesn't make sense for disparity
-    if(!resizing_output_images_)
-    {
-        resize(disp, out_disp, Size(orig_w, orig_h), INTER_NEAREST);
-    }
-    else //if output images are downsampled anyways, don't upsample now in order to not decrease quality further
-    {
-        out_disp = disp;
-    }
+
+    out_disp = disp;
 
     //transpose the result back
 //    transpose(out_disp, out_disp);
-
-//    Mat hogDescrImg = Helper::get_hogdescriptor_visual_image(rgb_resized, descriptorsValues_RGB, d.winSize, d.cellSize, 1, 1.0);
-//    imshow("hog descriptors", hogDescrImg);
 }
 
 Mat HOG_crossSpectralStereoMatcher::makeDisparity_WTA(vector<float> &values_L, vector<float> &values_R,
@@ -192,7 +181,6 @@ float HOG_crossSpectralStereoMatcher::getL1Distance(vector<float> a, vector<floa
     }
     return dist;
 }
-
 
 
 /******************************************************************************

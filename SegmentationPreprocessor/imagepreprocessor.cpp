@@ -214,7 +214,7 @@ void ImagePreprocessor::OutputImageSize(int w, int h)
     output_image_size_set_ = true;
 }
 
-void ImagePreprocessor::StereoType(CrossSpectralStereoType type)
+void ImagePreprocessor::set_CSstereoType(CrossSpectralStereoType type)
 {
     stereo_Type_ = type;
     if(type == crossSpectrSt_HOG)
