@@ -6,13 +6,14 @@
 RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::RGBNIRD_MainWindow),
-	triggerSave(false), triggerSaveIR_RGB_pair(false),
-    triggerSwitch_kinectRGB2IR(false), triggerSwitch_kinectIR2RGB(false), capturing_kinectRGB(true),
+	acquiring(false), triggerSave(false), triggerSaveIR_RGB_pair(false),
+	triggerSwitch_kinectRGB2IR(false), triggerSwitch_kinectIR2RGB(false), capturing_kinectRGB(true),
 	capturingSeries(false), countingDown(false), countdownSeconds(0), countdownTime(0), seriesCnt(0), seriesMax(0), seriesInterval(0),
 	ptr_RGBScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene)),
 	ptr_NIRScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene)),
 	ptr_depthScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene)),
-	sound_click("sound/cameraClick.wav"), sound_beep("sound/beep.wav"), sound_beep2("sound/beep2.wav")
+	sound_click("sound/cameraClick.wav"), sound_beep("sound/beep.wav"), sound_beep2("sound/beep2.wav"),
+	simulatingRGBCalib(true), flipImgs(false)
 {
 	ui->setupUi(this);
 
@@ -63,19 +64,19 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	width_depth = ui->graphicsView_Depth->width()-2;
 	height_depth = ui->graphicsView_Depth->height()-2;
 
-    //load parameters for resizing / cropping RGB image
-    FileStorage fs("misc/rgbCam.config", FileStorage::READ);
-    fs["cam_RGB"] >> cam_RGB;
-    fs["distCoeff_RGB"] >> distCoeff_RGB;
-    fs["resizeFac_RGB"] >> resizeFac_RGB;
-    fs["cropRect_RGB"] >> cropRect_RGB;
-    fs.release();
+	//load parameters for resizing / cropping RGB image
+	FileStorage fs("misc/rgbCam.config", FileStorage::READ);
+	fs["cam_RGB"] >> cam_RGB;
+	fs["distCoeff_RGB"] >> distCoeff_RGB;
+	fs["resizeFac_RGB"] >> resizeFac_RGB;
+	fs["cropRect_RGB"] >> cropRect_RGB;
+	fs.release();
 
-    //compute the rectangle to be drawn on the rgb image, indicating the are which will remain after calibration
-    drawRect_RGB.x = cropRect_RGB.x / resizeFac_RGB;
-    drawRect_RGB.y = cropRect_RGB.y / resizeFac_RGB;
-    drawRect_RGB.width = cropRect_RGB.width / resizeFac_RGB;
-    drawRect_RGB.height = cropRect_RGB.height / resizeFac_RGB;
+	//compute the rectangle to be drawn on the rgb image, indicating the are which will remain after calibration
+	drawRect_RGB.x = cropRect_RGB.x / resizeFac_RGB;
+	drawRect_RGB.y = cropRect_RGB.y / resizeFac_RGB;
+	drawRect_RGB.width = cropRect_RGB.width / resizeFac_RGB;
+	drawRect_RGB.height = cropRect_RGB.height / resizeFac_RGB;
 }
 
 
@@ -119,22 +120,22 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 	if(capturedImgs.contains(Kinect_Depth)){ allCapturedImgs[Kinect_Depth] = capturedImgs[Kinect_Depth]; sentNow.push_back(Kinect_Depth); }
 	if(capturedImgs.contains(Kinect_RGB))
 	{
-        if(triggerSwitch_kinectIR2RGB)
+		if(triggerSwitch_kinectIR2RGB)
 		{
 			allCapturedImgs.clear();
-            capturing_kinectRGB = true;
-            triggerSwitch_kinectIR2RGB = false;
+			capturing_kinectRGB = true;
+			triggerSwitch_kinectIR2RGB = false;
 		}
 		allCapturedImgs[Kinect_RGB] = capturedImgs[Kinect_RGB];
 		sentNow.push_back(Kinect_RGB);
 	}
 	if(capturedImgs.contains(Kinect_IR))
 	{
-        if(triggerSwitch_kinectRGB2IR)
+		if(triggerSwitch_kinectRGB2IR)
 		{
 			allCapturedImgs.clear();
-            capturing_kinectRGB = false;
-            triggerSwitch_kinectRGB2IR = false;
+			capturing_kinectRGB = false;
+			triggerSwitch_kinectRGB2IR = false;
 		}
 		allCapturedImgs[Kinect_IR] = capturedImgs[Kinect_IR];
 		sentNow.push_back(Kinect_IR);
@@ -152,13 +153,21 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 
 		if(type == RGB)
 		{
-            //make undistored copy of RGB image and draw rectangle indicating effective area after calibration
-            Mat rgbWithRect;
-            undistort(img, rgbWithRect, cam_RGB, distCoeff_RGB);
-            cv::rectangle(rgbWithRect, drawRect_RGB, Scalar(255,0,0), 3);
+			//make undistored copy of RGB image and draw rectangle indicating effective area after calibration
+			Mat rgbWithRect;
+			if(simulatingRGBCalib)
+			{
+				undistort(img, rgbWithRect, cam_RGB, distCoeff_RGB);
+				cv::rectangle(rgbWithRect, drawRect_RGB, Scalar(255,0,0), 3);
+			}
+			else
+			{
+				rgbWithRect = img;
+			}
 
-            //make a resized copy of the image according to graphic widget size
-			cv::resize(img, imgSmall, Size(width_rgb,height_rgb));
+			//make a resized copy of the image according to graphic widget size
+			cv::resize(rgbWithRect, imgSmall, Size(width_rgb,height_rgb));
+			if(flipImgs){ flip(imgSmall, imgSmall, 1); }
 
 			//show in widget width inverted channels (because Mat is BGR and QImage is RGB)
 			QImage qimg(imgSmall.data, imgSmall.cols, imgSmall.rows, imgSmall.step, QImage::Format_RGB888);
@@ -170,6 +179,7 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 		{
 			//make a resized copy of the image according to graphic widget size
 			cv::resize(img, imgSmall, Size(width_nir,height_nir));
+			if(flipImgs){ flip(imgSmall, imgSmall, 1); }
 
 			//convert and scale from 16 to 8 bit so image can be displayed
 			Mat img8bit(imgSmall.rows, imgSmall.cols, CV_8UC1);
@@ -186,13 +196,17 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 			ptr_NIRScene->addPixmap(QPixmap::fromImage(qimg));
 			ui->graphicsView_NIR->setScene(ptr_NIRScene.data());
 		}
-        else if(capturing_kinectRGB && type == Kinect_Depth || !capturing_kinectRGB && type == Kinect_IR)
+		else if(capturing_kinectRGB && type == Kinect_Depth || !capturing_kinectRGB && type == Kinect_IR)
 		{
 			//make a resized copy of the image according to graphic widget size
 			Mat img8bit;
-            if(capturing_kinectRGB){ img.convertTo(img8bit, CV_8UC1, 255.0/2047.0); }//scaling for depth image
+			if(capturing_kinectRGB){ img.convertTo(img8bit, CV_8UC1, 255.0/2047.0); }//scaling for depth image
 			else{ img8bit = img; }//no scaling for IR image
-			cv::resize(img8bit, imgSmall, Size(width_depth,height_depth));
+			if(img8bit.cols != 0) //work-around for not understood bug... when switching back from IR to RGB, depth image is empty. TODO: look into it
+			{
+				cv::resize(img8bit, imgSmall, Size(width_depth,height_depth));
+				if(flipImgs){ flip(imgSmall, imgSmall, 1); }
+			}
 			cvtColor(imgSmall, imgSmall, CV_GRAY2RGB);
 
 			//show in widget width inverted channels (because Mat is BGR and QImage is RGB)
@@ -219,7 +233,7 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 		sound_click.play();
 
 		emit saveImages(allCapturedImgs, ui->actionRGB->isChecked(), ui->actionNIR_Dark->isChecked(), ui->actionNIR_channels->isChecked(),
-						ui->actionKinect_Depth->isChecked(), ui->actionKinect_Depth->isChecked(), ui->actionKinect_RGB->isChecked());
+						ui->actionKinect_Depth->isChecked(), ui->actionKinect_IR->isChecked(), ui->actionKinect_RGB->isChecked());
 
 		triggerSave = false;
 	}
@@ -300,6 +314,23 @@ QString RGB_NIR_Depth_Capture::getUniquePrefixFromDateAndTime()
 }
 
 
+void RGB_NIR_Depth_Capture::startAcquisition()
+{
+	myImgAcqWorker_Prosilica->setAcquiring(true);
+	myImgAcqWorker_Goldeye->setAcquiring(true);
+	myImgAcqWorker_Kinect->setAcquiring(true);
+	emit startImgAcquisition();
+	acquiring = true;
+}
+
+void RGB_NIR_Depth_Capture::stopAcquisition()
+{
+	myImgAcqWorker_Prosilica->setAcquiring(false);
+	myImgAcqWorker_Goldeye->setAcquiring(false);
+	myImgAcqWorker_Kinect->setAcquiring(false);
+	acquiring = false;
+}
+
 /***********************************************
 ** Keyboard events:
 ************************************************/
@@ -307,6 +338,20 @@ void RGB_NIR_Depth_Capture::keyPressEvent(QKeyEvent *event)
 {
 	//save image when "s" is pressed, ascii[83] = s
 	if(event->key() == 83){ triggerSave = true; }
+
+	//start/stop acquiring images when "a" is pressed, ascii[65] = a
+	if(event->key() == 65)
+	{
+		if(acquiring){ stopAcquisition(); }
+		else{ startAcquisition(); }
+	}
+
+	//flip images if "f" is pressed
+	if(event->key() == 70)
+	{
+		flipImgs = !flipImgs;
+		ui->checkBox_flipImgs->setChecked(flipImgs);
+	}
 }
 
 
@@ -315,22 +360,17 @@ void RGB_NIR_Depth_Capture::keyPressEvent(QKeyEvent *event)
 ************************************************/
 void RGB_NIR_Depth_Capture::on_btn_startAcquisition_released()
 {
-	myImgAcqWorker_Prosilica->setAcquiring(true);
-	myImgAcqWorker_Goldeye->setAcquiring(true);
-	myImgAcqWorker_Kinect->setAcquiring(true);
-	emit startImgAcquisition();
+	startAcquisition();
+}
+
+void RGB_NIR_Depth_Capture::on_btn_stopAcquisition_released()
+{
+	stopAcquisition();
 }
 
 void RGB_NIR_Depth_Capture::on_btn_saveImgs_released()
 {
 	triggerSave = true;
-}
-
-void RGB_NIR_Depth_Capture::on_btn_stopAcquisition_released()
-{
-	myImgAcqWorker_Prosilica->setAcquiring(false);
-	myImgAcqWorker_Goldeye->setAcquiring(false);
-	myImgAcqWorker_Kinect->setAcquiring(false);
 }
 
 void RGB_NIR_Depth_Capture::on_checkBox_showAllChannels_clicked()
@@ -365,8 +405,8 @@ void RGB_NIR_Depth_Capture::on_btn_saveIR_RGB_pair_released()
 void RGB_NIR_Depth_Capture::on_pushButton_switchRGB_IR_released()
 {
 	bool capturingRGB = ((KinectWorker*)myImgAcqWorker_Kinect)->isCapturingRGB();
-    triggerSwitch_kinectRGB2IR = capturingRGB;
-    triggerSwitch_kinectIR2RGB = !capturingRGB;
+	triggerSwitch_kinectRGB2IR = capturingRGB;
+	triggerSwitch_kinectIR2RGB = !capturingRGB;
 	((KinectWorker*)myImgAcqWorker_Kinect)->switch_RGB_IR(!capturingRGB);
 }
 
@@ -374,4 +414,14 @@ void RGB_NIR_Depth_Capture::on_pushButton_switchRGB_IR_released()
 void RGB_NIR_Depth_Capture::on_actionNIR_multi_channel_capture_changed()
 {
 	emit toggleNIR_MultiChannelCapture(ui->actionNIR_multi_channel_capture->isChecked());
+}
+
+void RGB_NIR_Depth_Capture::on_checkBox_simulateRGBcalib_clicked()
+{
+	simulatingRGBCalib = ui->checkBox_simulateRGBcalib->isChecked();
+}
+
+void RGB_NIR_Depth_Capture::on_checkBox_flipImgs_clicked()
+{
+	flipImgs = ui->checkBox_flipImgs->isChecked();
 }

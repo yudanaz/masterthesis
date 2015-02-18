@@ -32,7 +32,7 @@ void SaveImgsWorker::saveImgs(RGBDNIR_MAP imgs, bool RGB_img, bool NIR_DarkImg, 
 			case NIR_1300:
 			case NIR_1550: if(NIR_channels) save = true; break;
 			case Kinect_Depth: if(kinect_depth) save = true; break;
-			case Kinect_IR: if(kinect_depth) save = true; break;
+			case Kinect_IR: if(kinect_ir) save = true; break;
 			case Kinect_RGB: if(kinect_rgb) save = true; break;
 			default: break;
 		}

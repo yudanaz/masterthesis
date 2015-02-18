@@ -83,18 +83,9 @@ void KinectCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 
 		bool success;
 
-		//try getting depth image until successful
-		Mat depthMat;//(Size(640,480),CV_16UC1);
-		success =  freenectDevice->getDepth(depthMat);
-		while(!success)
-		{
-			success = freenectDevice->getDepth(depthMat);
-		}
-		camImgs[Kinect_Depth] = depthMat;
-
-		//try getting RGB or IR image until successful
 		if(capturingRGB)
 		{
+			//try getting RGB or IR image until successful
 			Mat rgbMat(Size(640,480),CV_8UC3,Scalar(0));
 			success = freenectDevice->getVideo(rgbMat);
 			while(!success)
@@ -102,6 +93,15 @@ void KinectCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 				success = freenectDevice->getVideo(rgbMat);
 			}
 			camImgs[Kinect_RGB] = rgbMat;
+
+			//try getting depth image until successful
+			Mat depthMat;//(Size(640,480),CV_16UC1);
+			success =  freenectDevice->getDepth(depthMat);
+			while(!success)
+			{
+				success = freenectDevice->getDepth(depthMat);
+			}
+			camImgs[Kinect_Depth] = depthMat;
 		}
 		else
 		{
