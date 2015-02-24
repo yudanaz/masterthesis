@@ -13,6 +13,9 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true">background-color: rgb(231, 203, 173);</string>
+  </property>
   <widget class="QWidget" name="formLayoutWidget">
    <property name="geometry">
     <rect>
@@ -36,7 +39,7 @@
     <item row="0" column="1">
      <widget class="QLineEdit" name="lineEdit_optType">
       <property name="text">
-       <string>0</string>
+       <string>1</string>
       </property>
      </widget>
     </item>
@@ -113,7 +116,7 @@
     <item row="6" column="0">
      <widget class="QLabel" name="label_8">
       <property name="text">
-       <string>Uniqueness</string>
+       <string>Pre-Filter Cap</string>
       </property>
      </widget>
     </item>
@@ -141,14 +144,14 @@
     <item row="4" column="1">
      <widget class="QLineEdit" name="lineEdit_maxDisparity">
       <property name="text">
-       <string>38</string>
+       <string>32</string>
       </property>
      </widget>
     </item>
     <item row="3" column="1">
      <widget class="QLineEdit" name="lineEdit_minDisparity">
       <property name="text">
-       <string>4</string>
+       <string>0</string>
       </property>
      </widget>
     </item>

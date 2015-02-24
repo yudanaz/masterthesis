@@ -62,7 +62,7 @@ void HOG_crossSpectralStereoMatcher::process(Mat imgRGB_L, Mat imgNIR_R, Mat& ou
         sgbm.SADWindowSize = SADwindow;
         sgbm.minDisparity = minDisp;
         int nrOfDisp = maxDisp-minDisp;
-        while(nrOfDisp % 16 != 0){ nrOfDisp--; }//for sgbm the nr of disparities must be divisible by 16
+        while(nrOfDisp % 16 != 0){ nrOfDisp++; }//for sgbm the nr of disparities must be divisible by 16
         sgbm.numberOfDisparities = nrOfDisp;
         sgbm.preFilterCap = preFilterCAP;
         sgbm.uniquenessRatio = uniquenessRatio;
@@ -202,11 +202,16 @@ void HOG_crossSpectralStereoMatcher::compute_SGBM_HOG(InputArray leftarr, InputA
 
 //computes the cost for disparity matches for one row based on HOG desriptors
 void HOG_crossSpectralStereoMatcher::calcPixelCostHOG(vector<float> &descr_L, vector<float> &descr_R, int blockSize, int y,
-                                                      int imgWidth, int imgHeight, int disparityRange, int binsInDescriptor,
+                                                      int imgWidth, int imgHeight, int minDisp, int maxDisp, int binsInDescriptor,
                                                       CostType *cost)
 {
     int w_descr = (imgWidth - blockSize + 1);
     int h_descr = (imgHeight - blockSize + 1);
+
+    //prepare the data
+    int dispRange = maxDisp - minDisp;
+    memset( cost, 0, imgWidth*dispRange*sizeof(cost[0]) );
+//    qDebug() << "row cost values size: " << imgWidth*dispRange;
 
     //make sure only valid indices in the descriptor vector are used
     //discard y values that go over the "blocksize-induces border"
@@ -214,14 +219,13 @@ void HOG_crossSpectralStereoMatcher::calcPixelCostHOG(vector<float> &descr_L, ve
     int yy = (y - blockSize/2);
     if(yy >= h_descr){ return; }
 
-
-    int cnt = blockSize/2;
-    for(int x = disparityRange; x < w_descr; ++x) //respect horizontal border caused by disparity-range (we're looking for pixels to the left)
+    int cnt = (blockSize/2 + maxDisp-2) * dispRange;
+    for(int x = maxDisp-1; x < w_descr; ++x) //respect horizontal border caused by disparity-range (we're looking for pixels to the left)
     {
         uint i = x * h_descr + yy;// the real index into descriptor vector
 
         //get distance for every descriptor in range
-        for(int j = 0; j <= disparityRange; j++)
+        for(int j = minDisp; j < maxDisp; j++)
         {
             //index in right image, not straight-forward because HOG computes descriptors column-wise, instead of row-wise
             uint indexR = i - j * h_descr;
@@ -405,7 +409,7 @@ void HOG_crossSpectralStereoMatcher::computeDisparitySGBM(const Mat& img1, const
                     {
 //                        calcPixelCostBT( img1, img2, k, minD, maxD, pixDiff, tempBuf, clipTab, TAB_OFS, ftzero );
                           calcPixelCostHOG( HOGdescr_L, HOGdescr_R, blockSize, k,
-                                            img1.cols, img1.rows, maxD, binsInDescriptor, pixDiff);
+                                            img1.cols, img1.rows, minD, maxD, binsInDescriptor, pixDiff);
 
                         /** DEBUG **/
 //                        int costVals = img1.cols * (maxD - minD);

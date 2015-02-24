@@ -49,7 +49,7 @@ private:
                                Mat& buffer , vector<float> &HOGdescr_L, vector<float> &HOGdescr_R, int blockSize, int binsInDescriptor);
 
     void calcPixelCostHOG(vector<float>& descr_L, vector<float>& descr_R, int blockSize, int y,
-                          int imgWidth, int imgHeight, int disparityRange, int binsInDescriptor, CostType* cost);
+                          int imgWidth, int imgHeight, int minDisp, int maxDisp, int binsInDescriptor, CostType* cost);
 
     void calcPixelCostBT( const Mat& img1, const Mat& img2, int y,
                           int minD, int maxD, CostType* cost,

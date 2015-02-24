@@ -502,15 +502,15 @@ Mat ImagePreprocessor::projectFrom3DSpaceToImage(std::vector<Point3f> points3D, 
 
 void ImagePreprocessor::makeCrossSpectralStereo(Mat imgRGB_L, Mat imgNIR_R, Mat& out_disp)
 {
-//    Mat rgb_gray; //rgb to grayscale
-//    cvtColor(imgRGB_L, rgb_gray, CV_BGR2GRAY);
-//    CSstereoMatcher->process(rgb_gray, imgNIR_R, out_disp);
+    Mat rgb_gray; //rgb to grayscale
+    cvtColor(imgRGB_L, rgb_gray, CV_BGR2GRAY);
+    CSstereoMatcher->process(rgb_gray, imgNIR_R, out_disp);
 
-    //get red RGB channel (closest to NIR)
-    Mat rgb_red(imgRGB_L.rows, imgRGB_L.cols, CV_8UC1);
-    int from_to[] = {2, 0};
-    mixChannels(&imgRGB_L, 1, &rgb_red, 1, from_to, 1);
-    CSstereoMatcher->process(rgb_red, imgNIR_R, out_disp);
+//    //get red RGB channel (closest to NIR)
+//    Mat rgb_red(imgRGB_L.rows, imgRGB_L.cols, CV_8UC1);
+//    int from_to[] = {2, 0};
+//    mixChannels(&imgRGB_L, 1, &rgb_red, 1, from_to, 1);
+//    CSstereoMatcher->process(rgb_red, imgNIR_R, out_disp);
 }
 
 
