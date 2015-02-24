@@ -39,6 +39,7 @@ void MainWindow::preprocessImages()
     imshow("RGB", rgb_);
     imshow("NIR", nir_);
     imshow("cross-spectral Stereo", depthStereo_);
+    imshow("Kinect Depth", depth_);
 //    imwrite("rectified_rgb.png", rgb_);
 //    imwrite("rectified_nir.png", nir_);
 }
@@ -53,10 +54,10 @@ void MainWindow::preprocessImages()
 void MainWindow::on_pushButton_calibCams_released()
 {
     QStringList rgbs = io.getFileNames("Open images for RGB camera calibration", IMGTYPES);
-    QStringList irs;// = io.getFileNames("Open images for IR camera calibration", IMGTYPES);
+    QStringList irs = io.getFileNames("Open images for IR camera calibration", IMGTYPES);
     QStringList nirs = io.getFileNames("Open images for NIR camera calibration", IMGTYPES);
 
-    if(rgbs.length() == 0 || nirs.length() == 0 /*|| irs.length() == 0*/ )
+    if(rgbs.length() == 0 || nirs.length() == 0 || irs.length() == 0 )
     {
         QMessageBox::information(this, "Error", "Calibration images missing for one of the cameras", QMessageBox::Ok);
         return;
@@ -74,16 +75,16 @@ void MainWindow::on_pushButton_calibCamRig_released()
     }
 
     QStringList rgbs = io.getFileNames("Open RGB images for camera rig calibration", IMGTYPES);
-    QStringList irs;// = io.getFileNames("Open IR calib images", IMGTYPES);
+    QStringList irs = io.getFileNames("Open IR calib images", IMGTYPES);
     QStringList nirs  = io.getFileNames("Open NIR images for camera rig calibration", IMGTYPES);
 
-    if(rgbs.length() == 0 || nirs.length() == 0 /*|| irs.length() == 0*/ )
+    if(rgbs.length() == 0 || nirs.length() == 0 || irs.length() == 0 )
     {
         QMessageBox::information(this, "Error", "Calibration images missing for one of the cameras", QMessageBox::Ok);
         return;
     }
 
-    if(rgbs.length() != nirs.length()  /*|| rgbs.length() != irs.length() || irs.length() != nirs.length()*/)
+    if(rgbs.length() != nirs.length()  || rgbs.length() != irs.length() || irs.length() != nirs.length())
     {
         QMessageBox::information(this, "Error", "Not same amount of calibration images for each camera", QMessageBox::Ok);
         return;
@@ -102,13 +103,13 @@ void MainWindow::on_pushButton_preproc_released()
     }
 
     QString img_rgb = io.getFileName("Select RGB image", IMGTYPES);
-//    QString img_depth = io.getFileName("Select Depth image", "*.png");
+    QString img_depth = io.getFileName("Select Depth image", "*.png");
     QString img_nir = io.getFileName("Select NIR image", IMGTYPES);
 
-    if(img_rgb == "" /*|| img_depth == "" */|| img_nir == "" ){ return; }
+    if(img_rgb == "" || img_depth == "" || img_nir == "" ){ return; }
 
     rgb = imread(img_rgb.toStdString(), IMREAD_ANYCOLOR);
-    depth;// = imread(img_depth.toStdString(), IMREAD_ANYDEPTH);
+    depth = imread(img_depth.toStdString(), IMREAD_ANYDEPTH);
     nir = imread(img_nir.toStdString(), IMREAD_GRAYSCALE);
 
     preprocessImages();
@@ -117,7 +118,7 @@ void MainWindow::on_pushButton_preproc_released()
 void MainWindow::on_pushButton_reproc_released()
 {
     if(rgb.cols == 0) return;
-//    if(depth.cols == 0) return;
+    if(depth.cols == 0) return;
     if(nir.cols == 0) return;
     preprocessImages();
 }

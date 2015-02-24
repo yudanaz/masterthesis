@@ -53,7 +53,7 @@ void ImagePreprocessor::calibCams(QStringList calibImgs_RGB,
     //read calibration images from disk
     QList<Mat> imgsRGB = readImgs2List(calibImgs_RGB);
     QList<Mat> imgsNIR = readImgs2List(calibImgs_NIR);
-//    QList<Mat> imgsIR = readImgs2List(calibImgs_IR);
+    QList<Mat> imgsIR = readImgs2List(calibImgs_IR);
 
     //compute intrinsics and undistortion map
     make_Intrinsics_and_undistCoeffs(imgsRGB, cam_RGB, distCoeff_RGB, "RGB");
@@ -76,7 +76,7 @@ void ImagePreprocessor::calibRig(QStringList calibImgs_RGB, QStringList calibImg
     //read calibration images from disk
     QList<Mat> imgsRGB = readImgs2List(calibImgs_RGB);
     QList<Mat> imgsNIR = readImgs2List(calibImgs_NIR);
-//    QList<Mat> imgsIR = readImgs2List(calibImgs_IR);
+    QList<Mat> imgsIR = readImgs2List(calibImgs_IR);
 
     //undistort RGB and NIR and store as temp images
     QProgressDialog progress("Temporarily undistorting RGB and NIR images", "Cancel", 0, imgsRGB.size(), parent);
@@ -124,9 +124,9 @@ void ImagePreprocessor::calibRig(QStringList calibImgs_RGB, QStringList calibImg
 //    }
 
     //make rectify maps
-//    make_RectifyMaps(imgsIR, imgsRGB, distCoeff_IR, distCoeff_RGB, cam_IR, cam_RGB,
-//                     rectifyMapX_IR, rectifyMapY_IR, rectifyMapX_RGB, rectifyMapY_RGB,
-//                     rotation_IR2RGB, transl_IR2RGB, "IR", "RGB");
+    make_RectifyMaps(imgsIR, imgsRGB, distCoeff_IR, distCoeff_RGB, cam_IR, cam_RGB,
+                     rectifyMapX_IR, rectifyMapY_IR, rectifyMapX_RGB, rectifyMapY_RGB,
+                     rotation_IR2RGB, transl_IR2RGB, "IR", "RGB");
     make_RectifyMaps(imgsNIR, imgsRGB_resized, distCoeff_NIR, distCoeff_RGB_resized, cam_NIR, cam_RGB_resized,
                      rectifyMapX_NIR, rectifyMapY_NIR, rectifyMapX_RGB, rectifyMapY_RGB,
                      rotation_NIR2RGB, transl_NIR2RGB, "NIR_rectify", "RGB_rectify");
@@ -160,23 +160,23 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
     undistort(RGB, RGB_undist, cam_RGB, distCoeff_RGB);
     Mat RGB_resized = resizeAndCropRGBImg(RGB_undist);
 
-//    //map Kinect depth to RGB
-//    vector<Point3f> depth3D = projectDepthTo3DSpace(depth);
-//    Mat depth2D = projectFrom3DSpaceToImage(depth3D, rotation_IR2RGB, transl_IR2RGB, cam_RGB,
-//                                            Size(depth.cols, depth.rows));
+    //map Kinect depth to RGB
+    vector<Point3f> depth3D = projectDepthTo3DSpace(depth_kinect);
+    Mat depth2D = projectFrom3DSpaceToImage(depth3D, rotation_IR2RGB, transl_IR2RGB, cam_RGB,
+                                            Size(depth_kinect.cols, depth_kinect.rows));
 
-//    //fill gaps in depth map
-//    Mat depth8bit, RGB_undist_gray;
-//    depth2D.convertTo(depth8bit, CV_8UC1, 255.0/2047.0);
-//    cvtColor(RGB, RGB_undist_gray, CV_BGR2GRAY);
-//    Mat depth_refined = crossbilatFilter.filter(depth8bit, RGB_undist_gray, 16.0, 0.1);
+    //fill gaps in depth map
+    Mat depth8bit, RGB_undist_gray;
+    depth2D.convertTo(depth8bit, CV_8UC1, 255.0/2047.0);
+    cvtColor(RGB, RGB_undist_gray, CV_BGR2GRAY);
+    Mat depth_refined = crossbilatFilter.filter(depth8bit, RGB_undist_gray, 16.0, 0.1);
 
     //rectify
     Mat RGB_rect, NIR_rect, depth_rect;
     remap(RGB_resized, RGB_rect, rectifyMapX_RGB, rectifyMapY_RGB, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
     remap(NIR, NIR_rect, rectifyMapX_NIR, rectifyMapY_NIR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
-//    remap(depth_refined, depth_rect, rectifMapX_RGB, rectifMapY_RGB, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
-        //(rectify kinect depth  with RGB params, because it was mapped to RGB)
+    remap(depth_refined, depth_rect, rectifyMapX_RGB, rectifyMapY_RGB, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
+    //(rectify kinect depth  with RGB params, because it was mapped to RGB)
 
     //if set, resize the images to a new output (smaller) size (might be better/faster for CNN learning
     // and improves performance of cross-spectral stereo matching)
@@ -184,14 +184,14 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
     {
         resize(RGB_rect, RGB_out, outputImgSz, 0, 0, INTER_AREA); //area averaging best for downsampling
         resize(NIR_rect, NIR_out, outputImgSz, 0, 0, INTER_AREA);
-//        resize(depth_rect, depth_remapped_out, outputImgSz, 0, 0, INTER_NEAREST); //for depth no in-between interpolation!
+        resize(depth_rect, depth_remapped_out, outputImgSz, 0, 0, INTER_NEAREST); //for depth no in-between interpolation!
     }
     else
     {
         //put results in output imgs
         RGB_out = RGB_rect;
         NIR_out = NIR_rect;
-//        depth_remapped_out = depth_rect;
+        depth_remapped_out = depth_rect;
     }
 
     //make disparity image from resized RGB and NIR images (cross/multi - spectral)
@@ -502,15 +502,15 @@ Mat ImagePreprocessor::projectFrom3DSpaceToImage(std::vector<Point3f> points3D, 
 
 void ImagePreprocessor::makeCrossSpectralStereo(Mat imgRGB_L, Mat imgNIR_R, Mat& out_disp)
 {
-    Mat rgb_gray; //rgb to grayscale
-    cvtColor(imgRGB_L, rgb_gray, CV_BGR2GRAY);
-    CSstereoMatcher->process(rgb_gray, imgNIR_R, out_disp);
+//    Mat rgb_gray; //rgb to grayscale
+//    cvtColor(imgRGB_L, rgb_gray, CV_BGR2GRAY);
+//    CSstereoMatcher->process(rgb_gray, imgNIR_R, out_disp);
 
-//    //get red RGB channel (closest to NIR)
-//    Mat rgb_red(imgRGB_L.rows, imgRGB_L.cols, CV_8UC1);
-//    int from_to[] = {2, 0};
-//    mixChannels(&imgRGB_L, 1, &rgb_red, 1, from_to, 1);
-//    CSstereoMatcher->process(rgb_red, imgNIR_R, out_disp);
+    //get red RGB channel (closest to NIR)
+    Mat rgb_red(imgRGB_L.rows, imgRGB_L.cols, CV_8UC1);
+    int from_to[] = {2, 0};
+    mixChannels(&imgRGB_L, 1, &rgb_red, 1, from_to, 1);
+    CSstereoMatcher->process(rgb_red, imgNIR_R, out_disp);
 }
 
 
@@ -643,8 +643,8 @@ void ImagePreprocessor::saveAll(QString saveURL)
     fs << "rectifMapY_RGB" << rectifyMapY_RGB;
     fs << "rectifMapX_NIR" << rectifyMapX_NIR;
     fs << "rectifMapY_NIR" << rectifyMapY_NIR;
-    fs << "rectifMapX_IR" << rectifMapX_IR;
-    fs << "rectifMapY_IR" << rectifMapY_IR;
+    fs << "rectifMapX_IR" << rectifyMapX_IR;
+    fs << "rectifMapY_IR" << rectifyMapY_IR;
 
     fs << "rotation_NIR2RGB" << rotation_NIR2RGB;
     fs << "rotation_IR2RGB" << rotation_IR2RGB;
@@ -689,8 +689,8 @@ void ImagePreprocessor::loadAll(QString loadURL)
     fs["rectifMapY_RGB"] >> rectifyMapY_RGB;
     fs["rectifMapX_NIR"] >> rectifyMapX_NIR;
     fs["rectifMapY_NIR"] >> rectifyMapY_NIR;
-    fs["rectifMapX_IR"] >> rectifMapX_IR;
-    fs["rectifMapY_IR"] >> rectifMapY_IR;
+    fs["rectifMapX_IR"] >> rectifyMapX_IR;
+    fs["rectifMapY_IR"] >> rectifyMapY_IR;
 
     fs["rotation_NIR2RGB"] >> rotation_NIR2RGB;
     fs["rotation_IR2RGB"] >> rotation_IR2RGB;

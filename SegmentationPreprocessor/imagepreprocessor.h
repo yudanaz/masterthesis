@@ -130,8 +130,8 @@ private:
     Mat rectifyMapX_NIR;
     Mat rectifyMapY_NIR;
 
-    Mat rectifMapX_IR;
-    Mat rectifMapY_IR;
+    Mat rectifyMapX_IR;
+    Mat rectifyMapY_IR;
 
     //translation and rotation
     Mat rotation_IR2RGB;
