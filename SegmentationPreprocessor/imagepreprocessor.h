@@ -41,6 +41,7 @@ public:
     void calibRig(QStringList calibImgs_RGB, QStringList calibImgs_NIR, QStringList calibImgs_IR, Size chessboardSize);
 
     void preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat &RGB_out, Mat &NIR_out, Mat &depth_stereo_out, Mat &depth_remapped_out);
+    void setParameters(std::vector<float> params);
 
     void saveAll(QString saveURL);
     void loadAll(QString loadURL);

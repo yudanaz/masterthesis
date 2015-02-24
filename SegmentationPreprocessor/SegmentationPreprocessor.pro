@@ -36,7 +36,7 @@ SOURCES += main.cpp\
     helper.cpp \
     hog_crossspectralstereomatcher.cpp \
     locnorm_crossspectralstereomatcher.cpp \
-    stereosgbm_hog.cpp
+    stereomatching_params.cpp
 
 HEADERS  += mainwindow.h \
     io.h \
@@ -54,10 +54,11 @@ HEADERS  += mainwindow.h \
     hog_crossspectralstereomatcher.h \
     crossspectralstereomatcher.h \
     locnorm_crossspectralstereomatcher.h \
-    stereosgbm_hog.h
+    stereomatching_params.h
 
 
-FORMS    += mainwindow.ui
+FORMS    += mainwindow.ui \
+    stereomatching_params.ui
 
 OTHER_FILES += \
     config/dummyDoc

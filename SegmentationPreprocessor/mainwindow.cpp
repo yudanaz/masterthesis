@@ -7,6 +7,7 @@
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
+    ui_stereoMparams(new StereoMatching_params),
     io(this),
     preproc(parent)
 {
@@ -19,8 +20,35 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow()
 {
     delete ui;
+    delete ui_stereoMparams;
 
 }
+
+void MainWindow::preprocessImages()
+{
+    Mat rgb_, depth_, depthStereo_, nir_;
+
+    //set HOG parameters through static function (not very elegant, i know, but wtf...)
+    preproc.setParameters(ui_stereoMparams->getParams());
+
+    preproc.preproc(rgb, nir, depth, rgb_, nir_, depthStereo_, depth_);
+
+
+    //for now...
+//    equalizeHist(nir_, nir_);
+    imshow("RGB", rgb_);
+    imshow("NIR", nir_);
+    imshow("cross-spectral Stereo", depthStereo_);
+//    imwrite("rectified_rgb.png", rgb_);
+//    imwrite("rectified_nir.png", nir_);
+}
+
+
+
+
+/*************************************************************************************************
+ * BUTTON SLOTS
+ *************************************************************************************************/
 
 void MainWindow::on_pushButton_calibCams_released()
 {
@@ -79,25 +107,19 @@ void MainWindow::on_pushButton_preproc_released()
 
     if(img_rgb == "" /*|| img_depth == "" */|| img_nir == "" ){ return; }
 
-    Mat rgb = imread(img_rgb.toStdString(), IMREAD_ANYCOLOR);
-    Mat depth;// = imread(img_depth.toStdString(), IMREAD_ANYDEPTH);
-    Mat nir = imread(img_nir.toStdString(), IMREAD_GRAYSCALE);
+    rgb = imread(img_rgb.toStdString(), IMREAD_ANYCOLOR);
+    depth;// = imread(img_depth.toStdString(), IMREAD_ANYDEPTH);
+    nir = imread(img_nir.toStdString(), IMREAD_GRAYSCALE);
 
-    Mat rgb_, depth_, depthStereo_, nir_;
+    preprocessImages();
+}
 
-    //set HOG parameters through static function (not very elegant, i know, but wtf...)
-    HOG_crossSpectralStereoMatcher::setParams(ui->lineEdit_dispRange->text().toInt());
-
-    preproc.preproc(rgb, nir, depth, rgb_, nir_, depthStereo_, depth_);
-
-
-    //for now...
-//    equalizeHist(nir_, nir_);
-    imshow("RGB", rgb_);
-    imshow("NIR", nir_);
-    imshow("cross-spectral Stereo", depthStereo_);
-//    imwrite("rectified_rgb.png", rgb_);
-//    imwrite("rectified_nir.png", nir_);
+void MainWindow::on_pushButton_reproc_released()
+{
+    if(rgb.cols == 0) return;
+//    if(depth.cols == 0) return;
+    if(nir.cols == 0) return;
+    preprocessImages();
 }
 
 void MainWindow::on_pushButton_save_released()
@@ -115,3 +137,13 @@ void MainWindow::on_pushButton_load_released()
 }
 
 
+
+
+/*************************************************************************************************
+ * MENU SLOTS
+ *************************************************************************************************/
+
+void MainWindow::on_actionStereoM_Params_triggered()
+{
+    ui_stereoMparams->show();
+}

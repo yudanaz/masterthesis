@@ -10,6 +10,7 @@ class CrossSpectralStereoMatcher : public QObject
 {
 public:
     virtual void process(Mat imgRGB_L, Mat imgNIR_R, Mat& out_disp) = 0;
+    virtual void setParams(std::vector<float> params) = 0;
 };
 
 #endif // CROSSSPECTRALSTEREOMATCHER_H

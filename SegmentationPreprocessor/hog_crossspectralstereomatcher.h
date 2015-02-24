@@ -22,18 +22,24 @@ public:
 
     virtual void process(Mat imgRGB_L, Mat imgNIR_R, Mat &out_disp);
 
-    void set_disparity_optimization_strategy(int strategy);
-
-    static void setParams(int disparityRange);
+    virtual void setParams(std::vector<float> params);
 
 private:
     Mat makeDisparity_WTA(vector<float>& values_L, vector<float>& values_R, Size imgSize, int blockSize, int nCells, int nBins);
 
     float getL1Distance(vector<float>& a, int index_a, vector<float>& b, int index_b, int binsInDescriptor);
 
+    //parameters
     int disparityOptimimizationStragey;
+    int minDisp;
+    int maxDisp;
+    float wtaThreshold;
+    int SADwindow;
+    int preFilterCAP;
+    int uniquenessRatio;
+    int speckleWindow;
+    int speckleRange;
 
-    static int dispRange;
 
     //modified SGBM:
     void compute_SGBM_HOG(InputArray leftarr, InputArray rightarr, OutputArray disparr, StereoSGBM params, vector<float> &HOGdesriptors_L, vector<float> &HOGdescriptors_R, int blockSize, int nCells, int nBins);

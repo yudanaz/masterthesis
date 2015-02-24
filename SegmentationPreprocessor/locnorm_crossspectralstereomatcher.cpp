@@ -73,3 +73,10 @@ Mat LocNorm_crossSpectralStereoMatcher::NormalizeLocally(Mat img, int meanKernel
         return floatImg;
     }
 }
+
+void LocNorm_crossSpectralStereoMatcher::setParams(std::vector<float> params)
+{
+    //
+}
+
+

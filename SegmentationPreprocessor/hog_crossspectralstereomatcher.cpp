@@ -2,7 +2,10 @@
 #include <QDebug>
 
 HOG_crossSpectralStereoMatcher::HOG_crossSpectralStereoMatcher():
-    disparityOptimimizationStragey(dispOpt_SGBM)
+    disparityOptimimizationStragey(dispOpt_WTA),
+    minDisp(4), maxDisp(20),
+    wtaThreshold(1.0),
+    SADwindow(3), preFilterCAP(11), uniquenessRatio(1), speckleWindow(7), speckleRange(4)
 {
 }
 
@@ -41,7 +44,6 @@ void HOG_crossSpectralStereoMatcher::process(Mat imgRGB_L, Mat imgNIR_R, Mat& ou
     resize(imgNIR_R, nir_resized, d1.winSize, INTER_AREA);
 
     //compute the HOG descriptors
-
     d1.compute(rgb_resized, descriptorsValues_RGB, Size(0,0), Size(0,0), locations_RGB);
     d1.compute(nir_resized, descriptorsValues_NIR, Size(0,0), Size(0,0), locations_NIR);
 
@@ -57,17 +59,18 @@ void HOG_crossSpectralStereoMatcher::process(Mat imgRGB_L, Mat imgNIR_R, Mat& ou
     else if(disparityOptimimizationStragey == dispOpt_SGBM)
     {
         StereoSGBM sgbm; //use the original opencv sgbm as parameter to our modified version
-        int SAD_window = 1;
-        sgbm.SADWindowSize = SAD_window;
-        sgbm.minDisparity = 0;
-        sgbm.numberOfDisparities = 16;
-        sgbm.preFilterCap = 11;
-        sgbm.uniquenessRatio = 1;
-        sgbm.speckleWindowSize = 7;
-        sgbm.speckleRange = 4;
+        sgbm.SADWindowSize = SADwindow;
+        sgbm.minDisparity = minDisp;
+        int nrOfDisp = maxDisp-minDisp;
+        while(nrOfDisp % 16 != 0){ nrOfDisp--; }//for sgbm the nr of disparities must be divisible by 16
+        sgbm.numberOfDisparities = nrOfDisp;
+        sgbm.preFilterCap = preFilterCAP;
+        sgbm.uniquenessRatio = uniquenessRatio;
+        sgbm.speckleWindowSize = speckleWindow;
+        sgbm.speckleRange = speckleRange;
         sgbm.fullDP = true;
-        sgbm.P1 = 8 * SAD_window * SAD_window;
-        sgbm.P2 = 32 * SAD_window * SAD_window;
+        sgbm.P1 = 8 * SADwindow * SADwindow;
+        sgbm.P2 = 32 * SADwindow * SADwindow;
         sgbm.disp12MaxDiff = 1;
 
         Mat disp16;
@@ -90,7 +93,7 @@ Mat HOG_crossSpectralStereoMatcher::makeDisparity_WTA(vector<float> &values_L, v
 
     Mat disp_border(h, w, CV_8UC1, Scalar(0));
 
-    int range = HOG_crossSpectralStereoMatcher::dispRange;
+    int range = maxDisp - minDisp;
     int binsInDescriptor = nCells * nBins; //every step is one block centered around one pixel in original images
     float smallestDistance = FLT_MAX; //here the smallest distance is stored when searching for best match for every pixel
     int bestMatch = 0;
@@ -102,13 +105,14 @@ Mat HOG_crossSpectralStereoMatcher::makeDisparity_WTA(vector<float> &values_L, v
     //(every descriptor stands for one image pixel)
     for(int y = 0; y < h_descr; ++y)
     {
-        for(int x = range; x < w_descr; ++x) //respect horizontal border caused by disparity-range (we're looking for pixels to the left)
+        for(int x = maxDisp; x < w_descr; ++x) //respect horizontal border caused by disparity-range (we're looking for pixels to the left)
         {
             ulong i = x * h_descr + y;// the real index into descriptor vector
 
             //step through a range of descriptors for right image and find the best match
             smallestDistance = FLT_MAX; //reset
-            for(int j = 0; j <= range; j++)
+//            for(int j = 0; j <= range; j++)
+            for(int j = minDisp; j <= maxDisp; j++)
             {
                 //index in right image, not straight-forward because HOG computes descriptors column-wise, instead of row-wise
                 int indexR = i - j * h_descr;
@@ -122,8 +126,19 @@ Mat HOG_crossSpectralStereoMatcher::makeDisparity_WTA(vector<float> &values_L, v
                 }
             }
 
+            //cast to 8bit range, 255 = closest, 1 = farest, 0 = undefined
+            uchar dispValue;
+//            qDebug() << smallestDistance;
+            if(smallestDistance < wtaThreshold)
+            {
+                dispValue = (uchar)(bestMatch/(float)range * 254.0 + 1.0 + 0.5);
+            }
+            else //undefined because distance is too big
+            {
+                dispValue = 0;
+            }
+
             //write the disparity for the best match to disparity image
-            uchar dispValue = (uchar)(bestMatch/(float)range * 255.0 + 0.5); //cast to 8bit range, 255 = closest, 0 = farest
             disp_border.at<uchar>(y + blockSize/2, x + blockSize/2) = dispValue;
         }//x
     }//y
@@ -147,11 +162,18 @@ float HOG_crossSpectralStereoMatcher::getL1Distance(vector<float>& a, int index_
 /******************************************************************************
  * SET HOG PARAMETERS IN STATIC FUNCTION
  *****************************************************************************/
-void HOG_crossSpectralStereoMatcher::setParams(int disparityRange)
+void HOG_crossSpectralStereoMatcher::setParams(std::vector<float> params)
 {
-    dispRange = disparityRange;
+    if(params.size() > 0) disparityOptimimizationStragey = (int)params[0];
+    if(params.size() > 1) minDisp = (int)params[1];
+    if(params.size() > 2) maxDisp = (float)params[2];
+    if(params.size() > 3) wtaThreshold = (float)params[3];
+    if(params.size() > 4) SADwindow = (float)params[4];
+    if(params.size() > 5) preFilterCAP = (float)params[5];
+    if(params.size() > 6) uniquenessRatio = (float)params[6];
+    if(params.size() > 7) speckleWindow = (float)params[7];
+    if(params.size() > 8) speckleRange = (float)params[8];
 }
-int HOG_crossSpectralStereoMatcher::dispRange = 8;
 
 
 /******************************************************************************

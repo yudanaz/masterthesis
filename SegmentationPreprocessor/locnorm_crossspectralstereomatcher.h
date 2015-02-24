@@ -12,6 +12,7 @@ public:
     LocNorm_crossSpectralStereoMatcher();
 
     virtual void process(Mat imgRGB_L, Mat imgNIR_R, Mat &out_disp);
+    virtual void setParams(std::vector<float> params);
 
 private:
     /*!

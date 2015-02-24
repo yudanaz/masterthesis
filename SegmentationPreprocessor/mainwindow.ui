@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>300</height>
+    <height>346</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -23,7 +23,7 @@
       <x>30</x>
       <y>10</y>
       <width>341</width>
-      <height>196</height>
+      <height>271</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout">
@@ -64,22 +64,27 @@
       </widget>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout">
-       <item>
-        <widget class="QLabel" name="label">
-         <property name="text">
-          <string>Disp.Range:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="lineEdit_dispRange">
-         <property name="text">
-          <string>16</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
+      <widget class="QPushButton" name="pushButton_reproc">
+       <property name="styleSheet">
+        <string notr="true">background-color: rgb(255, 185, 84)</string>
+       </property>
+       <property name="text">
+        <string>Re-Process</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="verticalSpacer">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>40</height>
+        </size>
+       </property>
+      </spacer>
      </item>
      <item>
       <widget class="QPushButton" name="pushButton_save">
@@ -113,8 +118,20 @@
      <height>25</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menuParameters">
+    <property name="title">
+     <string>Config</string>
+    </property>
+    <addaction name="actionStereoM_Params"/>
+   </widget>
+   <addaction name="menuParameters"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
+  <action name="actionStereoM_Params">
+   <property name="text">
+    <string>StereoM. Params</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

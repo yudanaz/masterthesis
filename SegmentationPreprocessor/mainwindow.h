@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include "io.h"
 #include "imagepreprocessor.h"
+#include "stereomatching_params.h"
 
 namespace Ui {
 class MainWindow;
@@ -28,8 +29,21 @@ private slots:
 
     void on_pushButton_calibCamRig_released();
 
+    void on_pushButton_reproc_released();
+
+    void on_actionStereoM_Params_triggered();
+
 private:
+
+    void preprocessImages();
+
+    Mat rgb;
+    Mat depth;
+    Mat nir;
+
     Ui::MainWindow *ui;
+    StereoMatching_params *ui_stereoMparams;
+
     IO io;
     ImagePreprocessor preproc;
 };

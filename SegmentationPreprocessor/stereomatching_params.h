@@ -15,6 +15,8 @@ public:
     explicit StereoMatching_params(QWidget *parent = 0);
     ~StereoMatching_params();
 
+    std::vector<float> getParams();
+
 private:
     Ui::StereoMatching_params *ui;
 };
