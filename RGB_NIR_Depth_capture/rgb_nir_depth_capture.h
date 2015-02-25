@@ -47,9 +47,9 @@ signals:
 private slots:
 	void on_btn_startAcquisition_released();
 
-	void on_btn_saveImgs_released();
-
 	void on_btn_stopAcquisition_released();
+
+	void on_btn_saveImgs_released();
 
 	void on_checkBox_showAllChannels_clicked();
 
@@ -61,10 +61,17 @@ private slots:
 
 	void on_actionNIR_multi_channel_capture_changed();
 
+	void on_checkBox_simulateRGBcalib_clicked();
+
+	void on_checkBox_flipImgs_clicked();
+
 protected:
 	void keyPressEvent(QKeyEvent *event);
 
 private:
+	void startAcquisition();
+	void stopAcquisition();
+	bool acquiring;
 	QString getUniquePrefixFromDateAndTime();
 	void captureSeries();
 	bool capturingSeries;
@@ -85,9 +92,9 @@ private:
 	Ui::RGBNIRD_MainWindow *ui;
 	bool triggerSave;
 	bool triggerSaveIR_RGB_pair;
-    bool triggerSwitch_kinectRGB2IR;
-    bool triggerSwitch_kinectIR2RGB;
-    bool capturing_kinectRGB;
+	bool triggerSwitch_kinectRGB2IR;
+	bool triggerSwitch_kinectIR2RGB;
+	bool capturing_kinectRGB;
 	QThread workerThread_Prosilica;
 	QThread workerThread_Goldeye;
 	QThread workerThread_Kinect;
@@ -106,12 +113,15 @@ private:
 
 	int width_rgb, height_rgb, width_nir, height_nir, width_depth, height_depth;
 
-    //params to show the RGB image the way it's gonna be after pre-processing
-    Mat cam_RGB;
-    Mat distCoeff_RGB;
-    double resizeFac_RGB;
-    Rect cropRect_RGB;
-    Rect drawRect_RGB;
+	//params to show the RGB image the way it's gonna be after pre-processing
+	Mat cam_RGB;
+	Mat distCoeff_RGB;
+	double resizeFac_RGB;
+	Rect cropRect_RGB;
+	Rect drawRect_RGB;
+	bool simulatingRGBCalib;
+
+	bool flipImgs;
 };
 
 #endif // RGBNIRD_MAINWINDOW_H
