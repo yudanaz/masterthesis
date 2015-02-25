@@ -164,7 +164,6 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
     vector<Point3f> depth3D = projectDepthTo3DSpace(depth_kinect);
     Mat depth2D = projectFrom3DSpaceToImage(depth3D, rotation_IR2RGB, transl_IR2RGB, cam_RGB,
                                             Size(depth_kinect.cols, depth_kinect.rows));
-
     //fill gaps in depth map
     Mat depth8bit, RGB_undist_gray;
     depth2D.convertTo(depth8bit, CV_8UC1, 255.0/2047.0);

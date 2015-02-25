@@ -26,6 +26,11 @@ MainWindow::~MainWindow()
 
 void MainWindow::preprocessImages()
 {
+    qDebug() << IO::getOpenCVTypeName(depth.type());
+    depth.convertTo(depth, CV_8U, 255/2047);
+    imshow("kinect depth", depth);
+    cvWaitKey();
+
     Mat rgb_, depth_, depthStereo_, nir_;
 
     //set HOG parameters through static function (not very elegant, i know, but wtf...)
@@ -103,13 +108,13 @@ void MainWindow::on_pushButton_preproc_released()
     }
 
     QString img_rgb = io.getFileName("Select RGB image", IMGTYPES);
-    QString img_depth = io.getFileName("Select Depth image", "*.png");
     QString img_nir = io.getFileName("Select NIR image", IMGTYPES);
+    QString img_depth = io.getFileName("Select Depth image", IMGTYPES);
 
     if(img_rgb == "" || img_depth == "" || img_nir == "" ){ return; }
 
     rgb = imread(img_rgb.toStdString(), IMREAD_ANYCOLOR);
-    depth = imread(img_depth.toStdString(), IMREAD_ANYDEPTH);
+    depth = imread(img_depth.toStdString(), -1);
     nir = imread(img_nir.toStdString(), IMREAD_GRAYSCALE);
 
     preprocessImages();

@@ -11,7 +11,7 @@ namespace caffe {
 
 template<typename Dtype>
 void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchSize,
-                              bool RGB, bool NIR, bool depth, bool isMultiscale)
+                              bool RGB, bool NIR, bool depth, bool isMultiscale, std::string imageType)
 {
     //LOG(INFO) << "Doing Setup of NetRGBDNIR";
 
@@ -40,6 +40,7 @@ void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchS
     hasNIR = NIR;
     hasDepth = depth;
     multiscale = isMultiscale;
+    imgType = imageType;
 
     //define how many pixels should be selected randomly out of every image, before loading a new image
     randomPatchesCntMax = batchSize * 4;
@@ -274,10 +275,10 @@ void NetRGBDNIR<Dtype>::readNextImage()
 //    LOG(INFO) << "Read next image: " << imageURL;
 
     //load all image types (RGB, NIR and Depth) if available, create scales (image pyramid) pad images (make borders)
-    std::string labelsNm = imageURL + std::string("_labels.png");
-    std::string rgbNm = imageURL + std::string(".jpg");
-    std::string nirNm = imageURL + std::string("_nir.jpg");
-    std::string depthNm = imageURL + std::string("_depth.jpg");
+    std::string labelsNm = imageURL + std::string("_labels.png"); //labels lossless, always png
+    std::string rgbNm = imageURL + std::string(".") + imgType;
+    std::string nirNm = imageURL + std::string("_nir.") + imgType;
+    std::string depthNm = imageURL + std::string("_depth.jpg"); //depth lossless, always png
 
     //LOG(INFO) << "Reading image " << imageURL;
     img_labels = cv::imread(labelsNm, cv::IMREAD_GRAYSCALE); //label img isn't downsampled nor padded

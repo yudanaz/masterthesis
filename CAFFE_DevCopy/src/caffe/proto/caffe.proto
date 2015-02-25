@@ -807,5 +807,6 @@ message RGBDNIRSegmImgSourceParameter {
   required bool hasNIR = 7;
   required bool hasDepth = 8;
   required bool multiscale = 9;
+  optional string imageType = 10 [ default = "png" ];
 }
 
