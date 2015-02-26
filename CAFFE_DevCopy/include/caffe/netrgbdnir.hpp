@@ -15,12 +15,13 @@ public:
     explicit NetRGBDNIR(const NetParameter& param) : Net<Dtype>(param){}
     explicit NetRGBDNIR(const string& param_file) : Net<Dtype>(param_file){}
 
-    void setup(std::string imgsListURL, int patchsize, int batchSize, bool RGB, bool NIR, bool depth, bool isMultiscale, std::string imgType);
+    void setup(std::string imgsListURL, int patchsize, int batchSize, int imgsPerBatch, bool RGB, bool NIR, bool depth, bool isMultiscale, std::string imgType);
     void feedNextPatchesToInputLayers();
 
 protected:
     void readNextImage();
     void setRandomPatches();
+    void setUniformPatches();
     cv::Mat getImgPatch(cv::Mat img, int x, int y);
 
     int patchSz;
@@ -31,10 +32,12 @@ protected:
     int patchCnt;
     int patchMax;
     int batchSz;
+    std::vector<int> imgs_uniformSubpatchSize; //stores the size of the uniform subpatches for each image
+    std::vector<int> imgs_uniformSubpatchIndex; //stores the index in the uniform subpatches for each image
 
     boost::mt19937 gen; //random number generator
     int randomPatchesCntMax;
-    vector<int> randomPatches;
+    vector<int> sparsePatches;
 
     bool hasRGB;
     bool hasNIR;

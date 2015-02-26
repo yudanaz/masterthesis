@@ -802,6 +802,7 @@ message RGBDNIRSegmImgSourceParameter {
                             //files are found by concat e.g. url + "_nir.jpg"
   optional uint32 trainBatchSize = 3 [default = 128];
   optional uint32 testBatchSize = 4 [default = 64];
+  optional uint32 imagesPerBatch = 11 [default = 8];
   required uint32 patchSize = 5; //the size of the patch around each pixel to classify
   required bool hasRGB = 6;
   required bool hasNIR = 7;
