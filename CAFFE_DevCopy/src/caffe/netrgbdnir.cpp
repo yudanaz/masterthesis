@@ -45,7 +45,7 @@ void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchS
 
     //define how many pixels should be selected randomly out of every image, before loading a new image
     //leave this value small to avoid overfitting to the first images in training list
-    randomPatchesCntMax = batchSize / imgsPerBatch;//batchSize * 4;
+    sparsePatchesCntMax = batchSize / imgsPerBatch;//batchSize * 4;
 
 
     //read first image
@@ -75,7 +75,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
         //LOG(INFO) << "Starting nr " << batchCnt << " / " << batchSz << " in current batch";
 
         //if all patches in current image have been read, load next image
-        if(patchCnt >= randomPatchesCntMax)//patchMax)
+        if(patchCnt >= sparsePatchesCntMax)//patchMax)
         {
 //            LOG(INFO) << "Next image";
             readNextImage();
@@ -89,7 +89,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
         int w = img_labels.cols;
         int x = sparsePatches[patchCnt] % w;
         int y = sparsePatches[patchCnt] / w;
-//        LOG(INFO) << "patch count: " << patchCnt << "  patch: " << sparsePatches[patchCnt] << " x: " << x << " y: " << y;
+//        LOG(INFO) << "patch count: " << patchCnt << "  patch: " << sparsePatches[patchCnt] << " w: " << w << " x: " << x << " y: " << y;
 
         //get label for this patch
         int currentLabel = img_labels.at<uchar>(y,x);
@@ -249,7 +249,7 @@ void NetRGBDNIR<Dtype>::setRandomPatches()
 
     sparsePatches.clear();
 
-    for(int i = 0; i < randomPatchesCntMax; ++i)
+    for(int i = 0; i < sparsePatchesCntMax; ++i)
     {
         int rp = die();
 //        LOG(INFO) << rp;
@@ -260,18 +260,19 @@ void NetRGBDNIR<Dtype>::setRandomPatches()
 template<typename Dtype>
 void NetRGBDNIR<Dtype>::setUniformPatches()
 {
-    sparsePatches.clear();
-    for(int i = 0; i < randomPatchesCntMax; ++i)
-    {
-        //get uniformly distributed indices into image
-        int sp_sz = imgs_uniformSubpatchSize[imgCnt];
-        int sp_i = imgs_uniformSubpatchIndex[imgCnt];
-        int p = i * sp_sz + sp_i;
-        sparsePatches.push_back(p);
+    //get uniformly distributed indices into image
+    int sp_sz = imgs_uniformSubpatchSize[imgCnt];
+    int sp_i = imgs_uniformSubpatchIndex[imgCnt];
 
-        //update subpatch index
-        imgs_uniformSubpatchIndex[imgCnt] = (sp_i + 1) % sp_sz;
+    //save indices
+    sparsePatches.clear();
+    for(int i = 0; i < sparsePatchesCntMax; ++i)
+    {
+        sparsePatches.push_back(i * sp_sz + sp_i);
     }
+
+    //update subpatch index
+    imgs_uniformSubpatchIndex[imgCnt] = (sp_i + 1) % sp_sz;
 }
 
 template<typename Dtype>
@@ -293,7 +294,7 @@ void NetRGBDNIR<Dtype>::readNextImage()
 
     //get next image URL, also circle through images (if iterations are > all available patches)
     std::string imageURL = imgs[imgCnt];
-//    LOG(INFO) << "Read next image: " << imageURL;
+    LOG(INFO) << "Read next image: " << imageURL;
 
     //load all image types (RGB, NIR and Depth) if available, create scales (image pyramid) pad images (make borders)
     std::string labelsNm = imageURL + std::string("_labels.png"); //labels lossless, always png
@@ -306,7 +307,7 @@ void NetRGBDNIR<Dtype>::readNextImage()
 
     //set amount of patches for each image and set size of suppatches for uniform patch selection
     patchMax = img_labels.cols * img_labels.rows;
-    imgs_uniformSubpatchSize[imgCnt] = patchMax / randomPatchesCntMax;
+    imgs_uniformSubpatchSize[imgCnt] = patchMax / sparsePatchesCntMax;
 
     cv::Mat temp1, temp2, temp3;
 

@@ -36,7 +36,7 @@ protected:
     std::vector<int> imgs_uniformSubpatchIndex; //stores the index in the uniform subpatches for each image
 
     boost::mt19937 gen; //random number generator
-    int randomPatchesCntMax;
+    int sparsePatchesCntMax;
     vector<int> sparsePatches;
 
     bool hasRGB;
