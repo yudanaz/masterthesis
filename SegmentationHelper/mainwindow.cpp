@@ -1272,58 +1272,60 @@ void MainWindow::on_btn_makeTrainVal_released()
  *****************************************************************************************/
 void MainWindow::on_pushButton_test_released()
 {
-//    //////////////////////////////////////////////////////////////
-//    // TRANSFORM STANFORD BACKGROUND DATASET LABELS INTO PNG
-//    //////////////////////////////////////////////////////////////
-//    QString fileName = QFileDialog::getOpenFileName(this, "Select File", lastDir, "horizons.txt");
-//    if(fileName == ""){ return; }
-//    lastDir = QFileInfo(fileName).path();
+    //////////////////////////////////////////////////////////////
+    // TRANSFORM STANFORD BACKGROUND DATASET LABELS INTO PNG
+    //////////////////////////////////////////////////////////////
+    QString fileName = QFileDialog::getOpenFileName(this, "Select File", lastDir, "horizons.txt");
+    if(fileName == ""){ return; }
+    lastDir = QFileInfo(fileName).path();
 
-//    QFile f(fileName);
-//    f.open(QFile::ReadOnly);
-//    QTextStream in(&f);
+    QFile f(fileName);
+    f.open(QFile::ReadOnly);
+    QTextStream in(&f);
 
-//    QDir dir;
-//    dir.mkdir(lastDir + "/labelsImgs");
+    QDir dir;
+    dir.mkdir(lastDir + "/labelsImgs");
 
-//    while(!in.atEnd())
-//    {
-//        QStringList sl = in.readLine().split(" ");
-//        QString nm = sl.at(0);
-//        int w = sl.at(1).toInt();
-//        int h = sl.at(2).toInt();
+    while(!in.atEnd())
+    {
+        QStringList sl = in.readLine().split(" ");
+        QString nm = sl.at(0);
+        int w = sl.at(1).toInt();
+        int h = sl.at(2).toInt();
 
-//        Mat img(h, w, CV_8UC1);
+        Mat img(h, w, CV_8UC1);
 
-//        QFile lblf(lastDir + "/labels/" + nm + ".regions.txt");
-//        lblf.open(QFile::ReadOnly);
-//        QTextStream lblin(&lblf);
+        QFile lblf(lastDir + "/labels/" + nm + ".regions.txt");
+        lblf.open(QFile::ReadOnly);
+        QTextStream lblin(&lblf);
 
-//        for (int y = 0; y < h; ++y)
-//        {
-//            QStringList line = lblin.readLine().split(" ");
-//            for (int x = 0; x < w; ++x)
-//            {
-//                img.at<uchar>(y,x) = line.at(x).toInt() + 1; //in original, <0 is unknown, in our case 0 is unknown
-//            }
-//        }
+        for (int y = 0; y < h; ++y)
+        {
+            QStringList line = lblin.readLine().split(" ");
+            for (int x = 0; x < w; ++x)
+            {
+                uchar val = line.at(x).toInt();
+                if(val < 0){ img.at<uchar>(y,x) = 255; }//in original, <0 is unknown, in our case 255 is unknown
+                else{ img.at<uchar>(y,x) = val; }
+            }
+        }
 
-//        imwrite((lastDir + "/labelsImgs/" + nm + "_labels.png").toStdString(), img);
-//    }
+        imwrite((lastDir + "/labelsImgs/" + nm + "_labels.png").toStdString(), img);
+    }
 
-//    f.close();
-//    //////////////////////////////////////////////////////////////
-//    // endof TRANSFORM STANFORD BACKGROUND DATASET LABELS INTO PNG
-//    //////////////////////////////////////////////////////////////
+    f.close();
+    //////////////////////////////////////////////////////////////
+    // endof TRANSFORM STANFORD BACKGROUND DATASET LABELS INTO PNG
+    //////////////////////////////////////////////////////////////
 
-	QString fileName = QFileDialog::getOpenFileName(this, "Select File", lastDir, IMGTYPES);
-	if(fileName == ""){ return; }
-	lastDir = QFileInfo(fileName).path();
-	ImagePreprocessor preproc;
-	Mat a = imread(fileName.toStdString().c_str(), IMREAD_ANYDEPTH | IMREAD_ANYCOLOR);
-	a.convertTo(a, CV_8UC1, 255.0/2047.0);
-	imshow("just loaded", a);
-	qDebug() << a.type();
+//	QString fileName = QFileDialog::getOpenFileName(this, "Select File", lastDir, IMGTYPES);
+//	if(fileName == ""){ return; }
+//	lastDir = QFileInfo(fileName).path();
+//	ImagePreprocessor preproc;
+//	Mat a = imread(fileName.toStdString().c_str(), IMREAD_ANYDEPTH | IMREAD_ANYCOLOR);
+//	a.convertTo(a, CV_8UC1, 255.0/2047.0);
+//	imshow("just loaded", a);
+//	qDebug() << a.type();
 
 //	qDebug() << CV_16UC1;
 //	qDebug() << CV_8UC1;

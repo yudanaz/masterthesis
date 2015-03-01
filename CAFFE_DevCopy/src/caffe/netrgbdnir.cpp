@@ -19,7 +19,7 @@ void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchS
     std::ifstream inFile;
     inFile.open((char*)imgsListURL.c_str());
     std::string line;
-    imgCnt = 999999; //init high so it would jump to zero in first call of readNextImage()
+    imgCnt = -1; //init like this so it would jump to zero in first call of readNextImage()
     imgMax = 0;
     while(std::getline(inFile, line))
     {
@@ -47,7 +47,6 @@ void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchS
     //leave this value small to avoid overfitting to the first images in training list
     sparsePatchesCntMax = batchSize / imgsPerBatch;//batchSize * 4;
 
-
     //read first image
     readNextImage();
 
@@ -70,7 +69,8 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
     vector<Datum> datums_depth1;
     vector<Datum> datums_depth2;
 
-    for(int batchCnt = 0; batchCnt < batchSz; ++batchCnt)
+    int batchCnt = 0;
+    for(batchCnt = 0; batchCnt < batchSz; ++batchCnt)
     {
         //LOG(INFO) << "Starting nr " << batchCnt << " / " << batchSz << " in current batch";
 
@@ -93,6 +93,16 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 
         //get label for this patch
         int currentLabel = img_labels.at<uchar>(y,x);
+//        LOG(INFO) << "label: " << currentLabel;
+
+        //jump the "unknown" label, training with this label is useless
+        if(currentLabel == 255) //255 = unknown
+        {
+            batchCnt--; //go back one step so that in the end we have the correct number of patches in the batch
+            patchCnt++; //but go to the next patch (this is normally done at the end of this for loop, which is now skipped)
+//            LOG(INFO)<< "zero label";
+            continue;
+        }
 
         //LOG(INFO) << "Get Patch for Scale 0";
         //read the current patch from the image (orig. scale 0)
@@ -104,6 +114,23 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
                 /*if(patchCnt % 2 == 0)*/{ patch_rgb1 = getImgPatch(img_rgb1, x/2, y/2); }
                 /*if(patchCnt % 4 == 0)*/{ patch_rgb2 = getImgPatch(img_rgb2, x/4, y/4); }
             }
+
+//            //DEBUG//
+//            cv::Mat patch_rgb0_, patch_rgb1_, patch_rgb2_;
+////            cv::line(img_rgb0, cv::Point(x+borderSz,y+borderSz), cv::Point(x+borderSz,y+borderSz), cv::Scalar(0,0,255), 2);
+//            cv::resize(patch_rgb0, patch_rgb0_, cv::Size(), 4, 4, cv::INTER_CUBIC);
+//            cv::resize(patch_rgb1, patch_rgb1_, cv::Size(), 4, 4, cv::INTER_CUBIC);
+//            cv::resize(patch_rgb2, patch_rgb2_, cv::Size(), 4, 4, cv::INTER_CUBIC);
+////            imshow("orig", img_rgb0);
+////            cvWaitKey();
+//            imshow("sc0", patch_rgb0_);
+////            cvWaitKey();
+//            imshow("sc1", patch_rgb1_);
+////            cvWaitKey();
+//            imshow("sc2", patch_rgb2_);
+//            cvWaitKey();
+//            //DEBUG//
+
         }
 
         if(hasNIR)
@@ -225,11 +252,11 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
                 { ((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_rgb2); } }
 
             else if(nm == "nir0"){ if(hasNIR)
-                { ((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_rgb0); } }
+                { ((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_nir0); } }
             else if(nm == "nir1"){ if(hasNIR && multiscale)
-                { ((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_rgb1); } }
+                { ((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_nir1); } }
             else if(nm == "nir2"){ if(hasNIR && multiscale)
-                { ((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_rgb2); } }
+                { ((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_nir2); } }
 
             else if(nm == "depth0"){ if(hasDepth)
                 {((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_depth0); } }
@@ -311,6 +338,7 @@ void NetRGBDNIR<Dtype>::readNextImage()
 
     cv::Mat temp1, temp2, temp3;
 
+    //Make the downsized images for the image pyramid and add the padding according to patch size
     //LOG(INFO) << "Making scales for RGB";
     if(hasRGB)
     {
@@ -320,12 +348,23 @@ void NetRGBDNIR<Dtype>::readNextImage()
         if(multiscale)
         {
             cv::pyrDown(temp1, temp2);
+//            cv::resize(temp1, temp2, cv::Size(), 0.5, 0.5, cv::INTER_AREA);
             cv::copyMakeBorder(temp2, img_rgb1, borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 1 (half the size)
 
             cv::pyrDown(temp2, temp3);
+//            cv::resize(temp2, temp3, cv::Size(), 0.5, 0.5, cv::INTER_AREA);
             cv::copyMakeBorder(temp3, img_rgb2, borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 2 (1/4 the size)
         }
     }
+
+//    //DEBUG//
+//    imshow("rgb0_justLoaded", img_rgb0);
+//    cvWaitKey();
+//    imshow("rgb1_justLoaded", img_rgb1);
+//    cvWaitKey();
+//    imshow("rgb2_justLoaded", img_rgb2);
+//    cvWaitKey();
+//    //DEBUG//
 
     //LOG(INFO) << "Making scales for NIR";
     if(hasNIR)
