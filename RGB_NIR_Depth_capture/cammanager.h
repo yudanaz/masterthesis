@@ -8,7 +8,7 @@ using namespace cv;
 
 enum RGBDNIR_captureType
 {
-	RGB, Kinect_Depth, Kinect_RGB, Kinect_IR, NIR_Dark, NIR_935, NIR_1060, NIR_1300, NIR_1550
+	RGB, Kinect_Depth, Kinect_RGB, Kinect_IR, NIR_Dark, NIR_970, NIR_1300, NIR_1550
 };
 typedef QMap<RGBDNIR_captureType, Mat> RGBDNIR_MAP;
 

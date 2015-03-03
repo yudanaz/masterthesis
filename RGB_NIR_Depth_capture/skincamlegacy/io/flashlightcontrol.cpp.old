@@ -3,6 +3,8 @@
 FlashlightControl::FlashlightControl()
 {
 	serial = NULL;
+
+	bands << 935 << 1060 << 1300 << 1550;
 }
 
 FlashlightControl::~FlashlightControl()
@@ -141,39 +143,6 @@ void FlashlightControl::halt()
 
 QList<qint16> FlashlightControl::getBands()
 {
-	QList<qint16> bands;
-
-	try
-	{
-		sendCommand("w", false);
-
-		QString response;
-		char c = 0;
-
-		while(c != ';')
-		{
-			c = serial->ReadByte(1000);
-			response.append(c);
-		}
-		response.chop(1);
-
-		QStringList bandStrings = response.split(",");
-		for(quint8 i = 0; i < bandStrings.count(); i++)
-		{
-			bool ok = false;
-
-			bands.append(bandStrings.at(i).toInt(&ok));
-
-			if(!ok)
-				throw FlashlightException(QString("Error receiving wavebands from ringlight: %1")
-										  .arg(response));
-		}
-	}
-	catch (FlashlightException)
-	{
-		throw;
-	}
-
 	return bands;
 }
 
@@ -250,9 +219,8 @@ quint8 FlashlightControl::getFrameKey()
 #endif
 		throw FlashlightException("Flashlight not connected");
 
-	//wait for key (which must be between 0 and 6, which is the
-	//maximum number of wavebands possible)
-	while((key < '0') ||  (key > '6'))
+	//wait for key
+	while((key < '0') ||  (key > '4'))
 	{
 #ifdef QSERIAL
 		response = serial->read(1);

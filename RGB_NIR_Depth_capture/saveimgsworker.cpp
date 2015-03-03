@@ -27,8 +27,7 @@ void SaveImgsWorker::saveImgs(RGBDNIR_MAP imgs, bool RGB_img, bool NIR_DarkImg, 
 		{
 			case RGB: if(RGB_img) save = true; break;
 			case NIR_Dark: if(NIR_DarkImg) save = true; break;
-			case NIR_935:
-			case NIR_1060:
+			case NIR_970:
 			case NIR_1300:
 			case NIR_1550: if(NIR_channels) save = true; break;
 			case Kinect_Depth: if(kinect_depth) save = true; break;

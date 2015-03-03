@@ -24,7 +24,7 @@ VimbaCamManager::VimbaCamManager(VimbaCamType camType):
 	connected_flashlight(false),
 	flashLightRunning(false),
 	exceptionCnt(0),
-	maxFPS(30), nrOfWavebands(4), nrOfWavebands2Trigger(4)
+	maxFPS(30), nrOfWavebands(3), nrOfWavebands2Trigger(4)
 {
 	myCamType = camType;
 
@@ -118,7 +118,7 @@ void VimbaCamManager::connectCameras()
 			quint8 value = 0;
 			//calculate waveband value: binary representation, 1 = enabled, from left
 			QList<bool> bands;// = myConfig.wavebands.config.values();
-			bands << true << true << true << true;
+			bands << true << true << true;// << true;
 			for (quint8 i = 0; i < nrOfWavebands; i++)
 			{
 				if(bands.at(i))
@@ -235,10 +235,9 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 				switch(key)
 				{
 					case 0: camImgs[NIR_Dark] = img; break;
-					case 1: camImgs[NIR_935] = img;  break;
-					case 2: camImgs[NIR_1060] = img; break;
-					case 3: camImgs[NIR_1300] = img; break;
-					case 4: camImgs[NIR_1550] = img; break;
+					case 1: camImgs[NIR_970] = img;  break;
+					case 2: camImgs[NIR_1300] = img; break;
+					case 3: camImgs[NIR_1550] = img; break;
 					default: break;
 				}
 			}
@@ -311,8 +310,7 @@ QString VimbaCamManager::getRGBDNIR_captureTypeString(RGBDNIR_captureType i)
 		case Kinect_RGB: return "Kinect_RGB";
 		case Kinect_IR: return "Kinect_IR";
 		case NIR_Dark: return "NIR_Dark";
-		case NIR_935: return "NIR_935nm";
-		case NIR_1060: return "NIR_1060nm";
+		case NIR_970: return "NIR_970nm";
 		case NIR_1300: return "NIR_1300nm";
 		case NIR_1550: return "NIR_1550nm";
 		default:

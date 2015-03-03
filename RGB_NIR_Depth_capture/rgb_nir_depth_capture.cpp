@@ -112,8 +112,7 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 	if(capturedImgs.contains(RGB)){ allCapturedImgs[RGB] = capturedImgs[RGB]; sentNow.push_back(RGB); }
 
 	if(capturedImgs.contains(NIR_Dark)){ allCapturedImgs[NIR_Dark] = capturedImgs[NIR_Dark]; sentNow.push_back(NIR_Dark); }
-	if(capturedImgs.contains(NIR_935)){ allCapturedImgs[NIR_935] = capturedImgs[NIR_935]; sentNow.push_back(NIR_935); }
-	if(capturedImgs.contains(NIR_1060)){ allCapturedImgs[NIR_1060] = capturedImgs[NIR_1060]; sentNow.push_back(NIR_1060); }
+	if(capturedImgs.contains(NIR_970)){ allCapturedImgs[NIR_970] = capturedImgs[NIR_970]; sentNow.push_back(NIR_970); }
 	if(capturedImgs.contains(NIR_1300)){ allCapturedImgs[NIR_1300] = capturedImgs[NIR_1300]; sentNow.push_back(NIR_1300); }
 	if(capturedImgs.contains(NIR_1550)){ allCapturedImgs[NIR_1550] = capturedImgs[NIR_1550]; sentNow.push_back(NIR_1550); }
 
@@ -339,7 +338,7 @@ void RGB_NIR_Depth_Capture::keyPressEvent(QKeyEvent *event)
 	//save image when "s" is pressed, ascii[83] = s
 	if(event->key() == 83){ triggerSave = true; }
 
-	//start/stop acquiring images when "a" is pressed, ascii[65] = a
+	//start/stop acquiring images when "a" is pressed),, ascii[65] = a
 	if(event->key() == 65)
 	{
 		if(acquiring){ stopAcquisition(); }

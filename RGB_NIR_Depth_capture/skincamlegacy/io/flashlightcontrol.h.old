@@ -131,6 +131,9 @@ private:
 #else
 	SerialPort *serial;
 #endif
+
+	QList<qint16> bands;	/*!< a list of the available wavebands. */
+
 };
 
 #endif // FLASHLIGHTCONTROL_H
