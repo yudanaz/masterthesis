@@ -28,7 +28,7 @@ void ProsilicaWorker::startAcquisition()
 			//forward images to main thread
 			emit imagesReady(images);
 
-//			usleep(211011); //quick +/- fix for network packet collision -> alternates camera queries by simple timeout
+			usleep(66666); //sleep so speed is <= 15 fps
 		}
 		while(acquiring);
 		stopped = true;

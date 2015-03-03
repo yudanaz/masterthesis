@@ -92,32 +92,42 @@ void KinectCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 			{
 				success = freenectDevice->getVideo(rgbMat);
 			}
+			//turn by 180° (kinect is upside down in camera rig)
+			flip(rgbMat, rgbMat, 0);
+			flip(rgbMat, rgbMat, 1);
 			camImgs[Kinect_RGB] = rgbMat;
 
 			//try getting depth image until successful
-			Mat depthMat;//(Size(640,480),CV_16UC1);
+			Mat depthMat, depthMat_8bit;
 			success =  freenectDevice->getDepth(depthMat);
 			while(!success)
 			{
 				success = freenectDevice->getDepth(depthMat);
 			}
-			camImgs[Kinect_Depth] = depthMat;
+			//scale to 8 bit and turn by 180° (kinect is upside down in camera rig)
+			depthMat.convertTo(depthMat_8bit, CV_8UC1, 255.0/2047.0);
+			flip(depthMat_8bit, depthMat_8bit, 0);
+			flip(depthMat_8bit, depthMat_8bit, 1);
+			camImgs[Kinect_Depth] = depthMat_8bit;
 		}
 		else
 		{
 			Mat irMat;
-			Mat irMap8bit;
+			Mat irMat8bit;
 
 			success = freenectDevice->getIR(irMat);
 			while(!success)
 			{
 				success = freenectDevice->getIR(irMat);
 			}
-			//normalize to [0,255]
 //			double min, max;
 //			minMaxLoc(irMat, &min, &max);
-			irMat.convertTo(irMap8bit, CV_8UC1, 255.0/25.0); //max
-			camImgs[Kinect_IR] = irMap8bit;
+
+			//normalize to [0,255] and turn by 180° (kinect is upside down in camera rig)
+			irMat.convertTo(irMat8bit, CV_8UC1, 255.0/16.0); //25 //max
+			flip(irMat8bit, irMat8bit, 0);
+			flip(irMat8bit, irMat8bit, 1);
+			camImgs[Kinect_IR] = irMat8bit;
 		}
 	}
 	catch(std::runtime_error e)

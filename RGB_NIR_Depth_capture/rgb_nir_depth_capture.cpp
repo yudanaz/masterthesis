@@ -198,12 +198,9 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 		else if(capturing_kinectRGB && type == Kinect_Depth || !capturing_kinectRGB && type == Kinect_IR)
 		{
 			//make a resized copy of the image according to graphic widget size
-			Mat img8bit;
-			if(capturing_kinectRGB){ img.convertTo(img8bit, CV_8UC1, 255.0/2047.0); }//scaling for depth image
-			else{ img8bit = img; }//no scaling for IR image
-			if(img8bit.cols != 0) //work-around for not understood bug... when switching back from IR to RGB, depth image is empty. TODO: look into it
+			if(img.cols != 0) //work-around for not understood bug... when switching back from IR to RGB, depth image is empty. TODO: look into it
 			{
-				cv::resize(img8bit, imgSmall, Size(width_depth,height_depth));
+				cv::resize(img, imgSmall, Size(width_depth,height_depth));
 				if(flipImgs){ flip(imgSmall, imgSmall, 1); }
 			}
 			cvtColor(imgSmall, imgSmall, CV_GRAY2RGB);
