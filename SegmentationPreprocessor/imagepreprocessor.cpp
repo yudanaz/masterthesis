@@ -166,35 +166,55 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 	undistort(RGB, RGB_undist, cam_RGB, distCoeff_RGB);
 	Mat RGB_resized = resizeAndCropRGBImg(RGB_undist);
 
-	Mat depth_ = mapKinectDepth2NIR(depth_kinect, NIR);
+	Mat depth_remapped = mapKinectDepth2NIR(depth_kinect, NIR);
 
 	//rectify
 	Mat RGB_rect, NIR_rect, depth_rect;
 	remap(RGB_resized, RGB_rect, rectifyMapX_RGB, rectifyMapY_RGB, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
 	remap(NIR, NIR_rect, rectifyMapX_NIR, rectifyMapY_NIR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
-	remap(depth_, depth_rect, rectifyMapX_NIR, rectifyMapY_NIR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
+	remap(depth_remapped, depth_rect, rectifyMapX_NIR, rectifyMapY_NIR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
 	//(rectify kinect depth  with NIR params, because it was mapped to NIR)
 
 	//if set, resize the images to a new output (smaller) size (might be better/faster for CNN learning
 	// and improves performance of cross-spectral stereo matching)
+	Mat RGB_small, NIR_small, depth_remapped_small;
 	if(output_image_size_set_)
 	{
-		resize(RGB_rect, RGB_out, outputImgSz, 0, 0, INTER_AREA); //area averaging best for downsampling
-		resize(NIR_rect, NIR_out, outputImgSz, 0, 0, INTER_AREA);
-		resize(depth_rect, depth_remapped_out, outputImgSz, 0, 0, INTER_NEAREST); //for depth no in-between interpolation!
+		resize(NIR_rect, NIR_small, outputImgSz, 0, 0, INTER_AREA);
+		resize(RGB_rect, RGB_small, outputImgSz, 0, 0, INTER_AREA); //area averaging best for downsampling
+		resize(depth_rect, depth_remapped_small, outputImgSz, 0, 0, INTER_NEAREST); //for depth no in-between interpolation!
 	}
 	else
 	{
 		//put results in output imgs
-		RGB_out = RGB_rect;
-		NIR_out = NIR_rect;
-		depth_remapped_out = depth_rect;
+		NIR_small = NIR_rect;
+		RGB_small = RGB_rect;
+		depth_remapped_small = depth_rect;
 	}
 
-	//make disparity image from resized RGB and NIR images (cross/multi - spectral)
-//	Mat disp;
-//	makeCrossSpectralStereo(NIR_out, RGB_out, disp);
-//	depth_stereo_out = disp;
+	//make disparity image from RGB and NIR images (cross/multi - spectral)
+	Mat disp;
+	makeCrossSpectralStereo(NIR_small, RGB_small, disp);
+
+	//register RGB to NIR image using HOG descriptors
+	Mat RGB_registered;
+	if(stereo_Type_ == crossSpectrSt_HOG)
+	{
+		vector<Point2f> matchedDescrL, matchedDescrR;
+		((HOG_crossSpectralStereoMatcher*)(CrossSpectralStereoMatcher*)CSstereoMatcher)->getBestDescriptors(matchedDescrL, matchedDescrR);
+		Mat homography = findHomography(matchedDescrL, matchedDescrR, CV_RANSAC);
+		warpPerspective(RGB_small, RGB_registered, homography, RGB_small.size());
+	}
+	else
+	{
+		RGB_registered = RGB_small; //~do nothing
+	}
+
+	//set the final outputs
+	NIR_out = NIR_small;
+	RGB_out = RGB_registered;
+	depth_remapped_out = depth_remapped_small;
+	depth_stereo_out = disp;
 }
 
 /**************************************************************************
@@ -535,6 +555,7 @@ void ImagePreprocessor::makeCrossSpectralStereo(Mat imgNIR_L, Mat imgRGB_R, Mat&
 	from_to[0] = 0; //970 nm is first channel
 	mixChannels(&imgNIR_L, 1, &nir_970, 1, from_to, 1);
 
+	//match stereo images and get disparity image
 	CSstereoMatcher->process(nir_970, rgb_red, out_disp);
 }
 
