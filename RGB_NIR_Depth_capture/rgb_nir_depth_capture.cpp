@@ -1,12 +1,13 @@
 #include <QDir>
 #include <QDateTime>
+#include <QDesktopServices>
 #include "rgb_nir_depth_capture.h"
 #include "ui_rgbnird_mainwindow.h"
 
 RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::RGBNIRD_MainWindow),
-	acquiring(false), triggerSave(false), triggerSaveIR_RGB_pair(false),
+	acquiring(false), triggerSave(false),
 	triggerSwitch_kinectRGB2IR(false), triggerSwitch_kinectIR2RGB(false), capturing_kinectRGB(true),
 	capturingSeries(false), countingDown(false), countdownSeconds(0), countdownTime(0), seriesCnt(0), seriesMax(0), seriesInterval(0),
 	ptr_RGBScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene)),
@@ -234,25 +235,6 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 		triggerSave = false;
 	}
 
-	//save pair of kinect RGB and IR images if triggered
-	if(triggerSaveIR_RGB_pair)
-	{
-		if(allCapturedImgs.contains(Kinect_IR) && allCapturedImgs.contains(Kinect_RGB))
-		{
-			sound_click.play();
-
-			QString dateTime_str = getUniquePrefixFromDateAndTime();
-			QString nmRGB = QDir::currentPath() + "/out/" + dateTime_str + "_kinectPairRGB.png";
-			QString nmIR = QDir::currentPath() + "/out/" + dateTime_str + "_kinectPairIR.png";
-			imwrite(nmRGB.toStdString(), allCapturedImgs[Kinect_RGB]);
-			imwrite(nmIR.toStdString(), allCapturedImgs[Kinect_IR]);
-
-			//remove ir image so it isn't saved twice
-			allCapturedImgs.remove(Kinect_IR);
-			triggerSaveIR_RGB_pair = false;
-		}
-	}
-
 	threadLock.unlock();
 }
 
@@ -348,6 +330,13 @@ void RGB_NIR_Depth_Capture::keyPressEvent(QKeyEvent *event)
 		flipImgs = !flipImgs;
 		ui->checkBox_flipImgs->setChecked(flipImgs);
 	}
+
+	//open output folder if "o" is pressed
+	if(event->key() == 79)
+	{
+		QDir d;
+		QDesktopServices::openUrl(d.absolutePath() + "/out");
+	}
 }
 
 
@@ -392,20 +381,13 @@ void RGB_NIR_Depth_Capture::on_pushButton_saveSeries_released()
 	sound_beep.play();
 }
 
-void RGB_NIR_Depth_Capture::on_btn_saveIR_RGB_pair_released()
-{
-	triggerSaveIR_RGB_pair = true;
-	((KinectWorker*)myImgAcqWorker_Kinect)->triggerIRcapture();
-}
-
-void RGB_NIR_Depth_Capture::on_pushButton_switchRGB_IR_released()
+void RGB_NIR_Depth_Capture::on_checkBox_switchKinectRGB_IR_clicked()
 {
 	bool capturingRGB = ((KinectWorker*)myImgAcqWorker_Kinect)->isCapturingRGB();
 	triggerSwitch_kinectRGB2IR = capturingRGB;
 	triggerSwitch_kinectIR2RGB = !capturingRGB;
 	((KinectWorker*)myImgAcqWorker_Kinect)->switch_RGB_IR(!capturingRGB);
 }
-
 
 void RGB_NIR_Depth_Capture::on_actionNIR_multi_channel_capture_changed()
 {
@@ -420,4 +402,11 @@ void RGB_NIR_Depth_Capture::on_checkBox_simulateRGBcalib_clicked()
 void RGB_NIR_Depth_Capture::on_checkBox_flipImgs_clicked()
 {
 	flipImgs = ui->checkBox_flipImgs->isChecked();
+}
+
+
+void RGB_NIR_Depth_Capture::on_btn_saveImgs_2_released()
+{
+	QDir d;
+	QDesktopServices::openUrl(d.absolutePath() + "/out");
 }

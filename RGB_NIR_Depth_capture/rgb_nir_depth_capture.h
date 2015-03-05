@@ -55,15 +55,15 @@ private slots:
 
 	void on_pushButton_saveSeries_released();
 
-	void on_btn_saveIR_RGB_pair_released();
-
-	void on_pushButton_switchRGB_IR_released();
-
 	void on_actionNIR_multi_channel_capture_changed();
 
 	void on_checkBox_simulateRGBcalib_clicked();
 
 	void on_checkBox_flipImgs_clicked();
+
+	void on_checkBox_switchKinectRGB_IR_clicked();
+
+	void on_btn_saveImgs_2_released();
 
 protected:
 	void keyPressEvent(QKeyEvent *event);
@@ -91,7 +91,6 @@ private:
 
 	Ui::RGBNIRD_MainWindow *ui;
 	bool triggerSave;
-	bool triggerSaveIR_RGB_pair;
 	bool triggerSwitch_kinectRGB2IR;
 	bool triggerSwitch_kinectIR2RGB;
 	bool capturing_kinectRGB;
