@@ -16,6 +16,8 @@ void SaveImgsWorker::saveImgs(RGBDNIR_MAP imgs, bool RGB_img, bool NIR_DarkImg, 
 	if(!dir.exists(QDir::currentPath()+"/out")){ dir.mkdir(QDir::currentPath()+"/out"); }
 	QString dateTime_str = getUniquePrefixFromDateAndTime();
 
+	Mat nir970, nir1300, nir1550;
+
 	while(i.hasNext())
 	{
 		i.next();
@@ -27,12 +29,14 @@ void SaveImgsWorker::saveImgs(RGBDNIR_MAP imgs, bool RGB_img, bool NIR_DarkImg, 
 		{
 			case RGB: if(RGB_img) save = true; break;
 			case NIR_Dark: if(NIR_DarkImg) save = true; break;
-			case NIR_970:
-			case NIR_1300:
-			case NIR_1550: if(NIR_channels) save = true; break;
 			case Kinect_Depth: if(kinect_depth) save = true; break;
 			case Kinect_IR: if(kinect_ir) save = true; break;
 			case Kinect_RGB: if(kinect_rgb) save = true; break;
+
+			//only save nir channels later, when all three channels have been joined
+			case NIR_970: if(NIR_channels){ nir970 = i.value(); } break;
+			case NIR_1300: if(NIR_channels){ nir1300 = i.value(); } break;
+			case NIR_1550: if(NIR_channels){ nir1550 = i.value(); } break;
 			default: break;
 		}
 
@@ -43,6 +47,19 @@ void SaveImgsWorker::saveImgs(RGBDNIR_MAP imgs, bool RGB_img, bool NIR_DarkImg, 
 						 VimbaCamManager::getRGBDNIR_captureTypeString( (RGBDNIR_captureType)i.key() ) + ".png";
 			imwrite(nm.toStdString().c_str(), i.value());
 		}
+	}
+
+	//save multichannel if desired
+	if(NIR_channels && nir970.cols != 0 && nir1300.cols != 0 && nir1550.cols != 0)
+	{
+		Mat nirMultiCh;
+		std::vector<Mat> nirChs;
+		nirChs.push_back(nir970);
+		nirChs.push_back(nir1300);
+		nirChs.push_back(nir1550);
+		merge(nirChs, nirMultiCh);
+		QString nm = QDir::currentPath() + "/out/" + dateTime_str + "_NIR_MultiCh.png";
+		imwrite(nm.toStdString().c_str(), nirMultiCh);
 	}
 }
 
