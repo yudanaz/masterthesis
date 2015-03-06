@@ -17,6 +17,7 @@ using namespace cv;
 
 class BestDescriptorCandidate
 {
+public:
 	BestDescriptorCandidate(int x_, int y_, float cost_){ x = x_; y = y_; cost = cost_; }
 	int x;
 	int y;

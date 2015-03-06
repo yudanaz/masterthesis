@@ -198,14 +198,14 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 
 	//register RGB to NIR image using HOG descriptors
 	Mat RGB_registered;
-	if(stereo_Type_ == crossSpectrSt_HOG)
-	{
-		vector<Point2f> matchedDescrL, matchedDescrR;
-		((HOG_crossSpectralStereoMatcher*)(CrossSpectralStereoMatcher*)CSstereoMatcher)->getBestDescriptors(matchedDescrL, matchedDescrR);
-		Mat homography = findHomography(matchedDescrL, matchedDescrR, CV_RANSAC);
-		warpPerspective(RGB_small, RGB_registered, homography, RGB_small.size());
-	}
-	else
+//	if(stereo_Type_ == crossSpectrSt_HOG)
+//	{
+//		vector<Point2f> matchedDescrL, matchedDescrR;
+//		((HOG_crossSpectralStereoMatcher*)(CrossSpectralStereoMatcher*)CSstereoMatcher)->getBestDescriptors(matchedDescrL, matchedDescrR);
+//		Mat homography = findHomography(matchedDescrL, matchedDescrR, CV_RANSAC);
+//		warpPerspective(RGB_small, RGB_registered, homography, RGB_small.size());
+//	}
+//	else
 	{
 		RGB_registered = RGB_small; //~do nothing
 	}
@@ -473,14 +473,17 @@ Mat ImagePreprocessor::resizeAndCropRGBImg(Mat rgbImg)
 
 Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
 {
+	//fill holes in depth map by simple "shadow"-assumption
+	Mat depth_fixed = fixHolesInDepthMap(depth_kinect);
+
 	//map Kinect depth to NIR
 	Mat depth_kinect_undist;
-	undistort(depth_kinect, depth_kinect_undist, cam_IR, distCoeff_IR);
+	undistort(depth_fixed, depth_kinect_undist, cam_IR, distCoeff_IR);
 	vector<Point3f> depth3D = projectKinectDepthTo3DSpace(depth_kinect_undist);
 	Mat depth2D = projectFrom3DSpaceToImage(depth3D, rotation_IR2NIR, transl_IR2NIR, cam_NIR, distCoeff_NIR,
 											Size(NIR_img.cols, NIR_img.rows));
 
-	//fill gaps in depth map
+	//fill gaps in re-mapped depth map with crossbilateral filter
 	Mat NIR_gray, NIR_gray_undist;
 	cvtColor(NIR_img, NIR_gray, CV_RGB2GRAY);
 	undistort(NIR_gray, NIR_gray_undist, cam_NIR, distCoeff_NIR);
@@ -492,6 +495,29 @@ Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
 	imwrite("depth_after.png", depth_refined);
 
 	return depth_refined;
+}
+
+Mat ImagePreprocessor::fixHolesInDepthMap(Mat depth)
+{
+	Mat depth_;
+	flip(depth, depth_, 1); //flip vertically
+	for (int y = 0; y < depth_.rows; ++y)
+	{
+		uchar lastVal;
+		for (int x = 0; x < depth_.cols; ++x)
+		{
+			//if pixel value is white (255 = unknown depth), fill with last value in row
+			uchar val = depth_.at<uchar>(y,x);
+			if(val == 255)
+			{
+				depth_.at<uchar>(y,x) = lastVal;
+			}
+			else { lastVal = val; }
+		}
+	}
+
+	flip(depth_, depth_, 1); //flip back
+	return depth_;
 }
 
 vector<Point3f> ImagePreprocessor::projectKinectDepthTo3DSpace(Mat depth)
@@ -524,7 +550,28 @@ Mat ImagePreprocessor::projectFrom3DSpaceToImage(std::vector<Point3f> points3D, 
 //    qDebug() << IO::getOpenCVTypeName(img3D.type());
 
 	vector<Point2f> points2D;
-	projectPoints(points3D, rot, transl, cam_Matrix, distCoeff, points2D);
+	projectPoints(points3D, rot, transl, cam_Matrix, noArray(), points2D);
+
+	//DEBUG//
+	//test to see if projectPoints() does anything different from Burrus' method [http://nicolas.burrus.name/index.php/Research/KinectCalibration]
+	//turns out it does exactly the same thing. reprojection errror is elsewhere.
+//	float fx = cam_Matrix.at<double>(0,0);
+//	float cx = cam_Matrix.at<double>(0,2);
+//	float fy = cam_Matrix.at<double>(1,1);
+//	float cy = cam_Matrix.at<double>(1,2);
+//	for (uint j = 0; j < points3D.size(); ++j)
+//	{
+//		Mat p3d = Mat(points3D[j]);
+//		p3d.convertTo(p3d, rot.type()); //matrices have to be same type for matrix multiplication
+//		Mat m3d_ =  rot * p3d + transl ;
+//		const double *d = m3d_.ptr<double>(0);
+//		Point3f p3d_((float)d[0], (float)d[1], (float)d[2]);
+//		Point2f p2d;
+//		p2d.x = (p3d_.x * fx / p3d_.z) + cx;
+//		p2d.y = (p3d_.y * fy / p3d_.z) + cy;
+//		points2D.push_back(p2d);
+//	}
+	//DEBUG//
 
 	//transform vector holding 2D points into image matrix with depth values as intensity
 	Mat img2D(outImgSz.height, outImgSz.width, CV_8UC1, Scalar(255)); //white = farest OR unkown depth
