@@ -18,10 +18,9 @@ using namespace cv;
 class BestDescriptorCandidate
 {
 public:
-	BestDescriptorCandidate(int x_, int y_, float cost_){ x = x_; y = y_; cost = cost_; }
-	int x;
-	int y;
-	float cost;
+	BestDescriptorCandidate(int x1_, int y1_, int x2_, int y2_, int dist_){ x1 = x1_; y1 = y1_; x2 = x2_; y2 = y2_; dist = dist_; }
+	int x1; int y1; int x2; int y2;
+	float dist;
 };
 
 class HOG_crossSpectralStereoMatcher : public CrossSpectralStereoMatcher
@@ -33,7 +32,7 @@ public:
 
 	virtual void setParams(std::vector<float> params);
 
-	void getBestDescriptors(vector<Point2f> &outDescr_L, vector<Point2f> &outDescr_R);
+	void getBestDescriptors(vector<KeyPoint> &outDescr_L, vector<KeyPoint> &outDescr_R, vector<DMatch> &dmatches, float threshold);
 
 private:
 	Mat makeDisparity_WTA(vector<float>& values_L, vector<float>& values_R, Size imgSize, int blockSize, int nCells, int nBins);
@@ -52,11 +51,9 @@ private:
 	int speckleRange;
 
 	//best matching HOG descriptors (this is an extra feature)
-	void setBestDescriptors(int w, int h, int x1, int x2, int y, float cost);
+	void setBestDescriptors(int w, int h, int x1, int x2, int y, float dist);
 	int bestDescrRasterDiv;
 	std::vector<BestDescriptorCandidate> bestDescrCanditates;
-	std::vector<Point2f> bestDescr_L;
-	std::vector<Point2f> bestDescr_R;
 
 	//modified SGBM:
 	void compute_SGBM_HOG(InputArray leftarr, InputArray rightarr, OutputArray disparr, StereoSGBM params, vector<float> &HOGdesriptors_L, vector<float> &HOGdescriptors_R, int blockSize, int nCells, int nBins);

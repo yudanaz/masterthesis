@@ -5,6 +5,7 @@
 #include "helper.h"
 #include "hog_crossspectralstereomatcher.h"
 #include "locnorm_crossspectralstereomatcher.h"
+#include "CThinPlateSpline.h"
 
 /**************************************************************************
  **************************************************************************
@@ -198,14 +199,40 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 
 	//register RGB to NIR image using HOG descriptors
 	Mat RGB_registered;
-//	if(stereo_Type_ == crossSpectrSt_HOG)
-//	{
-//		vector<Point2f> matchedDescrL, matchedDescrR;
-//		((HOG_crossSpectralStereoMatcher*)(CrossSpectralStereoMatcher*)CSstereoMatcher)->getBestDescriptors(matchedDescrL, matchedDescrR);
-//		Mat homography = findHomography(matchedDescrL, matchedDescrR, CV_RANSAC);
+	if(stereo_Type_ == crossSpectrSt_HOG)
+	{
+		vector<KeyPoint> matchedDescrL, matchedDescrR;
+		vector<DMatch> dmatches;
+		((HOG_crossSpectralStereoMatcher*)(CrossSpectralStereoMatcher*)CSstereoMatcher)->getBestDescriptors(matchedDescrL, matchedDescrR, dmatches, 1.4);
+
+//		vector<Point2f> pL, pR;
+//		for (int i = 0; i < matchedDescrL.size(); ++i)
+//		{
+//			pL.push_back(matchedDescrL[i].pt);
+//			pR.push_back(matchedDescrR[i].pt);
+//		}
+//		Mat homography = findHomography(pR, pL, CV_RANSAC);
 //		warpPerspective(RGB_small, RGB_registered, homography, RGB_small.size());
-//	}
-//	else
+//		RGB_registered = registerImageByHorizontalShift(RGB_small, matchedDescrL, matchedDescrR);
+
+		vector<Point> pLs, pRs;
+		for (int i = 0; i < matchedDescrL.size(); ++i)
+		{
+			Point2f pL = matchedDescrL[i].pt;
+			Point2f pR = matchedDescrR[i].pt;
+			pLs.push_back(Point(pL.x, pL.y));
+			pRs.push_back(Point(pR.x, pL.y));
+		}
+		CThinPlateSpline tps(pRs, pLs);
+		tps.warpImage(RGB_small, RGB_registered);
+
+		//DEBUG show matches//
+		Mat matches;
+		drawMatches(NIR_small, matchedDescrL, RGB_small, matchedDescrR, dmatches, matches);
+		imshow("descriptor matches", matches);
+		//DEBUG show matches//
+	}
+	else
 	{
 		RGB_registered = RGB_small; //~do nothing
 	}
@@ -215,6 +242,24 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 	RGB_out = RGB_registered;
 	depth_remapped_out = depth_remapped_small;
 	depth_stereo_out = disp;
+}
+
+Mat ImagePreprocessor::registerImageByHorizontalShift(Mat img, vector<KeyPoint> k1, vector<KeyPoint> k2)
+{
+	//compute offset as half of average distance between matched points for horizontal shift
+	int xoffset = 0;
+	for(int i = 0; i < k1.size(); ++i)
+	{
+		Point2f p1 = k1[i].pt;
+		Point2f p2 = k2[i].pt;
+		xoffset += abs((int)p1.x - (int)p2.x);
+	}
+	xoffset = ((float)xoffset / (float)k1.size() / 2.0 + 0.5);
+
+	//shift image to the right
+	Mat imgShifted(img.rows, img.cols, img.type(), Scalar(0));
+	img( Rect(0, 0, img.cols-xoffset, img.rows)).copyTo(imgShifted( Rect(xoffset,0,img.cols-xoffset, img.rows) ));
+	return imgShifted;
 }
 
 /**************************************************************************

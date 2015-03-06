@@ -66,6 +66,7 @@ private:
 
 	bool fitRGBimgs2NIRimgs(QList<Mat> origNirs, QList<Mat> origRGBs);
 	Mat resizeAndCropRGBImg(Mat rgbImg);
+	Mat registerImageByHorizontalShift(Mat img, vector<KeyPoint> k1, vector<KeyPoint> k2);
 
 	Mat mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img);
 	Mat fixHolesInDepthMap(Mat depth);
@@ -117,12 +118,7 @@ private:
 
 	//resize and crop parameters
 	double resizeFac_RGB;
-//    double resizeFac_NIR;
-//    double resizeFac_IR;
-
 	Rect cropRect_RGB;
-//    Rect cropRect_NIR;
-//    Rect cropRect_IR;
 
 	//rectification maps
 	Mat rectifyMapX_RGB;

@@ -6,12 +6,12 @@ HOG_crossSpectralStereoMatcher::HOG_crossSpectralStereoMatcher():
 	minDisp(4), maxDisp(20),
 	wtaThreshold(1.0),
 	SADwindow(3), preFilterCAP(11), uniquenessRatio(1), speckleWindow(7), speckleRange(4),
-	bestDescrRasterDiv(4)
+	bestDescrRasterDiv(8)
 {
 	//fill best descriptor candidates vector with as many positions as the raster dictates
 	for(int i = 0; i< bestDescrRasterDiv*bestDescrRasterDiv; ++i)
 	{
-		BestDescriptorCandidate candidate(0,0,9999.0);
+		BestDescriptorCandidate candidate(0,0,0,0,9999.0);
 		bestDescrCanditates.push_back(candidate);
 	}
 }
@@ -165,15 +165,39 @@ float HOG_crossSpectralStereoMatcher::getL1Distance(vector<float>& a, int index_
 	return dist;
 }
 
-void HOG_crossSpectralStereoMatcher::getBestDescriptors(vector<Point2f> &outDescr_L, vector<Point2f> &outDescr_R)
+void HOG_crossSpectralStereoMatcher::getBestDescriptors(vector<KeyPoint> &outDescr_L, vector<KeyPoint> &outDescr_R, vector<DMatch> &dmatches, float threshold)
 {
-	outDescr_L = bestDescr_L;
-	outDescr_R = bestDescr_R;
+	//select those descriptors which are "better" then the threshold
+	int i = 0;
+	foreach (BestDescriptorCandidate c, bestDescrCanditates)
+	{
+		if(c.dist < threshold)
+		{
+			outDescr_L.push_back(KeyPoint(c.x1, c.y1, 1));
+			outDescr_R.push_back(KeyPoint(c.x2, c.y2, 1));
+			dmatches.push_back(DMatch(i,i,c.dist));
+			i++;
+		}
+	}
 }
 
-void HOG_crossSpectralStereoMatcher::setBestDescriptors(int w, int h, int x1, int x2, int y, float cost)
+void HOG_crossSpectralStereoMatcher::setBestDescriptors(int w, int h, int x1, int x2, int y, float dist)
 {
-	//TODO
+	//check in which raster cell of the image we're in
+	int cellX = x1 / (w / bestDescrRasterDiv);
+	int cellY = y / (h / bestDescrRasterDiv);
+	int cellIndex = cellY * bestDescrRasterDiv + cellX;
+
+	//if this cost is lower than the one stored for this cell, replace candidate
+	float currentDist= bestDescrCanditates[cellIndex].dist;
+	if(dist < currentDist)
+	{
+		bestDescrCanditates[cellIndex].dist = dist;
+		bestDescrCanditates[cellIndex].x1 = x1;
+		bestDescrCanditates[cellIndex].y1 = y;
+		bestDescrCanditates[cellIndex].x2 = x2;
+		bestDescrCanditates[cellIndex].y2 = y;
+	}
 }
 
 
@@ -253,7 +277,7 @@ void HOG_crossSpectralStereoMatcher::calcPixelCostHOG(vector<float> &descr_L, ve
 			cost[cnt++] = (CostType)(dist * 100.0 + 0.5); //*100 to cast float distance to short interval
 
 			//while doing all this also remember the best descriptors
-			setBestDescriptors(imgWidth, imgHeight, i, indexR, y, dist);
+			setBestDescriptors(imgWidth, imgHeight, x, x-j, y, dist);
 		}
 	}//x
 }

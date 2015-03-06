@@ -44,6 +44,9 @@ void MainWindow::preprocessImages()
 	imshow("NIR", nir_);
 //	imshow("cross-spectral Stereo", depthStereo_);
 	imshow("Kinect Depth", depth_);
+
+	imwrite("RGB.png", rgb_);
+	imwrite("NIR.png", nir_);
 }
 
 
