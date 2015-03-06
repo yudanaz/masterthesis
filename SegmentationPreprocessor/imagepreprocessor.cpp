@@ -121,15 +121,15 @@ void ImagePreprocessor::calibRig(QStringList calibImgs_RGB, QStringList calibImg
 	make_Intrinsics_and_undistCoeffs(imgsRGB_resized, cam_RGB_resized, distCoeff_RGB_resized, "RGB_resized");
 
 	//make rectify maps for IR -> NIR mapping
-	Mat dummy1, dummy2; //use dummies because NIR should compose a stereo pair with RGB, and not with IR
+	Mat dummy1, dummy2, dummy3; //use dummies because NIR should compose a stereo pair with RGB, and not with IR
 	make_RectifyMaps(imgsIR, imgsNIR_ir, distCoeff_IR, distCoeff_NIR, cam_IR, cam_NIR,
 					 rectifyMapX_IR, rectifyMapY_IR, dummy1, dummy2,
-					 rotation_IR2NIR, transl_IR2NIR, "IR (for IR->NIR)", "NIR (for IR->NIR)");
+					 rotation_IR2NIR, transl_IR2NIR, proj_IR2NIR, "IR (for IR->NIR)", "NIR (for IR->NIR)");
 
 	//make rectify maps for RGB -> NIR mapping
 	make_RectifyMaps(imgsRGB_resized, imgsNIR_rgb, distCoeff_RGB_resized, distCoeff_NIR, cam_RGB_resized, cam_NIR,
 					 rectifyMapX_RGB, rectifyMapY_RGB, rectifyMapX_NIR, rectifyMapY_NIR,
-					 rotation_RGB2NIR, transl_RGB2NIR, "RGB (for RGB->NIR)", "NIR (for RGB->NIR)");
+					 rotation_RGB2NIR, transl_RGB2NIR, dummy3, "RGB (for RGB->NIR)", "NIR (for RGB->NIR)");
 
 //	make_RectifyMaps(imgsIR, imgsRGB, distCoeff_IR, distCoeff_RGB, cam_IR, cam_RGB,
 //					 rectifyMapX_IR, rectifyMapY_IR, rectifyMapX_RGB, rectifyMapY_RGB,
@@ -205,26 +205,31 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 		vector<DMatch> dmatches;
 		((HOG_crossSpectralStereoMatcher*)(CrossSpectralStereoMatcher*)CSstereoMatcher)->getBestDescriptors(matchedDescrL, matchedDescrR, dmatches, 1.4);
 
-//		vector<Point2f> pL, pR;
-//		for (int i = 0; i < matchedDescrL.size(); ++i)
-//		{
-//			pL.push_back(matchedDescrL[i].pt);
-//			pR.push_back(matchedDescrR[i].pt);
-//		}
-//		Mat homography = findHomography(pR, pL, CV_RANSAC);
-//		warpPerspective(RGB_small, RGB_registered, homography, RGB_small.size());
-//		RGB_registered = registerImageByHorizontalShift(RGB_small, matchedDescrL, matchedDescrR);
-
-		vector<Point> pLs, pRs;
+		vector<Point2f> pL, pR;
 		for (int i = 0; i < matchedDescrL.size(); ++i)
 		{
-			Point2f pL = matchedDescrL[i].pt;
-			Point2f pR = matchedDescrR[i].pt;
-			pLs.push_back(Point(pL.x, pL.y));
-			pRs.push_back(Point(pR.x, pL.y));
+			pL.push_back(matchedDescrL[i].pt);
+			pR.push_back(matchedDescrR[i].pt);
 		}
-		CThinPlateSpline tps(pRs, pLs);
-		tps.warpImage(RGB_small, RGB_registered);
+
+		//register RGB to NIR using homography matrix computed from best HOG descriptor matches (uniformly spaced)
+		Mat homography = findHomography(pR, pL, CV_RANSAC);
+		warpPerspective(RGB_small, RGB_registered, homography, RGB_small.size());
+
+		//register RGB to NIR using simple horizonzal shift
+//		RGB_registered = registerImageByHorizontalShift(RGB_small, matchedDescrL, matchedDescrR);
+
+		//register RGB using thin plate spline algorithm
+//		vector<Point> pLs, pRs;
+//		for (int i = 0; i < matchedDescrL.size(); ++i)
+//		{
+//			Point2f pL = matchedDescrL[i].pt;
+//			Point2f pR = matchedDescrR[i].pt;
+//			pLs.push_back(Point(pL.x, pL.y));
+//			pRs.push_back(Point(pR.x, pL.y));
+//		}
+//		CThinPlateSpline tps(pRs, pLs);
+//		tps.warpImage(RGB_small, RGB_registered);
 
 		//DEBUG show matches//
 		Mat matches;
@@ -331,7 +336,7 @@ void ImagePreprocessor::make_Intrinsics_and_undistCoeffs(QList<Mat> calibImgs, M
 void ImagePreprocessor::make_RectifyMaps(QList<Mat> srcImgs, QList<Mat> dstImgs,
 										 Mat distCoeff_src, Mat distCoeff_dst, Mat cam_src, Mat cam_dst,
 										 Mat &out_rectifMapX_src, Mat &out_rectifMapY_src, Mat &out_rectifMapX_dst, Mat &out_rectifMapY_dst,
-										 Mat &out_Rot, Mat &out_Transl,
+										 Mat &out_Rot, Mat &out_Transl, Mat &Proj_dst,
 										 QString imgTypeSrc, QString imgTypeDst)
 {
 	//if set, use output image size, else use size of input image
@@ -382,7 +387,7 @@ void ImagePreprocessor::make_RectifyMaps(QList<Mat> srcImgs, QList<Mat> dstImgs,
 	}
 
 	//calibrate as stereo cameras
-	Mat /*Rot, Transl,*/ E, F, Rect_src, Rect_dst, Proj_src, Proj_dst, Q;
+	Mat /*Rot, Transl,*/ E, F, Rect_src, Rect_dst, Proj_src, Q;
 	stereoCalibrate(objPoints_,
 					imgPoints_src_, imgPoints_dst_,
 					cam_src, distCoeff_src,
@@ -525,8 +530,10 @@ Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
 	Mat depth_kinect_undist;
 	undistort(depth_fixed, depth_kinect_undist, cam_IR, distCoeff_IR);
 	vector<Point3f> depth3D = projectKinectDepthTo3DSpace(depth_kinect_undist);
+	double verticalShift = proj_IR2NIR.at<double>(1,3) / proj_IR2NIR.at<double>(0,0);
+	double horizontalShift = proj_IR2NIR.at<double>(0,3) / proj_IR2NIR.at<double>(0,0);
 	Mat depth2D = projectFrom3DSpaceToImage(depth3D, rotation_IR2NIR, transl_IR2NIR, cam_NIR, distCoeff_NIR,
-											Size(NIR_img.cols, NIR_img.rows));
+											Size(NIR_img.cols, NIR_img.rows), horizontalShift, verticalShift);
 
 	//fill gaps in re-mapped depth map with crossbilateral filter
 	Mat NIR_gray, NIR_gray_undist;
@@ -590,32 +597,33 @@ vector<Point3f> ImagePreprocessor::projectKinectDepthTo3DSpace(Mat depth)
 	return points3D;
 }
 
-Mat ImagePreprocessor::projectFrom3DSpaceToImage(std::vector<Point3f> points3D, Mat rot, Mat transl, Mat cam_Matrix, Mat distCoeff, Size outImgSz)
+Mat ImagePreprocessor::projectFrom3DSpaceToImage(std::vector<Point3f> points3D, Mat rot, Mat transl, Mat cam_Matrix, Mat distCoeff, Size outImgSz,
+												 double shiftX, double shiftY)
 {
 //    qDebug() << IO::getOpenCVTypeName(img3D.type());
 
 	vector<Point2f> points2D;
-	projectPoints(points3D, rot, transl, cam_Matrix, noArray(), points2D);
+//	projectPoints(points3D, rot, transl, cam_Matrix, noArray(), points2D);
 
 	//DEBUG//
 	//test to see if projectPoints() does anything different from Burrus' method [http://nicolas.burrus.name/index.php/Research/KinectCalibration]
 	//turns out it does exactly the same thing. reprojection errror is elsewhere.
-//	float fx = cam_Matrix.at<double>(0,0);
-//	float cx = cam_Matrix.at<double>(0,2);
-//	float fy = cam_Matrix.at<double>(1,1);
-//	float cy = cam_Matrix.at<double>(1,2);
-//	for (uint j = 0; j < points3D.size(); ++j)
-//	{
-//		Mat p3d = Mat(points3D[j]);
-//		p3d.convertTo(p3d, rot.type()); //matrices have to be same type for matrix multiplication
-//		Mat m3d_ =  rot * p3d + transl ;
-//		const double *d = m3d_.ptr<double>(0);
-//		Point3f p3d_((float)d[0], (float)d[1], (float)d[2]);
-//		Point2f p2d;
-//		p2d.x = (p3d_.x * fx / p3d_.z) + cx;
-//		p2d.y = (p3d_.y * fy / p3d_.z) + cy;
-//		points2D.push_back(p2d);
-//	}
+	float fx = cam_Matrix.at<double>(0,0);
+	float cx = cam_Matrix.at<double>(0,2);
+	float fy = cam_Matrix.at<double>(1,1);
+	float cy = cam_Matrix.at<double>(1,2);
+	for (uint j = 0; j < points3D.size(); ++j)
+	{
+		Mat p3d = Mat(points3D[j]);
+		p3d.convertTo(p3d, rot.type()); //matrices have to be same type for matrix multiplication
+		Mat m3d_ =  rot * p3d + transl ;
+		const double *d = m3d_.ptr<double>(0);
+		Point3f p3d_((float)d[0], (float)d[1], (float)d[2]);
+		Point2f p2d;
+		p2d.x = (p3d_.x * fx / p3d_.z) + cx - shiftX;
+		p2d.y = (p3d_.y * fy / p3d_.z) + cy - shiftY;
+		points2D.push_back(p2d);
+	}
 	//DEBUG//
 
 	//transform vector holding 2D points into image matrix with depth values as intensity
@@ -788,6 +796,7 @@ void ImagePreprocessor::saveAll(QString saveURL)
 	fs << "rotation_IR2RGB" << rotation_IR2NIR;
 	fs << "transl_NIR2RGB" << transl_RGB2NIR;
 	fs << "transl_IR2RGB" << transl_IR2NIR;
+	fs << "proj_IR2NIR" << proj_IR2NIR;
 
 	fs << "cams_are_calibrated_" << cams_are_calibrated_;
 	fs << "rig_is_calibrated_" << rig_is_calibrated_;
@@ -834,6 +843,7 @@ void ImagePreprocessor::loadAll(QString loadURL)
 	fs["rotation_IR2RGB"] >> rotation_IR2NIR;
 	fs["transl_NIR2RGB"] >> transl_RGB2NIR;
 	fs["transl_IR2RGB"] >> transl_IR2NIR;
+	fs["proj_IR2NIR"] >> proj_IR2NIR;
 
 	fs["cams_are_calibrated_"] >> cams_are_calibrated_;
 	fs["rig_is_calibrated_"] >> rig_is_calibrated_;

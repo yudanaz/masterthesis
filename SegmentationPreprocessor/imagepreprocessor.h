@@ -62,7 +62,7 @@ private:
 	void make_Intrinsics_and_undistCoeffs(QList<Mat> calibImgs, Mat& camIntrinsics, Mat& distCoeff, QString imgType);
 	void make_RectifyMaps(QList<Mat> srcImgs, QList<Mat> dstImgs, Mat distCoeff_src, Mat distCoeff_dst, Mat cam_src, Mat cam_dst,
 						  Mat& out_rectifMapX_src, Mat& out_rectifMapY_src, Mat& out_rectifMapX_dst, Mat& out_rectifMapY_dst,
-						  Mat &out_Rot, Mat &out_Transl, QString imgTypeSrc, QString imgTypeDst);
+						  Mat &out_Rot, Mat &out_Transl, Mat &Proj_dst, QString imgTypeSrc, QString imgTypeDst);
 
 	bool fitRGBimgs2NIRimgs(QList<Mat> origNirs, QList<Mat> origRGBs);
 	Mat resizeAndCropRGBImg(Mat rgbImg);
@@ -71,7 +71,7 @@ private:
 	Mat mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img);
 	Mat fixHolesInDepthMap(Mat depth);
 	vector<Point3f> projectKinectDepthTo3DSpace(Mat depth);
-	Mat projectFrom3DSpaceToImage(vector<Point3f> points3D, Mat rot, Mat transl, Mat cam_Matrix, Mat distCoeff, Size outImgSz);
+	Mat projectFrom3DSpaceToImage(vector<Point3f> points3D, Mat rot, Mat transl, Mat cam_Matrix, Mat distCoeff, Size outImgSz, double shiftX, double shiftY);
 
 	void makeCrossSpectralStereo(Mat imgNIR_L, Mat imgRGB_R, Mat &out_disp);
 
@@ -132,6 +132,7 @@ private:
 
 	//translation and rotation to NIR camera (our "main" camera position)
 	Mat rotation_IR2NIR;
+	Mat proj_IR2NIR;
 	Mat rotation_RGB2NIR;
 	Mat transl_IR2NIR;
 	Mat transl_RGB2NIR;
