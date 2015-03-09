@@ -199,49 +199,7 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 	makeCrossSpectralStereo(NIR_small, RGB_small, disp);
 
 	//register RGB to NIR image using HOG descriptors
-	Mat RGB_registered;
-	if(stereo_Type_ == crossSpectrSt_HOG)
-	{
-		vector<KeyPoint> matchedDescrL, matchedDescrR;
-		vector<DMatch> dmatches;
-		((HOG_crossSpectralStereoMatcher*)(CrossSpectralStereoMatcher*)CSstereoMatcher)->getBestDescriptors(matchedDescrL, matchedDescrR, dmatches, 1.4);
-
-		vector<Point2f> pL, pR;
-		for (int i = 0; i < matchedDescrL.size(); ++i)
-		{
-			pL.push_back(matchedDescrL[i].pt);
-			pR.push_back(matchedDescrR[i].pt);
-		}
-
-		//register RGB to NIR using homography matrix computed from best HOG descriptor matches (uniformly spaced)
-		Mat homography = findHomography(pR, pL, CV_RANSAC);
-		warpPerspective(RGB_small, RGB_registered, homography, RGB_small.size());
-
-		//register RGB to NIR using simple horizonzal shift
-//		RGB_registered = registerImageByHorizontalShift(RGB_small, matchedDescrL, matchedDescrR);
-
-		//register RGB using thin plate spline algorithm
-//		vector<Point> pLs, pRs;
-//		for (int i = 0; i < matchedDescrL.size(); ++i)
-//		{
-//			Point2f pL = matchedDescrL[i].pt;
-//			Point2f pR = matchedDescrR[i].pt;
-//			pLs.push_back(Point(pL.x, pL.y));
-//			pRs.push_back(Point(pR.x, pL.y));
-//		}
-//		CThinPlateSpline tps(pRs, pLs);
-//		tps.warpImage(RGB_small, RGB_registered);
-
-		//DEBUG show matches//
-		Mat matches;
-		drawMatches(NIR_small, matchedDescrL, RGB_small, matchedDescrR, dmatches, matches);
-		imshow("descriptor matches", matches);
-		//DEBUG show matches//
-	}
-	else
-	{
-		RGB_registered = RGB_small; //~do nothing
-	}
+	Mat RGB_registered = registerRGB2NIR(RGB_small, NIR_small);
 
 	//set the final outputs
 	NIR_out = NIR_small;
@@ -250,23 +208,7 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 	depth_stereo_out = disp;
 }
 
-Mat ImagePreprocessor::registerImageByHorizontalShift(Mat img, vector<KeyPoint> k1, vector<KeyPoint> k2)
-{
-	//compute offset as half of average distance between matched points for horizontal shift
-	int xoffset = 0;
-	for(int i = 0; i < k1.size(); ++i)
-	{
-		Point2f p1 = k1[i].pt;
-		Point2f p2 = k2[i].pt;
-		xoffset += abs((int)p1.x - (int)p2.x);
-	}
-	xoffset = ((float)xoffset / (float)k1.size() / 2.0 + 0.5);
 
-	//shift image to the right
-	Mat imgShifted(img.rows, img.cols, img.type(), Scalar(0));
-	img( Rect(0, 0, img.cols-xoffset, img.rows)).copyTo(imgShifted( Rect(xoffset,0,img.cols-xoffset, img.rows) ));
-	return imgShifted;
-}
 
 /**************************************************************************
  **************************************************************************
@@ -398,7 +340,7 @@ void ImagePreprocessor::make_RectifyMaps(QList<Mat> srcImgs, QList<Mat> dstImgs,
 	stereoRectify(cam_src, distCoeff_src,
 				  cam_dst, distCoeff_dst, imgSize, out_Rot, out_Transl,
 				  Rect_src, Rect_dst, Proj_src, Proj_dst, Q, CALIB_ZERO_DISPARITY,
-				  0); //set alpha to zero -> no black areas
+				  0); //set alpha to zero -> zoom and shift so no black areas remain after rectification
 
 	//make the rectify maps
 	initUndistortRectifyMap(cam_src, distCoeff_src, Rect_src, Proj_src, imgSize, CV_32FC1, out_rectifMapX_src, out_rectifMapY_src);
@@ -520,6 +462,24 @@ Mat ImagePreprocessor::resizeAndCropRGBImg(Mat rgbImg)
 	resize(rgbImg, resized, Size(), resizeFac_RGB, resizeFac_RGB, INTER_AREA); //for downsampling, area averaging is best
 	resized(cropRect_RGB).copyTo(cropped);
 	return cropped;
+}
+
+Mat ImagePreprocessor::registerImageByHorizontalShift(Mat img, vector<KeyPoint> k1, vector<KeyPoint> k2)
+{
+	//compute offset as half of average distance between matched points for horizontal shift
+	int xoffset = 0;
+	for(int i = 0; i < k1.size(); ++i)
+	{
+		Point2f p1 = k1[i].pt;
+		Point2f p2 = k2[i].pt;
+		xoffset += abs((int)p1.x - (int)p2.x);
+	}
+	xoffset = ((float)xoffset / (float)k1.size() / 2.0 + 0.5);
+
+	//shift image to the right
+	Mat imgShifted(img.rows, img.cols, img.type(), Scalar(0));
+	img( Rect(0, 0, img.cols-xoffset, img.rows)).copyTo(imgShifted( Rect(xoffset,0,img.cols-xoffset, img.rows) ));
+	return imgShifted;
 }
 
 Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
@@ -673,6 +633,57 @@ Mat ImagePreprocessor::projectFrom3DSpaceToImage(std::vector<Point3f> points3D, 
 	}
 
 	return img2D;
+}
+
+Mat ImagePreprocessor::registerRGB2NIR(Mat& RGB_img, Mat& NIR_img)
+{
+	Mat RGB_registered;
+
+	if(stereo_Type_ == crossSpectrSt_HOG)
+	{
+		vector<KeyPoint> matchedDescrL, matchedDescrR;
+		vector<DMatch> dmatches;
+		((HOG_crossSpectralStereoMatcher*)(CrossSpectralStereoMatcher*)CSstereoMatcher)->getBestDescriptors(matchedDescrL, matchedDescrR, dmatches, 1.8);
+
+		vector<Point2f> pL, pR;
+		for (int i = 0; i < matchedDescrL.size(); ++i)
+		{
+			pL.push_back(matchedDescrL[i].pt);
+			pR.push_back(matchedDescrR[i].pt);
+		}
+
+		//register RGB to NIR using homography matrix computed from best HOG descriptor matches (uniformly spaced)
+		Mat homography = findHomography(pR, pL, CV_RANSAC);
+		warpPerspective(RGB_img, RGB_registered, homography, RGB_img.size());
+
+		//register RGB to NIR using simple horizonzal shift
+//		RGB_registered = registerImageByHorizontalShift(RGB_img, matchedDescrL, matchedDescrR);
+
+		//register RGB using thin plate spline algorithm
+//		vector<Point> pLs, pRs;
+//		for (int i = 0; i < matchedDescrL.size(); ++i)
+//		{
+//			Point2f pL = matchedDescrL[i].pt;
+//			Point2f pR = matchedDescrR[i].pt;
+//			pLs.push_back(Point(pL.x, pL.y));
+//			pRs.push_back(Point(pR.x, pL.y));
+//		}
+//		CThinPlateSpline tps(pRs, pLs);
+//		tps.warpImage(RGB_img, RGB_registered);
+
+		//DEBUG show matches//
+		Mat matches;
+		drawMatches(NIR_img, matchedDescrL, RGB_img, matchedDescrR, dmatches, matches);
+//		imshow("descriptor matches", matches);
+		imwrite("HOG_descriptors_matches.png", matches);
+		//DEBUG show matches//
+	}
+	else
+	{
+		RGB_registered = RGB_img; //~do nothing
+	}
+
+	return RGB_registered;
 }
 
 void ImagePreprocessor::makeCrossSpectralStereo(Mat imgNIR_L, Mat imgRGB_R, Mat& out_disp)
@@ -891,7 +902,7 @@ void ImagePreprocessor::loadAll(QString loadURL)
 	fs2 << "lastCamParamURL" << loadURL.toStdString();
 	fs2.release();
 
-	makeMsg("Success!", "Calibration file loaded");
+	makeMsg("Success!", "Calibration file \"" + loadURL.split("/").last() + "\" loaded");
 }
 
 

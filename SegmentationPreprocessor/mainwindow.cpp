@@ -42,7 +42,7 @@ void MainWindow::preprocessImages()
 	//show the images
 	imshow("RGB", rgb_);
 	imshow("NIR", nir_);
-//	imshow("cross-spectral Stereo", depthStereo_);
+	imshow("cross-spectral Stereo", depthStereo_);
 	imshow("Kinect Depth", depth_);
 
 	imwrite("RGB.png", rgb_);

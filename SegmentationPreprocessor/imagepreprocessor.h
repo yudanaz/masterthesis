@@ -73,6 +73,8 @@ private:
 	vector<Point3f> projectKinectDepthTo3DSpace(Mat depth);
 	Mat projectFrom3DSpaceToImage(vector<Point3f> points3D, Mat rot, Mat transl, Mat cam_Matrix, Mat distCoeff, Size outImgSz, double shiftX, double shiftY);
 
+	Mat registerRGB2NIR(Mat &RGB_img, Mat &NIR_img);
+
 	void makeCrossSpectralStereo(Mat imgNIR_L, Mat imgRGB_R, Mat &out_disp);
 
 

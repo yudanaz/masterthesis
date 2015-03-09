@@ -1,6 +1,8 @@
 #include "hog_crossspectralstereomatcher.h"
 #include <QDebug>
 
+#define CV_SSE2 true
+
 HOG_crossSpectralStereoMatcher::HOG_crossSpectralStereoMatcher():
 	disparityOptimimizationStragey(dispOpt_WTA),
 	minDisp(4), maxDisp(20),
@@ -309,6 +311,8 @@ void HOG_crossSpectralStereoMatcher::computeDisparitySGBM(const Mat& img1, const
 														  vector<float>& HOGdescr_L, vector<float>& HOGdescr_R,
 														  int blockSize, int binsInDescriptor)
 {
+
+//	qDebug() << cv::useOptimized();
 #if CV_SSE2
 	static const uchar LSBTab[] =
 	{
@@ -741,7 +745,7 @@ void HOG_crossSpectralStereoMatcher::computeDisparitySGBM(const Mat& img1, const
 								_d8 = _mm_adds_epi16(_d8, _8);
 							}
 
-							short CV_DECL_ALIGNED(16) bestDispBuf[8];
+							short /*CV_DECL_ALIGNED(16)*/ bestDispBuf[8];
 							_mm_store_si128((__m128i*)bestDispBuf, _bestDisp);
 
 							_minL0 = _mm_min_epi16(_minL0, _mm_srli_si128(_minL0, 8));
