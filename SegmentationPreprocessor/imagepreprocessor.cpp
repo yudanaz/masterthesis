@@ -478,7 +478,7 @@ Mat ImagePreprocessor::registerImageByHorizontalShift(Mat img, vector<KeyPoint> 
 
 	//shift image to the right
 	Mat imgShifted(img.rows, img.cols, img.type(), Scalar(0));
-	img( Rect(0, 0, img.cols-xoffset, img.rows)).copyTo(imgShifted( Rect(xoffset,0,img.cols-xoffset, img.rows) ));
+	img( Rect(0, 0, img.cols-xoffset, img.rows)).copyTo(imgShifted( Rect(xoffset, 0, img.cols-xoffset, img.rows) ));
 	return imgShifted;
 }
 
@@ -496,6 +496,10 @@ Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
 	Mat depth2D = projectFrom3DSpaceToImage(depth3D, rotation_IR2NIR, transl_IR2NIR, cam_NIR, distCoeff_NIR,
 											Size(NIR_img.cols, NIR_img.rows), horizontalShift, verticalShift);
 	Mat depth2D_fixed = fixHolesInDepthMap(depth2D, 3); //fix bottom-up, i.e. shadows on lower side of objects
+	Mat depth2D_fixed_inverted;
+	Mat white(depth2D.size(), depth2D.type(), Scalar(255));
+	subtract(white, depth2D_fixed, depth2D_fixed_inverted);
+	return depth2D_fixed_inverted;
 
 	//fill gaps in re-mapped depth map with crossbilateral filter
 	Mat NIR_gray, NIR_gray_undist;
@@ -702,8 +706,10 @@ void ImagePreprocessor::makeCrossSpectralStereo(Mat imgNIR_L, Mat imgRGB_R, Mat&
 	from_to[0] = 0; //970 nm is first channel
 	mixChannels(&imgNIR_L, 1, &nir_970, 1, from_to, 1);
 
-	//match stereo images and get disparity image
+	//get left-to-right disparity
 	CSstereoMatcher->process(nir_970, rgb_red, out_disp);
+
+	//LR-CONSISTENCY CHECKING IS ALREADY DONE IN SGM, SO I DONT NEED TO DO THIS HERE...
 }
 
 

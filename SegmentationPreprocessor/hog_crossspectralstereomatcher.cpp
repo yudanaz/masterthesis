@@ -87,6 +87,9 @@ void HOG_crossSpectralStereoMatcher::process(Mat img_L, Mat img_R, Mat& out_disp
 		normalize(disp16, disp, 0, 255, CV_MINMAX, CV_8U);
 	}
 
+	//resize back to original size
+	resize(disp, disp, Size(orig_w, orig_h), INTER_AREA);
+
 	out_disp = disp;
 }
 

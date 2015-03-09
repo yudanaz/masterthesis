@@ -41,7 +41,6 @@ public:
 	void calibRig(QStringList calibImgs_RGB, QStringList calibImgs_NIR_rgb, QStringList calibImgs_IR, QStringList calibImgsNIR_ir, Size chessboardSize);
 
 	void preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat &RGB_out, Mat &NIR_out, Mat &depth_stereo_out, Mat &depth_remapped_out);
-	void setParameters(std::vector<float> params);
 
 	void saveAll(QString saveURL);
 	void loadAll(QString loadURL);
@@ -53,6 +52,7 @@ public:
 	bool cams_are_calibrated(){ return cams_are_calibrated_; }
 	bool rig_is_calibrated(){ return rig_is_calibrated_; }
 
+	void setParameters(std::vector<float> params);
 	void OutputImageSize(int w, int h);
 	void set_CSstereoType(CrossSpectralStereoType type);
 
