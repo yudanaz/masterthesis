@@ -176,6 +176,7 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 	remap(depth_remapped, depth_rect, rectifyMapX_NIR, rectifyMapY_NIR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
 	//(rectify kinect depth  with NIR params, because it was mapped to NIR)
 
+
 	//if set, resize the images to a new output (smaller) size (might be better/faster for CNN learning
 	// and improves performance of cross-spectral stereo matching)
 	Mat RGB_small, NIR_small, depth_remapped_small;
@@ -524,7 +525,7 @@ Mat ImagePreprocessor::resizeAndCropRGBImg(Mat rgbImg)
 Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
 {
 	//fill holes in depth map by simple "shadow"-assumption
-	Mat depth_fixed = fixHolesInDepthMap(depth_kinect);
+	Mat depth_fixed = fixHolesInDepthMap(depth_kinect, 1); //fix from right-to-left, i.e. shadows on right side of objects
 
 	//map Kinect depth to NIR
 	Mat depth_kinect_undist;
@@ -534,41 +535,76 @@ Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
 	double horizontalShift = proj_IR2NIR.at<double>(0,3) / proj_IR2NIR.at<double>(0,0);
 	Mat depth2D = projectFrom3DSpaceToImage(depth3D, rotation_IR2NIR, transl_IR2NIR, cam_NIR, distCoeff_NIR,
 											Size(NIR_img.cols, NIR_img.rows), horizontalShift, verticalShift);
+	Mat depth2D_fixed = fixHolesInDepthMap(depth2D, 3); //fix bottom-up, i.e. shadows on lower side of objects
 
 	//fill gaps in re-mapped depth map with crossbilateral filter
 	Mat NIR_gray, NIR_gray_undist;
 	cvtColor(NIR_img, NIR_gray, CV_RGB2GRAY);
 	undistort(NIR_gray, NIR_gray_undist, cam_NIR, distCoeff_NIR);
-	Mat depth_refined = crossbilatFilter.filter(depth2D, NIR_gray_undist, 8.0, 0.1);
+	Mat depth_refined = crossbilatFilter.filter(depth2D_fixed, NIR_gray_undist, 4.0, 0.1);
 
 	imwrite("depth_before.png", depth2D);
-//	imwrite("nir_gray.png", NIR_gray);
+	imwrite("depth before fixed.png", depth2D_fixed);
 	imwrite("nir_gray_undist.png", NIR_gray_undist);
 	imwrite("depth_after.png", depth_refined);
 
 	return depth_refined;
 }
 
-Mat ImagePreprocessor::fixHolesInDepthMap(Mat depth)
+Mat ImagePreprocessor::fixHolesInDepthMap(Mat depth, int direction) //0 = L-R, 1 = R-L, 2 = Top-Down, 3 = Bottom-Up
 {
 	Mat depth_;
-	flip(depth, depth_, 1); //flip vertically
+
+	//define the direction of the depth-shadow fix, default: shawdows on left side of objects
+	if(direction == 1) // shadows on right side of objects
+	{
+		flip(depth, depth_, 1); //flip vertically
+	}
+	else if(direction == 2) //shadows on upper side of objects
+	{
+		transpose(depth, depth_); //transpose
+	}
+	else if(direction == 3) //shadows on lower side of objects
+	{
+		transpose(depth, depth_); //transpose and flip vertically
+		flip(depth_, depth_, 1);
+	}
+
 	for (int y = 0; y < depth_.rows; ++y)
 	{
-		uchar lastVal;
+		uchar lastVal = 255; //init with 255 so white border around reprojected image won't be changed
 		for (int x = 0; x < depth_.cols; ++x)
 		{
 			//if pixel value is white (255 = unknown depth), fill with last value in row
 			uchar val = depth_.at<uchar>(y,x);
 			if(val == 255)
 			{
-				depth_.at<uchar>(y,x) = lastVal;
+				bool isBorder = false;
+
+				//quick fix: also check if we're not targetting a white border caused by reprojection
+				//do this by checking if the next n pixels are also white
+				if(direction >=2)
+				{
+					isBorder = true;
+					for(int i = 0; i < 40; ++i)
+					{
+						if(depth_.at<uchar>(y,x+i) != 255) //if at least one of the next pixels isnt't white, it's not a border
+						{
+							isBorder = false;
+							break;
+						}
+					}
+				}
+
+				if(!isBorder){ depth_.at<uchar>(y,x) = lastVal; }
 			}
 			else { lastVal = val; }
 		}
 	}
+	if(direction == 1){ flip(depth_, depth_, 1); } //flip back
+	else if(direction == 2){ transpose(depth, depth_); } //transpose back
+	else if(direction == 3){ flip(depth_, depth_, 1); transpose(depth_, depth_); } //transpose and flip back
 
-	flip(depth_, depth_, 1); //flip back
 	return depth_;
 }
 
@@ -620,8 +656,8 @@ Mat ImagePreprocessor::projectFrom3DSpaceToImage(std::vector<Point3f> points3D, 
 		const double *d = m3d_.ptr<double>(0);
 		Point3f p3d_((float)d[0], (float)d[1], (float)d[2]);
 		Point2f p2d;
-		p2d.x = (p3d_.x * fx / p3d_.z) + cx - shiftX;
-		p2d.y = (p3d_.y * fy / p3d_.z) + cy - shiftY;
+		p2d.x = ( (p3d_.x + shiftX) * fx / p3d_.z) + cx;
+		p2d.y = ( (p3d_.y + shiftY) * fy / p3d_.z) + cy;
 		points2D.push_back(p2d);
 	}
 	//DEBUG//
