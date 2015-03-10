@@ -66,7 +66,7 @@ private:
 
 	bool fitRGBimgs2NIRimgs(QList<Mat> origNirs, QList<Mat> origRGBs);
 	Mat resizeAndCropRGBImg(Mat rgbImg);
-	Mat registerImageByHorizontalShift(Mat img, vector<KeyPoint> k1, vector<KeyPoint> k2);
+
 
 	Mat mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img);
 	Mat fixHolesInDepthMap(Mat depth, int direction);
@@ -74,6 +74,12 @@ private:
 	Mat projectFrom3DSpaceToImage(vector<Point3f> points3D, Mat rot, Mat transl, Mat cam_Matrix, Mat distCoeff, Size outImgSz, double shiftX, double shiftY);
 
 	Mat registerRGB2NIR(Mat &RGB_img, Mat &NIR_img);
+    Mat registerImageByHorizontalShift(Mat img, vector<KeyPoint> k1, vector<KeyPoint> k2);
+    Point warpOnePoint(Mat transfMat, Point p);
+
+    Rect makeMinimalCrop(Point p1, Point p2, Point p3, Point p4, Mat &refImg);
+    void assertPointInsideImage(Point& p, Mat& refImg);
+    Mat cropImage(Mat img, Rect cropROI);
 
 	void makeCrossSpectralStereo(Mat imgNIR_L, Mat imgRGB_R, Mat &out_disp);
 
@@ -144,6 +150,10 @@ private:
 	bool rig_is_calibrated_;
 	bool output_image_size_set_;
 	CrossSpectralStereoType stereo_Type_;
+
+    //crop rectangles for final crop
+    Rect finalCropRect_byRGB;
+    Rect finalCropRect_byKinectDepth;
 };
 
 #endif // IMAGEPREPROCESSOR_H

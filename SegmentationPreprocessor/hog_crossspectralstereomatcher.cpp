@@ -8,7 +8,7 @@ HOG_crossSpectralStereoMatcher::HOG_crossSpectralStereoMatcher():
 	minDisp(4), maxDisp(20),
 	wtaThreshold(1.0),
 	SADwindow(3), preFilterCAP(11), uniquenessRatio(1), speckleWindow(7), speckleRange(4),
-	bestDescrRasterDiv(8)
+    bestDescrRasterDiv(16)
 {
 	//fill best descriptor candidates vector with as many positions as the raster dictates
 	for(int i = 0; i< bestDescrRasterDiv*bestDescrRasterDiv; ++i)
@@ -26,8 +26,8 @@ void HOG_crossSpectralStereoMatcher::process(Mat img_L, Mat img_R, Mat& out_disp
 	//multispectral stereo matching with HOG descriptors like in
 	//"On cross-spectral stereo matching using dense gradient features" [Pinggera]
 	HOGDescriptor d1;
-	int blockSize = 18;
-	int cellSize = 6;
+//	int blockSize = 18;
+//	int cellSize = 6;
 	int nCells = blockSize/cellSize * blockSize/cellSize;
 	d1.blockSize = Size(blockSize, blockSize); //param from paper
 	d1.cellSize = Size(cellSize, cellSize);// n x n subcells, n = 3, nCells = 3*3 = 9, param from paper
@@ -220,6 +220,11 @@ void HOG_crossSpectralStereoMatcher::setParams(std::vector<float> params)
 	if(params.size() > 6) uniquenessRatio = (float)params[6];
 	if(params.size() > 7) speckleWindow = (float)params[7];
 	if(params.size() > 8) speckleRange = (float)params[8];
+
+    if(params.size() > 9) blockSize = (float)params[9];
+    if(params.size() > 10) cellSize = (float)params[10];
+    //make sure blockSize is multiple of cellSize
+    while(blockSize % cellSize != 0){ blockSize++; }
 }
 
 

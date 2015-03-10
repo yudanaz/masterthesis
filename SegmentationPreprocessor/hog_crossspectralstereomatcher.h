@@ -49,6 +49,8 @@ private:
 	int uniquenessRatio;
 	int speckleWindow;
 	int speckleRange;
+    int blockSize;
+    int cellSize;
 
 	//best matching HOG descriptors (this is an extra feature)
 	void setBestDescriptors(int w, int h, int x1, int x2, int y, float dist);

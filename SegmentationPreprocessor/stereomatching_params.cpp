@@ -26,6 +26,8 @@ std::vector<float> StereoMatching_params::getParams()
 	p.push_back(ui->lineEdit_uniqueness->text().toFloat());
 	p.push_back(ui->lineEdit_speckleWin->text().toFloat());
 	p.push_back(ui->lineEdit_speckleRange->text().toFloat());
+    p.push_back(ui->lineEdit_HOGblockSize->text().toFloat());
+    p.push_back(ui->lineEdit_HOGcellSize->text().toFloat());
 
 	return p;
 }
