@@ -71,7 +71,8 @@ private:
 	Mat mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img);
 	Mat fixHolesInDepthMap(Mat depth, int direction);
 	vector<Point3f> projectKinectDepthTo3DSpace(Mat depth);
-	Mat projectFrom3DSpaceToImage(vector<Point3f> points3D, Mat rot, Mat transl, Mat cam_Matrix, Mat distCoeff, Size outImgSz, double shiftX, double shiftY);
+    Mat projectFrom3DSpaceToImage(vector<Point3f> points3D, Mat rot, Mat transl, Mat cam_Matrix, Mat distCoeff, Size outImgSz, double shiftX, double shiftY, Mat &refImg);
+
 
 	Mat registerRGB2NIR(Mat &RGB_img, Mat &NIR_img);
     Mat registerImageByHorizontalShift(Mat img, vector<KeyPoint> k1, vector<KeyPoint> k2);

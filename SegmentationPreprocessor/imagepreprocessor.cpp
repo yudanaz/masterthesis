@@ -168,6 +168,7 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 	Mat RGB_resized = resizeAndCropRGBImg(RGB_undist);
 
 	Mat depth_remapped = mapKinectDepth2NIR(depth_kinect, NIR);
+    imshow("depth remapped", depth_remapped);cvWaitKey();
 
 	//rectify
 	Mat RGB_rect, NIR_rect, depth_rect;
@@ -184,10 +185,14 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
     Mat RGB_registered = registerRGB2NIR(RGB_rect, NIR_rect);
 
     //crop images according to registered RGB
-    Mat NIR_cropped = cropImage(NIR_rect, finalCropRect_byRGB);
-    Mat RGB_cropped = cropImage(RGB_registered, finalCropRect_byRGB);
-    Mat depth_cropped = cropImage(depth_rect, finalCropRect_byRGB);
-    Mat disp_cropped = cropImage(disp, finalCropRect_byRGB);
+//    Mat NIR_cropped = cropImage(NIR_rect, finalCropRect_byRGB);
+//    Mat RGB_cropped = cropImage(RGB_registered, finalCropRect_byRGB);
+//    Mat depth_cropped = cropImage(depth_rect, finalCropRect_byRGB);
+//    Mat disp_cropped = cropImage(disp, finalCropRect_byRGB);
+    Mat NIR_cropped = cropImage(NIR_rect, finalCropRect_byKinectDepth);
+    Mat RGB_cropped = cropImage(RGB_registered, finalCropRect_byKinectDepth);
+    Mat depth_cropped = cropImage(depth_rect, finalCropRect_byKinectDepth);
+    Mat disp_cropped = cropImage(disp, finalCropRect_byKinectDepth);
 
     //if set, resize the images to a new output (smaller) size (might be better/faster for CNN learning
     // and improves performance of cross-spectral stereo matching)
@@ -541,14 +546,19 @@ Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
 	Mat depth_fixed = fixHolesInDepthMap(depth_kinect, 1); //fix from right-to-left, i.e. shadows on right side of objects
 
 	//map Kinect depth to NIR
-	Mat depth_kinect_undist;
+    //map from depth map to 3d space
+    Mat depth_kinect_undist;
 	undistort(depth_fixed, depth_kinect_undist, cam_IR, distCoeff_IR);
 	vector<Point3f> depth3D = projectKinectDepthTo3DSpace(depth_kinect_undist);
-	double verticalShift = proj_IR2NIR.at<double>(1,3) / proj_IR2NIR.at<double>(0,0);
+
+    //mape from 3d space to 2d image in coordinate system of NIR camera
+    double verticalShift = proj_IR2NIR.at<double>(1,3) / proj_IR2NIR.at<double>(0,0);
 	double horizontalShift = proj_IR2NIR.at<double>(0,3) / proj_IR2NIR.at<double>(0,0);
 	Mat depth2D = projectFrom3DSpaceToImage(depth3D, rotation_IR2NIR, transl_IR2NIR, cam_NIR, distCoeff_NIR,
-											Size(NIR_img.cols, NIR_img.rows), horizontalShift, verticalShift);
-	Mat depth2D_fixed = fixHolesInDepthMap(depth2D, 3); //fix bottom-up, i.e. shadows on lower side of objects
+                                            Size(NIR_img.cols, NIR_img.rows), horizontalShift, verticalShift, depth_kinect_undist);
+
+    //again fill holes in the resulting reprojected depth map
+    Mat depth2D_fixed = fixHolesInDepthMap(depth2D, 3); //fix bottom-up, i.e. shadows on lower side of objects
 	Mat depth2D_fixed_inverted;
 	Mat white(depth2D.size(), depth2D.type(), Scalar(255));
 	subtract(white, depth2D_fixed, depth2D_fixed_inverted);
@@ -651,7 +661,7 @@ vector<Point3f> ImagePreprocessor::projectKinectDepthTo3DSpace(Mat depth)
 }
 
 Mat ImagePreprocessor::projectFrom3DSpaceToImage(std::vector<Point3f> points3D, Mat rot, Mat transl, Mat cam_Matrix, Mat distCoeff, Size outImgSz,
-												 double shiftX, double shiftY)
+                                                 double shiftX, double shiftY, Mat& refImg)
 {
 //    qDebug() << IO::getOpenCVTypeName(img3D.type());
 
@@ -677,7 +687,17 @@ Mat ImagePreprocessor::projectFrom3DSpaceToImage(std::vector<Point3f> points3D, 
 		p2d.y = ( (p3d_.y + shiftY) * fy / p3d_.z) + cy;
 		points2D.push_back(p2d);
 	}
-	//DEBUG//
+
+    //make crop rectangle based on reprojected corner points
+    int i1 = 0;
+    int i2 = refImg.cols-1;
+    int i3 = refImg.cols * (refImg.rows - 1);
+    int i4 = refImg.cols * refImg.rows - 1;
+    Point p1((int)points2D[i1].x, (int)points2D[i1].y); //indices for corner points
+    Point p2((int)points2D[i2].x, (int)points2D[i2].y);
+    Point p3((int)points2D[i3].x, (int)points2D[i3].y);
+    Point p4((int)points2D[i4].x, (int)points2D[i4].y);
+    finalCropRect_byKinectDepth = makeMinimalCrop(p1, p2, p3, p4, refImg);
 
 	//transform vector holding 2D points into image matrix with depth values as intensity
 	Mat img2D(outImgSz.height, outImgSz.width, CV_8UC1, Scalar(255)); //white = farest OR unkown depth
