@@ -481,19 +481,34 @@ Mat ImagePreprocessor::resizeAndCropRGBImg(Mat rgbImg)
 
 Mat ImagePreprocessor::registerImageByHorizontalShift(Mat img, vector<KeyPoint> k1, vector<KeyPoint> k2)
 {
-	//compute offset as half of average distance between matched points for horizontal shift
-	int xoffset = 0;
+	//compute offset as half of median distance between matched points for horizontal shift
+	QList<int> distances;
 	for(uint i = 0; i < k1.size(); ++i)
 	{
 		Point2f p1 = k1[i].pt;
 		Point2f p2 = k2[i].pt;
-		xoffset += abs((int)p1.x - (int)p2.x);
+		distances.append( abs((int)p1.x - (int)p2.x) );
 	}
-	xoffset = ((float)xoffset / (float)k1.size() / 2.0 + 0.5);
+
+	//make median
+	qSort(distances);
+	int xoffset;
+	if(k1.size() % 2 == 0) //even
+	{
+		xoffset = (int)( (float)( distances[k1.size()/2] + distances[k1.size()/2-1] ) / 2.0 + 0.5);
+	}
+	else //uneven
+	{
+		xoffset = distances[k1.size()/2];
+	}
 
 	//shift image to the right
 	Mat imgShifted(img.rows, img.cols, img.type(), Scalar(0));
 	img( Rect(0, 0, img.cols-xoffset, img.rows)).copyTo(imgShifted( Rect(xoffset, 0, img.cols-xoffset, img.rows) ));
+
+	//define crop rectangle based on offset
+	finalCropRect_byRGB = Rect(xoffset, 0, img.cols-xoffset, img.rows);
+
 	return imgShifted;
 }
 
@@ -747,12 +762,22 @@ Mat ImagePreprocessor::registerRGB2NIR(Mat& RGB_img, Mat& NIR_img)
 			pR.push_back(matchedDescrR[i].pt);
 		}
 
-		//register RGB to NIR using homography matrix computed from best HOG descriptor matches (uniformly spaced)
-		Mat homography = findHomography(pR, pL, CV_RANSAC);
-		warpPerspective(RGB_img, RGB_registered, homography, RGB_img.size());
+//		//register RGB to NIR using homography matrix computed from best HOG descriptor matches (uniformly spaced)
+//		Mat homography = findHomography(pR, pL, CV_RANSAC);
+//		warpPerspective(RGB_img, RGB_registered, homography, RGB_img.size());
+
+//		//also use homography matrix to get the 4 corner points of the warped image
+//		Point p1 = warpOnePoint(homography, Point(0,0));
+//		Point p2 = warpOnePoint(homography, Point(RGB_img.cols-1, 0));
+//		Point p3 = warpOnePoint(homography, Point(0,RGB_img.rows-1));
+//		Point p4 = warpOnePoint(homography, Point(RGB_img.cols-1, RGB_img.rows-1));
+
+//		//use these corner points to define the minimal crop rectangle
+//		finalCropRect_byRGB = makeMinimalCrop(p1, p2, p3, p4, RGB_img);
 
 		//register RGB to NIR using simple horizonzal shift
-//		RGB_registered = registerImageByHorizontalShift(RGB_img, matchedDescrL, matchedDescrR);
+		RGB_registered = registerImageByHorizontalShift(RGB_img, matchedDescrL, matchedDescrR);
+
 
 		//register RGB using thin plate spline algorithm
 //		vector<Point> pLs, pRs;
@@ -773,14 +798,6 @@ Mat ImagePreprocessor::registerRGB2NIR(Mat& RGB_img, Mat& NIR_img)
 //		imwrite("HOG_descriptors_matches.png", matches);
 		//DEBUG show matches//
 
-		//also use homography matrix to get the 4 corner points of the warped image
-		Point p1 = warpOnePoint(homography, Point(0,0));
-		Point p2 = warpOnePoint(homography, Point(RGB_img.cols-1, 0));
-		Point p3 = warpOnePoint(homography, Point(0,RGB_img.rows-1));
-		Point p4 = warpOnePoint(homography, Point(RGB_img.cols-1, RGB_img.rows-1));
-
-		//use these corner points to define the minimal crop rectangle
-		finalCropRect_byRGB = makeMinimalCrop(p1, p2, p3, p4, RGB_img);
 	}
 	else
 	{
