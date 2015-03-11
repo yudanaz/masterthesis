@@ -74,7 +74,7 @@ private:
 	bool acquiring;
 	QString getUniquePrefixFromDateAndTime();
 	void captureSeries();
-	Mat drawCross(Mat& img);
+	Mat drawCross(Mat& img, int lineStrength = 1);
 
 	bool capturingSeries;
 	bool countingDown;
@@ -112,7 +112,7 @@ private:
 	QSharedPointer<QGraphicsScene> ptr_depthScene;
 
 
-	int width_rgb, height_rgb, width_nir, height_nir, width_depth, height_depth;
+	int width_win1, height_win1, width_win2, height_win2, width_win3, height_win3;
 
 	//params to show the RGB image the way it's gonna be after pre-processing
 	Mat cam_RGB;

@@ -58,12 +58,12 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	workerThread_SaveImgs.start(QThread::HighPriority);
 
 	//get image widget sizes for display (-2 because of widget borders)
-	width_rgb = ui->graphicsView_RGB->width()-2;
-	height_rgb = ui->graphicsView_RGB->height()-2;
-	width_nir = ui->graphicsView_NIR->width()-2;
-	height_nir = ui->graphicsView_NIR->height()-2;
-	width_depth = ui->graphicsView_Depth->width()-2;
-	height_depth = ui->graphicsView_Depth->height()-2;
+	width_win1 = ui->graphicsView1->width()-2;
+	height_win1 = ui->graphicsView1->height()-2;
+	width_win2 = ui->graphicsView2->width()-2;
+	height_win2 = ui->graphicsView2->height()-2;
+	width_win3 = ui->graphicsView3->width()-2;
+	height_win3 = ui->graphicsView3->height()-2;
 
 	//load parameters for resizing / cropping RGB image
 	FileStorage fs("misc/rgbCam.config", FileStorage::READ);
@@ -157,7 +157,7 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 			Mat rgbWithCross;
 			if(ui->checkBox_drawTargetCross->isChecked())
 			{
-				rgbWithCross = drawCross(img);
+				rgbWithCross = drawCross(img, 6);
 			}
 			else{ rgbWithCross = img; }
 
@@ -174,14 +174,14 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 			}
 
 			//make a resized copy of the image according to graphic widget size
-			cv::resize(rgbWithRect, imgSmall, Size(width_rgb,height_rgb));
+			cv::resize(rgbWithRect, imgSmall, Size(width_win2,height_win2));
 			if(flipImgs){ flip(imgSmall, imgSmall, 1); }
 
 			//show in widget width inverted channels (because Mat is BGR and QImage is RGB)
 			QImage qimg(imgSmall.data, imgSmall.cols, imgSmall.rows, imgSmall.step, QImage::Format_RGB888);
 			ptr_RGBScene = QSharedPointer<QGraphicsScene>(new QGraphicsScene);//drop last pointer to free memory
 			ptr_RGBScene->addPixmap(QPixmap::fromImage(qimg.rgbSwapped()));
-			ui->graphicsView_RGB->setScene(ptr_RGBScene.data());
+			ui->graphicsView2->setScene(ptr_RGBScene.data());
 		}
 		else if(type == NIR_Dark)//NIR_1300)
 		{
@@ -193,14 +193,14 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 			else{ imgCross = imgColor; }
 
 			//make a resized copy of the image according to graphic widget size
-			cv::resize(imgCross, imgSmall, Size(width_nir,height_nir));
+			cv::resize(imgCross, imgSmall, Size(width_win1,height_win1));
 			if(flipImgs){ flip(imgSmall, imgSmall, 1); }
 
 			//show in widget width inverted channels (because Mat is BGR and QImage is RGB)
 			QImage qimg(imgSmall.data, imgSmall.cols, imgSmall.rows, imgSmall.step, QImage::Format_RGB888);
 			ptr_NIRScene = QSharedPointer<QGraphicsScene>(new QGraphicsScene);//drop last pointer to free memory
 			ptr_NIRScene->addPixmap(QPixmap::fromImage(qimg));
-			ui->graphicsView_NIR->setScene(ptr_NIRScene.data());
+			ui->graphicsView1->setScene(ptr_NIRScene.data());
 		}
 		else if(capturing_kinectRGB && type == Kinect_Depth || !capturing_kinectRGB && type == Kinect_IR)
 		{
@@ -214,7 +214,7 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 			//make a resized copy of the image according to graphic widget size
 			if(img.cols != 0) //work-around for not understood bug... when switching back from IR to RGB, depth image is empty. TODO: look into it
 			{
-				cv::resize(imgCross, imgSmall, Size(width_depth,height_depth));
+				cv::resize(imgCross, imgSmall, Size(width_win3, height_win3));
 				if(flipImgs){ flip(imgSmall, imgSmall, 1); }
 			}
 
@@ -222,7 +222,7 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 			QImage qimg(imgSmall.data, imgSmall.cols, imgSmall.rows, imgSmall.step, QImage::Format_RGB888);
 			ptr_depthScene = QSharedPointer<QGraphicsScene>(new QGraphicsScene);//drop last pointer to free memory
 			ptr_depthScene->addPixmap(QPixmap::fromImage(qimg));
-			ui->graphicsView_Depth->setScene(ptr_depthScene.data());
+			ui->graphicsView3->setScene(ptr_depthScene.data());
 		}
 
 		//show the other channels in extra windows if user wants that
@@ -290,15 +290,15 @@ void RGB_NIR_Depth_Capture::captureSeries()
 	}
 }
 
-Mat RGB_NIR_Depth_Capture::drawCross(Mat &img)
+Mat RGB_NIR_Depth_Capture::drawCross(Mat &img, int lineStrength)
 {
 	Mat img2 = img.clone();
 	Point p1(img.cols/2, 0);
 	Point p2(img.cols/2, img.rows);
 	Point p3(0, img.rows/2);
 	Point p4(img.cols, img.rows/2);
-	cv::line(img2, p1, p2, Scalar(0,255,0), 3);
-	cv::line(img2, p3, p4, Scalar(0,255,0), 3);
+	cv::line(img2, p1, p2, Scalar(0,255,0), lineStrength);
+	cv::line(img2, p3, p4, Scalar(0,255,0), lineStrength);
 	return img2;
 }
 

@@ -54,7 +54,7 @@
      </item>
     </layout>
    </widget>
-   <widget class="QGraphicsView" name="graphicsView_RGB">
+   <widget class="QGraphicsView" name="graphicsView1">
     <property name="geometry">
      <rect>
       <x>10</x>
@@ -64,7 +64,7 @@
      </rect>
     </property>
    </widget>
-   <widget class="QGraphicsView" name="graphicsView_NIR">
+   <widget class="QGraphicsView" name="graphicsView2">
     <property name="geometry">
      <rect>
       <x>530</x>
@@ -74,7 +74,7 @@
      </rect>
     </property>
    </widget>
-   <widget class="QGraphicsView" name="graphicsView_Depth">
+   <widget class="QGraphicsView" name="graphicsView3">
     <property name="geometry">
      <rect>
       <x>530</x>
