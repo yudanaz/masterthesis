@@ -78,6 +78,7 @@ private:
 	Mat registerImageByHorizontalShift(Mat img, vector<KeyPoint> k1, vector<KeyPoint> k2);
 	Point warpOnePoint(Mat transfMat, Point p);
 
+	Rect makeMinimalCrop(Rect r1, Rect r2);
 	Rect makeMinimalCrop(Point p1, Point p2, Point p3, Point p4, Mat &refImg);
 	void assertPointInsideImage(Point& p, Mat& refImg);
 	Mat cropImage(Mat img, Rect cropROI);

@@ -181,18 +181,14 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 	//register RGB to NIR image using HOG descriptors
 	Mat RGB_registered = registerRGB2NIR(RGB_rect, NIR_rect);
 
-	//crop images according to registered RGB __OR__ remapped kinect depth
-//	Mat NIR_cropped = cropImage(NIR_rect, finalCropRect_byRGB);
-//	Mat RGB_cropped = cropImage(RGB_registered, finalCropRect_byRGB);
-//	Mat depth_cropped = cropImage(depth_remapped, finalCropRect_byRGB);
-//	Mat disp_cropped = cropImage(disp, finalCropRect_byRGB);
+	//crop images according to registered RGB and remapped kinect depth
+	Rect finalCropRect = makeMinimalCrop(finalCropRect_byKinectDepth, finalCropRect_byRGB);
+	Mat NIR_cropped = cropImage(NIR_rect, finalCropRect);
+	Mat RGB_cropped = cropImage(RGB_registered, finalCropRect);
+	Mat depth_cropped = cropImage(depth_remapped, finalCropRect);
+	Mat disp_cropped = cropImage(disp, finalCropRect);
 
-	Mat NIR_cropped = cropImage(NIR_rect, finalCropRect_byKinectDepth);
-	Mat RGB_cropped = cropImage(RGB_registered, finalCropRect_byKinectDepth);
-	Mat depth_cropped = cropImage(depth_remapped, finalCropRect_byKinectDepth);
-	Mat disp_cropped = cropImage(disp, finalCropRect_byKinectDepth);
-
-	//fill remaining black spots in depth map
+	//fill eventually remaining black spots in depth map
 	depth_cropped = fixHolesInDepthMap(depth_cropped, 0);
 	depth_cropped = fixHolesInDepthMap(depth_cropped, 1);
 	depth_cropped = fixHolesInDepthMap(depth_cropped, 2);
@@ -525,6 +521,23 @@ Point ImagePreprocessor::warpOnePoint(Mat transfMat, Point p)
 	p_.x = X0 * W;
 	p_.y = Y0 * W;
 	return p_;
+}
+
+Rect ImagePreprocessor::makeMinimalCrop(Rect r1, Rect r2)
+{
+	Rect r;
+	int r1xx = r1.x + r1.width;
+	int r2xx = r2.x + r2.width;
+	int r1yy = r1.y + r1.height;
+	int r2yy = r2.y + r2.height;
+
+	r.x = r1.x > r2.x ? r1.x : r2.x;
+	r.y = r1.y > r2.y ? r2.y : r2.y;
+	int xx = r1xx < r2xx ? r1xx : r2xx;
+	int yy = r1yy < r2yy ? r1yy : r2yy;
+	r.width = xx - r.x;
+	r.height = yy - r.y;
+	return r;
 }
 
 Rect ImagePreprocessor::makeMinimalCrop(Point p1, Point p2, Point p3, Point p4, Mat& refImg)
