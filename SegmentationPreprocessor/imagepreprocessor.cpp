@@ -181,20 +181,22 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 	//register RGB to NIR image using HOG descriptors
 	Mat RGB_registered = registerRGB2NIR(RGB_rect, NIR_rect);
 
-	//crop images according to registered RGB
-	Mat NIR_cropped = cropImage(NIR_rect, finalCropRect_byRGB);
-	Mat RGB_cropped = cropImage(RGB_registered, finalCropRect_byRGB);
-	Mat depth_cropped = cropImage(depth_remapped, finalCropRect_byRGB);
-	Mat disp_cropped = cropImage(disp, finalCropRect_byRGB);
+	//crop images according to registered RGB __OR__ remapped kinect depth
+//	Mat NIR_cropped = cropImage(NIR_rect, finalCropRect_byRGB);
+//	Mat RGB_cropped = cropImage(RGB_registered, finalCropRect_byRGB);
+//	Mat depth_cropped = cropImage(depth_remapped, finalCropRect_byRGB);
+//	Mat disp_cropped = cropImage(disp, finalCropRect_byRGB);
 
-//	Mat NIR_cropped = cropImage(NIR_rect, finalCropRect_byKinectDepth);
-//	Mat RGB_cropped = cropImage(RGB_registered, finalCropRect_byKinectDepth);
-//	Mat depth_cropped = cropImage(depth_rect, finalCropRect_byKinectDepth);
-//	Mat disp_cropped = cropImage(disp, finalCropRect_byKinectDepth);
-//	Mat NIR_cropped = NIR_rect;
-//	Mat RGB_cropped = RGB_registered;
-//	Mat depth_cropped = depth_remapped;
-//	Mat disp_cropped = disp;
+	Mat NIR_cropped = cropImage(NIR_rect, finalCropRect_byKinectDepth);
+	Mat RGB_cropped = cropImage(RGB_registered, finalCropRect_byKinectDepth);
+	Mat depth_cropped = cropImage(depth_remapped, finalCropRect_byKinectDepth);
+	Mat disp_cropped = cropImage(disp, finalCropRect_byKinectDepth);
+
+	//fill remaining black spots in depth map
+	depth_cropped = fixHolesInDepthMap(depth_cropped, 0);
+	depth_cropped = fixHolesInDepthMap(depth_cropped, 1);
+	depth_cropped = fixHolesInDepthMap(depth_cropped, 2);
+	depth_cropped = fixHolesInDepthMap(depth_cropped, 3);
 
 	//if set, resize the images to a new output (smaller) size (might be better/faster for CNN learning
 	// and improves performance of cross-spectral stereo matching)
@@ -560,13 +562,19 @@ Mat ImagePreprocessor::cropImage(Mat img, Rect cropROI)
 
 Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
 {
+	//invert colors so depth encoding is similar to disparity map
+	Mat depth_kinect_inverted;
+	Mat white(depth_kinect.size(), depth_kinect.type(), Scalar(255));
+	subtract(white, depth_kinect, depth_kinect_inverted);
+
 	//fill holes in depth map by simple "shadow"-assumption
-	Mat depth_fixed = fixHolesInDepthMap(depth_kinect, 1); //fix from right-to-left, i.e. shadows on right side of objects
+	Mat depth_fixed = fixHolesInDepthMap(depth_kinect_inverted, 1); //fix from right-to-left, i.e. shadows on right side of objects
 
 	//map Kinect depth to NIR
 	//map from depth map to 3d space
 	Mat depth_kinect_undist;
 	undistort(depth_fixed, depth_kinect_undist, cam_IR, distCoeff_IR);
+
 	vector<Point3f> depth3D = projectKinectDepthTo3DSpace(depth_kinect_undist);
 
 	//mape from 3d space to 2d image in coordinate system of NIR camera
@@ -577,12 +585,9 @@ Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
 											Size(NIR_img.cols, NIR_img.rows), horizontalShift, verticalShift,
 											depth_kinect_undist);
 
-	//again fill holes in the resulting reprojected depth map and invert colors so depth encoding is similar to disparity map
+	//again fill holes in the resulting reprojected depth map
 	Mat depth2D_fixed = fixHolesInDepthMap(depth2D, 3); //fix bottom-up, i.e. shadows on lower side of objects
-	Mat depth2D_fixed_inverted;
-	Mat white(depth2D.size(), depth2D.type(), Scalar(255));
-	subtract(white, depth2D_fixed, depth2D_fixed_inverted);
-	return depth2D_fixed_inverted;
+	return depth2D_fixed;
 
 	//fill gaps in re-mapped depth map with crossbilateral filter
 //	Mat NIR_gray, NIR_gray_undist;
@@ -602,8 +607,12 @@ Mat ImagePreprocessor::fixHolesInDepthMap(Mat depth, int direction) //0 = L-R, 1
 {
 	Mat depth_;
 
-	//define the direction of the depth-shadow fix, default: shawdows on left side of objects
-	if(direction == 1) // shadows on right side of objects
+	//define the direction of the depth-shadow fix
+	if(direction == 0)//default: shawdows on left side of objects
+	{
+		depth_ = depth.clone();
+	}
+	else if(direction == 1) // shadows on right side of objects
 	{
 		flip(depth, depth_, 1); //flip vertically
 	}
@@ -619,12 +628,12 @@ Mat ImagePreprocessor::fixHolesInDepthMap(Mat depth, int direction) //0 = L-R, 1
 
 	for (int y = 0; y < depth_.rows; ++y)
 	{
-		uchar lastVal = 255; //init with 255 so white border around reprojected image won't be changed
+		uchar lastVal = 0; //init with 0 so black border around reprojected image won't be changed
 		for (int x = 0; x < depth_.cols; ++x)
 		{
-			//if pixel value is white (255 = unknown depth), fill with last value in row
+			//if pixel value is black (0 = unknown depth), fill with last value in row
 			uchar val = depth_.at<uchar>(y,x);
-			if(val == 255)
+			if(val == 0)
 			{
 				bool isBorder = false;
 
@@ -635,7 +644,7 @@ Mat ImagePreprocessor::fixHolesInDepthMap(Mat depth, int direction) //0 = L-R, 1
 					isBorder = true;
 					for(int i = 0; i < 40; ++i)
 					{
-						if(depth_.at<uchar>(y,x+i) != 255) //if at least one of the next pixels isnt't white, it's not a border
+						if(depth_.at<uchar>(y,x+i) != 0) //if at least one of the next pixels isnt't white, it's not a border
 						{
 							isBorder = false;
 							break;
@@ -649,7 +658,7 @@ Mat ImagePreprocessor::fixHolesInDepthMap(Mat depth, int direction) //0 = L-R, 1
 		}
 	}
 	if(direction == 1){ flip(depth_, depth_, 1); } //flip back
-	else if(direction == 2){ transpose(depth, depth_); } //transpose back
+	else if(direction == 2){ transpose(depth_, depth_); } //transpose back
 	else if(direction == 3){ flip(depth_, depth_, 1); transpose(depth_, depth_); } //transpose and flip back
 
 	return depth_;
@@ -710,23 +719,18 @@ Mat ImagePreprocessor::projectFrom3DSpaceToImage(std::vector<Point3f> points3D, 
 		points2D.push_back(p2d);
 	}
 
-	//make binary image with reprojected corner points for crop rectangle
-//	out_corners = Mat(outImgSz, CV_8UC1, Scalar(0));
-//	int i1 = 0;
-//	int i2 = refImg.cols-1;
-//	int i3 = refImg.cols * (refImg.rows - 1);
-//	int i4 = refImg.cols * refImg.rows - 1;
-//	Point p1((int)points2D[i1].x, (int)points2D[i1].y); //indices for corner points
-//	Point p2((int)points2D[i2].x, (int)points2D[i2].y);
-//	Point p3((int)points2D[i3].x, (int)points2D[i3].y);
-//	Point p4((int)points2D[i4].x, (int)points2D[i4].y);
-//	out_corners.at<uchar>(p1.y, p1.x) = 255;//paint corner points white
-//	out_corners.at<uchar>(p2.y, p2.x) = 255;
-//	out_corners.at<uchar>(p3.y, p3.x) = 255;
-//	out_corners.at<uchar>(p4.y, p4.x) = 255;
+	//remember reprojected coordinates of corner points of original depth map
+	int i1 = 0;
+	int i2 = refImg.cols-1;
+	int i3 = refImg.cols * (refImg.rows - 1);
+	int i4 = refImg.cols * refImg.rows - 1;
+	Point p1((int)points2D[i1].x, (int)points2D[i1].y); //indices for corner points
+	Point p2((int)points2D[i2].x, (int)points2D[i2].y);
+	Point p3((int)points2D[i3].x, (int)points2D[i3].y);
+	Point p4((int)points2D[i4].x, (int)points2D[i4].y);
 
 	//transform vector holding 2D points into image matrix with depth values as intensity
-	Mat img2D(outImgSz.height, outImgSz.width, CV_8UC1, Scalar(255)); //white = farest OR unkown depth
+	Mat img2D(outImgSz.height, outImgSz.width, CV_8UC1, Scalar(0)); //white = farest OR unkown depth
 	for (uint i = 0; i < points2D.size(); ++i)
 	{
 		int x = points2D[i].x;
@@ -735,12 +739,30 @@ Mat ImagePreprocessor::projectFrom3DSpaceToImage(std::vector<Point3f> points3D, 
 		img2D.at<uchar>(y,x) = val;
 	}
 
-	//rectify image without interpolation
+	//rectify image without interpolation, while doing that get rectified corner points
 	Mat img2D_rect(img2D.size(), img2D.type());
-	for (int y = 0; y < img2D.rows; ++y) {
-		for (int x = 0; x < img2D.cols; ++x) {
-			img2D_rect.at<uchar>(y,x) = img2D.at<uchar>(rectifyMapY.at<float>(y,x), rectifyMapX.at<float>(y,x));
-	}}
+	Point p1_rect(0, 0);
+	Point p2_rect(img2D_rect.cols-1, 0);
+	Point p3_rect(0, img2D_rect.rows-1);
+	Point p4_rect(img2D_rect.cols-1, img2D_rect.rows-1);
+
+	for (int y = 0; y < img2D.rows; ++y)
+	{
+		for (int x = 0; x < img2D.cols; ++x)
+		{
+			//for each pixel in rect. img get value from source image
+			int yy = rectifyMapY.at<float>(y,x);
+			int xx = rectifyMapX.at<float>(y,x);
+			img2D_rect.at<uchar>(y,x) = img2D.at<uchar>(yy, xx);
+
+			//if px in src img is corner point, remember position in rect. img
+			if(p1.x == xx && p1.y == yy){ p1_rect.x = x; p1_rect.y = y; }
+			if(p2.x == xx && p2.y == yy){ p2_rect.x = x; p2_rect.y = y; }
+			if(p3.x == xx && p3.y == yy){ p3_rect.x = x; p3_rect.y = y; }
+			if(p4.x == xx && p4.y == yy){ p4_rect.x = x; p4_rect.y = y; }
+		}
+	}
+	finalCropRect_byKinectDepth = makeMinimalCrop(p1_rect, p2_rect, p3_rect, p4_rect, img2D_rect);
 
 	return img2D_rect;
 }
