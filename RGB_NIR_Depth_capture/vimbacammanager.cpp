@@ -192,6 +192,7 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 		{
 //			camImgs[NIR_Dark] = goldeye->getCVFrame();
 			bool darkImageSaved = false;
+			Mat darkImg16bit;
 
 			//get waveband images from camera (plus dark)
 			for(i = 0; i < nrOfWavebands2Trigger + 1; i++)
@@ -221,23 +222,34 @@ void VimbaCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 
 				//if waveband, subtract dark image to get "pure" waveband image
 				//and do white calibration
-				if(key == 0){ darkImageSaved = true; }
+				if(key == 0)
+				{
+					darkImg16bit = img.clone();
+					darkImageSaved = true;
+				}
 				else
 				{
 					if(darkImageSaved)
 					{
-						cv::subtract(img, camImgs[NIR_Dark], img);
+						cv::subtract(img, darkImg16bit, img);
 					}
 					myImageSource.doWhiteCalib(img, key);
 				}
 
+				//convert to 8 bit
+				Mat img8bit;
+				double min, max;
+				minMaxLoc(img, &min, &max);
+				img.convertTo(img8bit, CV_8U, 255.0/max); //0.0159 = 255/16000, assuming 16k as max value, measured
+//				img.convertTo(img8bit, CV_8U, 0.0159); //0.0159 = 255/16000, assuming 16k as max value, measured
+
 				//create correct entry for image list depending on channel returned by goldeye
 				switch(key)
 				{
-					case 0: camImgs[NIR_Dark] = img; break;
-					case 1: camImgs[NIR_970] = img;  break;
-					case 2: camImgs[NIR_1300] = img; break;
-					case 3: camImgs[NIR_1550] = img; break;
+					case 0: camImgs[NIR_Dark] = img8bit; break;
+					case 1: camImgs[NIR_970] = img8bit;  break;
+					case 2: camImgs[NIR_1300] = img8bit; break;
+					case 3: camImgs[NIR_1550] = img8bit; break;
 					default: break;
 				}
 			}

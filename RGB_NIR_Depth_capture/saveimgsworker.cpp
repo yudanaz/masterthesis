@@ -1,5 +1,6 @@
 #include "saveimgsworker.h"
 #include "vimbacammanager.h"
+#include "helper.h"
 #include <QDir>
 
 SaveImgsWorker::SaveImgsWorker(QObject *parent) :
@@ -58,6 +59,7 @@ void SaveImgsWorker::saveImgs(RGBDNIR_MAP imgs, bool RGB_img, bool NIR_DarkImg, 
 		nirChs.push_back(nir1300);
 		nirChs.push_back(nir1550);
 		merge(nirChs, nirMultiCh);
+		qDebug() << Helper::getOpenCVTypeName(nirMultiCh.type());
 		QString nm = QDir::currentPath() + "/out/" + dateTime_str + "_NIR_MultiCh.png";
 		imwrite(nm.toStdString().c_str(), nirMultiCh);
 	}

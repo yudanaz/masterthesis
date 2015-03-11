@@ -74,6 +74,8 @@ private:
 	bool acquiring;
 	QString getUniquePrefixFromDateAndTime();
 	void captureSeries();
+	Mat drawCross(Mat& img);
+
 	bool capturingSeries;
 	bool countingDown;
 	QTime myTimer;

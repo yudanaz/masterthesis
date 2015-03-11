@@ -153,16 +153,24 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 
 		if(type == RGB)
 		{
+			//make target cross
+			Mat rgbWithCross;
+			if(ui->checkBox_drawTargetCross->isChecked())
+			{
+				rgbWithCross = drawCross(img);
+			}
+			else{ rgbWithCross = img; }
+
 			//make undistored copy of RGB image and draw rectangle indicating effective area after calibration
 			Mat rgbWithRect;
 			if(simulatingRGBCalib)
 			{
-				undistort(img, rgbWithRect, cam_RGB, distCoeff_RGB);
+				undistort(rgbWithCross, rgbWithRect, cam_RGB, distCoeff_RGB);
 				cv::rectangle(rgbWithRect, drawRect_RGB, Scalar(255,0,0), 3);
 			}
 			else
 			{
-				rgbWithRect = img;
+				rgbWithRect = rgbWithCross;
 			}
 
 			//make a resized copy of the image according to graphic widget size
@@ -177,34 +185,38 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 		}
 		else if(type == NIR_Dark)//NIR_1300)
 		{
+			//make target cross
+			Mat imgColor;
+			cvtColor(img, imgColor, CV_GRAY2RGB);
+			Mat imgCross;
+			if(ui->checkBox_drawTargetCross->isChecked()){ imgCross = drawCross(imgColor); }
+			else{ imgCross = imgColor; }
+
 			//make a resized copy of the image according to graphic widget size
-			cv::resize(img, imgSmall, Size(width_nir,height_nir));
+			cv::resize(imgCross, imgSmall, Size(width_nir,height_nir));
 			if(flipImgs){ flip(imgSmall, imgSmall, 1); }
 
-			//convert and scale from 16 to 8 bit so image can be displayed
-			Mat img8bit(imgSmall.rows, imgSmall.cols, CV_8UC1);
-			Mat imgRGB8(imgSmall.rows, imgSmall.cols, CV_8UC3);
-//			double minVal, maxVal;
-//			minMaxLoc(imgSmall, &minVal, &maxVal); //find minimum and maximum intensities
-//			imgSmall.convertTo(img8bit, CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
-			imgSmall.convertTo(img8bit, CV_8U, 0.016, 0); // 0.016 = 255/16000, assuming 16k as max value
-			cvtColor(img8bit, imgRGB8, CV_GRAY2RGB);
-
 			//show in widget width inverted channels (because Mat is BGR and QImage is RGB)
-			QImage qimg(imgRGB8.data, imgRGB8.cols, imgRGB8.rows, imgRGB8.step, QImage::Format_RGB888);
+			QImage qimg(imgSmall.data, imgSmall.cols, imgSmall.rows, imgSmall.step, QImage::Format_RGB888);
 			ptr_NIRScene = QSharedPointer<QGraphicsScene>(new QGraphicsScene);//drop last pointer to free memory
 			ptr_NIRScene->addPixmap(QPixmap::fromImage(qimg));
 			ui->graphicsView_NIR->setScene(ptr_NIRScene.data());
 		}
 		else if(capturing_kinectRGB && type == Kinect_Depth || !capturing_kinectRGB && type == Kinect_IR)
 		{
+			//make cross
+			Mat imgColor;
+			cvtColor(img, imgColor, CV_GRAY2RGB);
+			Mat imgCross;
+			if(ui->checkBox_drawTargetCross->isChecked()){ imgCross = drawCross(imgColor); }
+			else{ imgCross = imgColor; }
+
 			//make a resized copy of the image according to graphic widget size
 			if(img.cols != 0) //work-around for not understood bug... when switching back from IR to RGB, depth image is empty. TODO: look into it
 			{
-				cv::resize(img, imgSmall, Size(width_depth,height_depth));
+				cv::resize(imgCross, imgSmall, Size(width_depth,height_depth));
 				if(flipImgs){ flip(imgSmall, imgSmall, 1); }
 			}
-			cvtColor(imgSmall, imgSmall, CV_GRAY2RGB);
 
 			//show in widget width inverted channels (because Mat is BGR and QImage is RGB)
 			QImage qimg(imgSmall.data, imgSmall.cols, imgSmall.rows, imgSmall.step, QImage::Format_RGB888);
@@ -278,6 +290,17 @@ void RGB_NIR_Depth_Capture::captureSeries()
 	}
 }
 
+Mat RGB_NIR_Depth_Capture::drawCross(Mat &img)
+{
+	Mat img2 = img.clone();
+	Point p1(img.cols/2, 0);
+	Point p2(img.cols/2, img.rows);
+	Point p3(0, img.rows/2);
+	Point p4(img.cols, img.rows/2);
+	cv::line(img2, p1, p2, Scalar(0,255,0), 3);
+	cv::line(img2, p3, p4, Scalar(0,255,0), 3);
+	return img2;
+}
 
 QString RGB_NIR_Depth_Capture::getUniquePrefixFromDateAndTime()
 {

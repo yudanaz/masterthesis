@@ -119,6 +119,7 @@ void MainWindow::on_pushButton_preproc_released()
 	rgb = imread(img_rgb.toStdString(), IMREAD_COLOR);
 	depth = imread(img_depth.toStdString(), IMREAD_GRAYSCALE);
 	nir = imread(img_nir.toStdString(), IMREAD_COLOR);
+	qDebug() << IO::getOpenCVTypeName(nir.type());
 
 	preprocessImages();
 }
