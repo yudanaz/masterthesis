@@ -44,16 +44,20 @@ public:
     QLineEdit *lineEdit_speckleWin;
     QLabel *label_7;
     QLineEdit *lineEdit_speckleRange;
+    QLabel *label_10;
+    QLabel *label_11;
+    QLineEdit *lineEdit_HOGcellSize;
+    QLineEdit *lineEdit_HOGblockSize;
 
     void setupUi(QWidget *StereoMatching_params)
     {
         if (StereoMatching_params->objectName().isEmpty())
             StereoMatching_params->setObjectName(QStringLiteral("StereoMatching_params"));
-        StereoMatching_params->resize(270, 320);
+        StereoMatching_params->resize(270, 407);
         StereoMatching_params->setStyleSheet(QStringLiteral("background-color: rgb(231, 203, 173);"));
         formLayoutWidget = new QWidget(StereoMatching_params);
         formLayoutWidget->setObjectName(QStringLiteral("formLayoutWidget"));
-        formLayoutWidget->setGeometry(QRect(10, 10, 238, 299));
+        formLayoutWidget->setGeometry(QRect(10, 10, 259, 381));
         formLayout = new QFormLayout(formLayoutWidget);
         formLayout->setObjectName(QStringLiteral("formLayout"));
         formLayout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
@@ -148,6 +152,26 @@ public:
 
         formLayout->setWidget(9, QFormLayout::FieldRole, lineEdit_speckleRange);
 
+        label_10 = new QLabel(formLayoutWidget);
+        label_10->setObjectName(QStringLiteral("label_10"));
+
+        formLayout->setWidget(10, QFormLayout::LabelRole, label_10);
+
+        label_11 = new QLabel(formLayoutWidget);
+        label_11->setObjectName(QStringLiteral("label_11"));
+
+        formLayout->setWidget(11, QFormLayout::LabelRole, label_11);
+
+        lineEdit_HOGcellSize = new QLineEdit(formLayoutWidget);
+        lineEdit_HOGcellSize->setObjectName(QStringLiteral("lineEdit_HOGcellSize"));
+
+        formLayout->setWidget(11, QFormLayout::FieldRole, lineEdit_HOGcellSize);
+
+        lineEdit_HOGblockSize = new QLineEdit(formLayoutWidget);
+        lineEdit_HOGblockSize->setObjectName(QStringLiteral("lineEdit_HOGblockSize"));
+
+        formLayout->setWidget(10, QFormLayout::FieldRole, lineEdit_HOGblockSize);
+
 
         retranslateUi(StereoMatching_params);
 
@@ -162,9 +186,9 @@ public:
         label_2->setText(QApplication::translate("StereoMatching_params", "WTA  disp. thresh.:", 0));
         lineEdit_wtaThresh->setText(QApplication::translate("StereoMatching_params", "5.0", 0));
         label->setText(QApplication::translate("StereoMatching_params", "Minimal Disparity:", 0));
-        lineEdit_minDisparity->setText(QApplication::translate("StereoMatching_params", "8", 0));
+        lineEdit_minDisparity->setText(QApplication::translate("StereoMatching_params", "100", 0));
         label_9->setText(QApplication::translate("StereoMatching_params", "Maximal Disparity:", 0));
-        lineEdit_maxDisparity->setText(QApplication::translate("StereoMatching_params", "64", 0));
+        lineEdit_maxDisparity->setText(QApplication::translate("StereoMatching_params", "155", 0));
         label_4->setText(QApplication::translate("StereoMatching_params", "SAD window", 0));
         lineEdit_SADwin->setText(QApplication::translate("StereoMatching_params", "3", 0));
         label_8->setText(QApplication::translate("StereoMatching_params", "Pre-Filter Cap", 0));
@@ -175,6 +199,10 @@ public:
         lineEdit_speckleWin->setText(QApplication::translate("StereoMatching_params", "7", 0));
         label_7->setText(QApplication::translate("StereoMatching_params", "Speckle Range", 0));
         lineEdit_speckleRange->setText(QApplication::translate("StereoMatching_params", "4", 0));
+        label_10->setText(QApplication::translate("StereoMatching_params", "HOG block size (mult.of cell)", 0));
+        label_11->setText(QApplication::translate("StereoMatching_params", "HOG cell size", 0));
+        lineEdit_HOGcellSize->setText(QApplication::translate("StereoMatching_params", "8", 0));
+        lineEdit_HOGblockSize->setText(QApplication::translate("StereoMatching_params", "24", 0));
     } // retranslateUi
 
 };

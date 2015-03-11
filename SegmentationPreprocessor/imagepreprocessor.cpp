@@ -168,56 +168,58 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 	Mat RGB_resized = resizeAndCropRGBImg(RGB_undist);
 
 	Mat depth_remapped = mapKinectDepth2NIR(depth_kinect, NIR);
-    imshow("depth remapped", depth_remapped);cvWaitKey();
 
 	//rectify
-	Mat RGB_rect, NIR_rect, depth_rect;
+	Mat RGB_rect, NIR_rect;
 	remap(RGB_resized, RGB_rect, rectifyMapX_RGB, rectifyMapY_RGB, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
 	remap(NIR, NIR_rect, rectifyMapX_NIR, rectifyMapY_NIR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
-	remap(depth_remapped, depth_rect, rectifyMapX_NIR, rectifyMapY_NIR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
-	//(rectify kinect depth  with NIR params, because it was mapped to NIR)
 
-    //make disparity image from RGB and NIR images (cross/multi - spectral)
-    Mat disp;
-    makeCrossSpectralStereo(NIR_rect, RGB_rect, disp);
+	//make disparity image from RGB and NIR images (cross/multi - spectral)
+	Mat disp;
+	makeCrossSpectralStereo(NIR_rect, RGB_rect, disp);
 
-    //register RGB to NIR image using HOG descriptors
-    Mat RGB_registered = registerRGB2NIR(RGB_rect, NIR_rect);
+	//register RGB to NIR image using HOG descriptors
+	Mat RGB_registered = registerRGB2NIR(RGB_rect, NIR_rect);
 
-    //crop images according to registered RGB
-//    Mat NIR_cropped = cropImage(NIR_rect, finalCropRect_byRGB);
-//    Mat RGB_cropped = cropImage(RGB_registered, finalCropRect_byRGB);
-//    Mat depth_cropped = cropImage(depth_rect, finalCropRect_byRGB);
-//    Mat disp_cropped = cropImage(disp, finalCropRect_byRGB);
-    Mat NIR_cropped = cropImage(NIR_rect, finalCropRect_byKinectDepth);
-    Mat RGB_cropped = cropImage(RGB_registered, finalCropRect_byKinectDepth);
-    Mat depth_cropped = cropImage(depth_rect, finalCropRect_byKinectDepth);
-    Mat disp_cropped = cropImage(disp, finalCropRect_byKinectDepth);
+	//crop images according to registered RGB
+	Mat NIR_cropped = cropImage(NIR_rect, finalCropRect_byRGB);
+	Mat RGB_cropped = cropImage(RGB_registered, finalCropRect_byRGB);
+	Mat depth_cropped = cropImage(depth_remapped, finalCropRect_byRGB);
+	Mat disp_cropped = cropImage(disp, finalCropRect_byRGB);
 
-    //if set, resize the images to a new output (smaller) size (might be better/faster for CNN learning
-    // and improves performance of cross-spectral stereo matching)
-    Mat RGB_reg_small, NIR_small, depth_remapped_small, disp_small;
-    if(output_image_size_set_)
-    {
-        resize(NIR_cropped, NIR_small, outputImgSz, 0, 0, INTER_AREA);
-        resize(RGB_cropped, RGB_reg_small, outputImgSz, 0, 0, INTER_AREA); //area averaging best for downsampling
-        resize(depth_cropped, depth_remapped_small, outputImgSz, 0, 0, INTER_NEAREST); //for depth no in-between interpolation!
-        resize(disp_cropped, disp_small, outputImgSz, 0, 0, INTER_NEAREST); //for depth no in-between interpolation!
-    }
-    else
-    {
-        //put results in output imgs
-        NIR_small = NIR_cropped;
-        RGB_reg_small = RGB_cropped;
-        depth_remapped_small = depth_cropped;
-        disp_small = disp_cropped;
-    }
+//	Mat NIR_cropped = cropImage(NIR_rect, finalCropRect_byKinectDepth);
+//	Mat RGB_cropped = cropImage(RGB_registered, finalCropRect_byKinectDepth);
+//	Mat depth_cropped = cropImage(depth_rect, finalCropRect_byKinectDepth);
+//	Mat disp_cropped = cropImage(disp, finalCropRect_byKinectDepth);
+//	Mat NIR_cropped = NIR_rect;
+//	Mat RGB_cropped = RGB_registered;
+//	Mat depth_cropped = depth_remapped;
+//	Mat disp_cropped = disp;
+
+	//if set, resize the images to a new output (smaller) size (might be better/faster for CNN learning
+	// and improves performance of cross-spectral stereo matching)
+	Mat RGB_reg_small, NIR_small, depth_remapped_small, disp_small;
+	if(output_image_size_set_)
+	{
+		resize(NIR_cropped, NIR_small, outputImgSz, 0, 0, INTER_AREA);
+		resize(RGB_cropped, RGB_reg_small, outputImgSz, 0, 0, INTER_AREA); //area averaging best for downsampling
+		resize(depth_cropped, depth_remapped_small, outputImgSz, 0, 0, INTER_NEAREST); //for depth no in-between interpolation!
+		resize(disp_cropped, disp_small, outputImgSz, 0, 0, INTER_NEAREST); //for depth no in-between interpolation!
+	}
+	else
+	{
+		//put results in output imgs
+		NIR_small = NIR_cropped;
+		RGB_reg_small = RGB_cropped;
+		depth_remapped_small = depth_cropped;
+		disp_small = disp_cropped;
+	}
 
 	//set the final outputs
 	NIR_out = NIR_small;
-    RGB_out = RGB_reg_small;
+	RGB_out = RGB_reg_small;
 	depth_remapped_out = depth_remapped_small;
-    depth_stereo_out = disp_small;
+	depth_stereo_out = disp_small;
 }
 
 
@@ -310,7 +312,7 @@ void ImagePreprocessor::make_RectifyMaps(QList<Mat> srcImgs, QList<Mat> dstImgs,
 	QList<int> blackList; //will contain image indices for which chessboard corners couldn't be found
 	getObjectAndImagePoints(srcImgs, chessboardSz.width, chessboardSz.height, obj, objPoints_src, imgPoints_src,
 							imgTypeSrc, blackList, true);
-    getObjectAndImagePoints(dstImgs, chessboardSz.width, chessboardSz.height, obj, objPoints_dst, imgPoints_dst,
+	getObjectAndImagePoints(dstImgs, chessboardSz.width, chessboardSz.height, obj, objPoints_dst, imgPoints_dst,
 							imgTypeDst, blackList, true);
 
 
@@ -352,7 +354,8 @@ void ImagePreprocessor::make_RectifyMaps(QList<Mat> srcImgs, QList<Mat> dstImgs,
 	stereoRectify(cam_src, distCoeff_src,
 				  cam_dst, distCoeff_dst, imgSize, out_Rot, out_Transl,
 				  Rect_src, Rect_dst, Proj_src, Proj_dst, Q, CALIB_ZERO_DISPARITY,
-				  0); //set alpha to zero -> zoom and shift so no black areas remain after rectification
+				  1);
+//				  0); //set alpha to zero -> zoom and shift so no black areas remain after rectification
 
 	//make the rectify maps
 	initUndistortRectifyMap(cam_src, distCoeff_src, Rect_src, Proj_src, imgSize, CV_32FC1, out_rectifMapX_src, out_rectifMapY_src);
@@ -480,7 +483,7 @@ Mat ImagePreprocessor::registerImageByHorizontalShift(Mat img, vector<KeyPoint> 
 {
 	//compute offset as half of average distance between matched points for horizontal shift
 	int xoffset = 0;
-    for(uint i = 0; i < k1.size(); ++i)
+	for(uint i = 0; i < k1.size(); ++i)
 	{
 		Point2f p1 = k1[i].pt;
 		Point2f p2 = k2[i].pt;
@@ -496,48 +499,48 @@ Mat ImagePreprocessor::registerImageByHorizontalShift(Mat img, vector<KeyPoint> 
 
 Point ImagePreprocessor::warpOnePoint(Mat transfMat, Point p)
 {
-    Point p_;
-    Mat M = transfMat;
-    double X0 = M.at<double>(0,0) * p.x + M.at<double>(0,1) * p.y + M.at<double>(0,2);
-    double Y0 = M.at<double>(1,0) * p.x + M.at<double>(1,1) * p.y + M.at<double>(1,2);
-    double W = M.at<double>(2,0) * p.x + M.at<double>(2,1) * p.y + M.at<double>(2,2);
-    W = W != 0.0f ? 1.f / W : 0.0f;
-    p_.x = X0 * W;
-    p_.y = Y0 * W;
-    return p_;
+	Point p_;
+	Mat M = transfMat;
+	double X0 = M.at<double>(0,0) * p.x + M.at<double>(0,1) * p.y + M.at<double>(0,2);
+	double Y0 = M.at<double>(1,0) * p.x + M.at<double>(1,1) * p.y + M.at<double>(1,2);
+	double W = M.at<double>(2,0) * p.x + M.at<double>(2,1) * p.y + M.at<double>(2,2);
+	W = W != 0.0f ? 1.f / W : 0.0f;
+	p_.x = X0 * W;
+	p_.y = Y0 * W;
+	return p_;
 }
 
 Rect ImagePreprocessor::makeMinimalCrop(Point p1, Point p2, Point p3, Point p4, Mat& refImg)
 {
-    //make sure the points don't lie outside of the image boundaries
-    assertPointInsideImage(p1, refImg);
-    assertPointInsideImage(p2, refImg);
-    assertPointInsideImage(p3, refImg);
-    assertPointInsideImage(p4, refImg);
+	//make sure the points don't lie outside of the image boundaries
+	assertPointInsideImage(p1, refImg);
+	assertPointInsideImage(p2, refImg);
+	assertPointInsideImage(p3, refImg);
+	assertPointInsideImage(p4, refImg);
 
-    //the two middle x- and y-coordinates define the minimal crop rectangle
-    QList<int> xList = QList<int>() << p1.x << p2.x << p3.x << p4.x;
-    QList<int> yList = QList<int>() << p1.y << p2.y << p3.y << p4.y;
-    qSort(xList);
-    qSort(yList);
+	//the two middle x- and y-coordinates define the minimal crop rectangle
+	QList<int> xList = QList<int>() << p1.x << p2.x << p3.x << p4.x;
+	QList<int> yList = QList<int>() << p1.y << p2.y << p3.y << p4.y;
+	qSort(xList);
+	qSort(yList);
 
-    return Rect(xList[1], yList[1], xList[2]-xList[1], yList[2]-yList[1]);
+	return Rect(xList[1], yList[1], xList[2]-xList[1], yList[2]-yList[1]);
 }
 
 void ImagePreprocessor::assertPointInsideImage(Point &p, Mat &refImg)
 {
-    p.x = p.x < 0 ? 0 : p.x;
-    p.x = p.x > refImg.cols ? refImg.cols : p.x;
-    p.y = p.y < 0 ? 0 : p.y;
-    p.y = p.y > refImg.rows ? refImg.rows : p.y;
+	p.x = p.x < 0 ? 0 : p.x;
+	p.x = p.x > refImg.cols ? refImg.cols : p.x;
+	p.y = p.y < 0 ? 0 : p.y;
+	p.y = p.y > refImg.rows ? refImg.rows : p.y;
 }
 
 Mat ImagePreprocessor::cropImage(Mat img, Rect cropROI)
 {
-    Mat cropRef(img, cropROI);
-    Mat cropCopy;
-    cropRef.copyTo(cropCopy);
-    return cropCopy;
+	Mat cropRef(img, cropROI);
+	Mat cropCopy;
+	cropRef.copyTo(cropCopy);
+	return cropCopy;
 }
 
 Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
@@ -546,36 +549,38 @@ Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
 	Mat depth_fixed = fixHolesInDepthMap(depth_kinect, 1); //fix from right-to-left, i.e. shadows on right side of objects
 
 	//map Kinect depth to NIR
-    //map from depth map to 3d space
-    Mat depth_kinect_undist;
+	//map from depth map to 3d space
+	Mat depth_kinect_undist;
 	undistort(depth_fixed, depth_kinect_undist, cam_IR, distCoeff_IR);
 	vector<Point3f> depth3D = projectKinectDepthTo3DSpace(depth_kinect_undist);
 
-    //mape from 3d space to 2d image in coordinate system of NIR camera
-    double verticalShift = proj_IR2NIR.at<double>(1,3) / proj_IR2NIR.at<double>(0,0);
+	//mape from 3d space to 2d image in coordinate system of NIR camera
+	double verticalShift = proj_IR2NIR.at<double>(1,3) / proj_IR2NIR.at<double>(0,0);
 	double horizontalShift = proj_IR2NIR.at<double>(0,3) / proj_IR2NIR.at<double>(0,0);
 	Mat depth2D = projectFrom3DSpaceToImage(depth3D, rotation_IR2NIR, transl_IR2NIR, cam_NIR, distCoeff_NIR,
-                                            Size(NIR_img.cols, NIR_img.rows), horizontalShift, verticalShift, depth_kinect_undist);
+											rectifyMapX_NIR, rectifyMapY_NIR,
+											Size(NIR_img.cols, NIR_img.rows), horizontalShift, verticalShift,
+											depth_kinect_undist);
 
-    //again fill holes in the resulting reprojected depth map
-    Mat depth2D_fixed = fixHolesInDepthMap(depth2D, 3); //fix bottom-up, i.e. shadows on lower side of objects
+	//again fill holes in the resulting reprojected depth map and invert colors so depth encoding is similar to disparity map
+	Mat depth2D_fixed = fixHolesInDepthMap(depth2D, 3); //fix bottom-up, i.e. shadows on lower side of objects
 	Mat depth2D_fixed_inverted;
 	Mat white(depth2D.size(), depth2D.type(), Scalar(255));
 	subtract(white, depth2D_fixed, depth2D_fixed_inverted);
 	return depth2D_fixed_inverted;
 
 	//fill gaps in re-mapped depth map with crossbilateral filter
-	Mat NIR_gray, NIR_gray_undist;
-	cvtColor(NIR_img, NIR_gray, CV_RGB2GRAY);
-	undistort(NIR_gray, NIR_gray_undist, cam_NIR, distCoeff_NIR);
-	Mat depth_refined = crossbilatFilter.filter(depth2D_fixed, NIR_gray_undist, 4.0, 0.1);
+//	Mat NIR_gray, NIR_gray_undist;
+//	cvtColor(NIR_img, NIR_gray, CV_RGB2GRAY);
+//	undistort(NIR_gray, NIR_gray_undist, cam_NIR, distCoeff_NIR);
+//	Mat depth_refined = crossbilatFilter.filter(depth2D_fixed, NIR_gray_undist, 4.0, 0.1);
 
 //	imwrite("depth_before.png", depth2D);
 //	imwrite("depth before fixed.png", depth2D_fixed);
 //	imwrite("nir_gray_undist.png", NIR_gray_undist);
 //	imwrite("depth_after.png", depth_refined);
 
-	return depth_refined;
+//	return depth_refined;
 }
 
 Mat ImagePreprocessor::fixHolesInDepthMap(Mat depth, int direction) //0 = L-R, 1 = R-L, 2 = Top-Down, 3 = Bottom-Up
@@ -660,8 +665,9 @@ vector<Point3f> ImagePreprocessor::projectKinectDepthTo3DSpace(Mat depth)
 	return points3D;
 }
 
-Mat ImagePreprocessor::projectFrom3DSpaceToImage(std::vector<Point3f> points3D, Mat rot, Mat transl, Mat cam_Matrix, Mat distCoeff, Size outImgSz,
-                                                 double shiftX, double shiftY, Mat& refImg)
+Mat ImagePreprocessor::projectFrom3DSpaceToImage(std::vector<Point3f> points3D, Mat rot, Mat transl, Mat cam_Matrix, Mat distCoeff,
+												 Mat rectifyMapX, Mat rectifyMapY,
+												 Size outImgSz, double shiftX, double shiftY, Mat& refImg)
 {
 //    qDebug() << IO::getOpenCVTypeName(img3D.type());
 
@@ -677,6 +683,7 @@ Mat ImagePreprocessor::projectFrom3DSpaceToImage(std::vector<Point3f> points3D, 
 	float cy = cam_Matrix.at<double>(1,2);
 	for (uint j = 0; j < points3D.size(); ++j)
 	{
+		//project using camera intrinsics
 		Mat p3d = Mat(points3D[j]);
 		p3d.convertTo(p3d, rot.type()); //matrices have to be same type for matrix multiplication
 		Mat m3d_ =  rot * p3d + transl ;
@@ -688,16 +695,20 @@ Mat ImagePreprocessor::projectFrom3DSpaceToImage(std::vector<Point3f> points3D, 
 		points2D.push_back(p2d);
 	}
 
-    //make crop rectangle based on reprojected corner points
-    int i1 = 0;
-    int i2 = refImg.cols-1;
-    int i3 = refImg.cols * (refImg.rows - 1);
-    int i4 = refImg.cols * refImg.rows - 1;
-    Point p1((int)points2D[i1].x, (int)points2D[i1].y); //indices for corner points
-    Point p2((int)points2D[i2].x, (int)points2D[i2].y);
-    Point p3((int)points2D[i3].x, (int)points2D[i3].y);
-    Point p4((int)points2D[i4].x, (int)points2D[i4].y);
-    finalCropRect_byKinectDepth = makeMinimalCrop(p1, p2, p3, p4, refImg);
+	//make binary image with reprojected corner points for crop rectangle
+//	out_corners = Mat(outImgSz, CV_8UC1, Scalar(0));
+//	int i1 = 0;
+//	int i2 = refImg.cols-1;
+//	int i3 = refImg.cols * (refImg.rows - 1);
+//	int i4 = refImg.cols * refImg.rows - 1;
+//	Point p1((int)points2D[i1].x, (int)points2D[i1].y); //indices for corner points
+//	Point p2((int)points2D[i2].x, (int)points2D[i2].y);
+//	Point p3((int)points2D[i3].x, (int)points2D[i3].y);
+//	Point p4((int)points2D[i4].x, (int)points2D[i4].y);
+//	out_corners.at<uchar>(p1.y, p1.x) = 255;//paint corner points white
+//	out_corners.at<uchar>(p2.y, p2.x) = 255;
+//	out_corners.at<uchar>(p3.y, p3.x) = 255;
+//	out_corners.at<uchar>(p4.y, p4.x) = 255;
 
 	//transform vector holding 2D points into image matrix with depth values as intensity
 	Mat img2D(outImgSz.height, outImgSz.width, CV_8UC1, Scalar(255)); //white = farest OR unkown depth
@@ -709,7 +720,14 @@ Mat ImagePreprocessor::projectFrom3DSpaceToImage(std::vector<Point3f> points3D, 
 		img2D.at<uchar>(y,x) = val;
 	}
 
-	return img2D;
+	//rectify image without interpolation
+	Mat img2D_rect(img2D.size(), img2D.type());
+	for (int y = 0; y < img2D.rows; ++y) {
+		for (int x = 0; x < img2D.cols; ++x) {
+			img2D_rect.at<uchar>(y,x) = img2D.at<uchar>(rectifyMapY.at<float>(y,x), rectifyMapX.at<float>(y,x));
+	}}
+
+	return img2D_rect;
 }
 
 Mat ImagePreprocessor::registerRGB2NIR(Mat& RGB_img, Mat& NIR_img)
@@ -720,7 +738,7 @@ Mat ImagePreprocessor::registerRGB2NIR(Mat& RGB_img, Mat& NIR_img)
 	{
 		vector<KeyPoint> matchedDescrL, matchedDescrR;
 		vector<DMatch> dmatches;
-        ((HOG_crossSpectralStereoMatcher*)(CrossSpectralStereoMatcher*)CSstereoMatcher)->getBestDescriptors(matchedDescrL, matchedDescrR, dmatches, 4.0);
+		((HOG_crossSpectralStereoMatcher*)(CrossSpectralStereoMatcher*)CSstereoMatcher)->getBestDescriptors(matchedDescrL, matchedDescrR, dmatches, 4.0);
 
 		vector<Point2f> pL, pR;
 		for (int i = 0; i < matchedDescrL.size(); ++i)
@@ -751,18 +769,18 @@ Mat ImagePreprocessor::registerRGB2NIR(Mat& RGB_img, Mat& NIR_img)
 		//DEBUG show matches//
 		Mat matches;
 		drawMatches(NIR_img, matchedDescrL, RGB_img, matchedDescrR, dmatches, matches);
-        imshow("descriptor matches", matches);
+		imshow("descriptor matches", matches);
 //		imwrite("HOG_descriptors_matches.png", matches);
 		//DEBUG show matches//
 
-        //also use homography matrix to get the 4 corner points of the warped image
-        Point p1 = warpOnePoint(homography, Point(0,0));
-        Point p2 = warpOnePoint(homography, Point(RGB_img.cols, 0));
-        Point p3 = warpOnePoint(homography, Point(0,RGB_img.rows));
-        Point p4 = warpOnePoint(homography, Point(RGB_img.cols, RGB_img.rows));
+		//also use homography matrix to get the 4 corner points of the warped image
+		Point p1 = warpOnePoint(homography, Point(0,0));
+		Point p2 = warpOnePoint(homography, Point(RGB_img.cols-1, 0));
+		Point p3 = warpOnePoint(homography, Point(0,RGB_img.rows-1));
+		Point p4 = warpOnePoint(homography, Point(RGB_img.cols-1, RGB_img.rows-1));
 
-        //use these corner points to define the minimal crop rectangle
-        finalCropRect_byRGB = makeMinimalCrop(p1, p2, p3, p4, RGB_img);
+		//use these corner points to define the minimal crop rectangle
+		finalCropRect_byRGB = makeMinimalCrop(p1, p2, p3, p4, RGB_img);
 	}
 	else
 	{
@@ -777,21 +795,21 @@ void ImagePreprocessor::makeCrossSpectralStereo(Mat imgNIR_L, Mat imgRGB_R, Mat&
 //    Mat rgb_gray; //rgb to grayscale
 //    cvtColor(imgRGB_R, rgb_gray, CV_BGR2GRAY);
 
-    //get lowerst nir channel, 970 nm
-    Mat nir_970(imgNIR_L.rows, imgNIR_L.cols, CV_8UC1);
-    int from_to[] = {0, 0}; //970 nm is first channel
-    mixChannels(&imgNIR_L, 1, &nir_970, 1, from_to, 1);
+	//get lowerst nir channel, 970 nm
+	Mat nir_970(imgNIR_L.rows, imgNIR_L.cols, CV_8UC1);
+	int from_to[] = {0, 0}; //970 nm is first channel
+	mixChannels(&imgNIR_L, 1, &nir_970, 1, from_to, 1);
 
 //    CSstereoMatcher->process(nir_970, rgb_gray, out_disp);
 
-    //get red RGB channel (closest to NIR)
-    Mat rgb_red(imgRGB_R.rows, imgRGB_R.cols, CV_8UC1);
-    int from_to2[] = {2, 0}; //red is last channel (BGR format)
-    mixChannels(&imgRGB_R, 1, &rgb_red, 1, from_to2, 1);
+	//get red RGB channel (closest to NIR)
+	Mat rgb_red(imgRGB_R.rows, imgRGB_R.cols, CV_8UC1);
+	int from_to2[] = {2, 0}; //red is last channel (BGR format)
+	mixChannels(&imgRGB_R, 1, &rgb_red, 1, from_to2, 1);
 
 
-    //get left-to-right disparity
-    CSstereoMatcher->process(nir_970, rgb_red, out_disp);
+	//get left-to-right disparity
+	CSstereoMatcher->process(nir_970, rgb_red, out_disp);
 
 	//LR-CONSISTENCY CHECKING IS ALREADY DONE IN SGM, SO I DONT NEED TO DO THIS HERE...
 }

@@ -13,7 +13,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
 	ui->setupUi(this);
 //    preproc.OutputImageSize(200, 160); //for test purposes
-    //preproc.OutputImageSize(320, 256); // ~ 636x508 (native goldeye res.) * 0,5
+	//preproc.OutputImageSize(320, 256); // ~ 636x508 (native goldeye res.) * 0,5
 	preproc.set_CSstereoType(crossSpectrSt_HOG);
 }
 
@@ -47,6 +47,8 @@ void MainWindow::preprocessImages()
 
 	imwrite("RGB.png", rgb_);
 	imwrite("NIR.png", nir_);
+	imwrite("Depth_CSStereo.png", depthStereo_);
+	imwrite("Depth_Kinect.png", depth_);
 }
 
 

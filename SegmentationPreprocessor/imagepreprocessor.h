@@ -71,16 +71,16 @@ private:
 	Mat mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img);
 	Mat fixHolesInDepthMap(Mat depth, int direction);
 	vector<Point3f> projectKinectDepthTo3DSpace(Mat depth);
-    Mat projectFrom3DSpaceToImage(vector<Point3f> points3D, Mat rot, Mat transl, Mat cam_Matrix, Mat distCoeff, Size outImgSz, double shiftX, double shiftY, Mat &refImg);
+	Mat projectFrom3DSpaceToImage(vector<Point3f> points3D, Mat rot, Mat transl, Mat cam_Matrix, Mat distCoeff, Mat rectifyMapX, Mat rectifyMapY, Size outImgSz, double shiftX, double shiftY, Mat &refImg);
 
 
 	Mat registerRGB2NIR(Mat &RGB_img, Mat &NIR_img);
-    Mat registerImageByHorizontalShift(Mat img, vector<KeyPoint> k1, vector<KeyPoint> k2);
-    Point warpOnePoint(Mat transfMat, Point p);
+	Mat registerImageByHorizontalShift(Mat img, vector<KeyPoint> k1, vector<KeyPoint> k2);
+	Point warpOnePoint(Mat transfMat, Point p);
 
-    Rect makeMinimalCrop(Point p1, Point p2, Point p3, Point p4, Mat &refImg);
-    void assertPointInsideImage(Point& p, Mat& refImg);
-    Mat cropImage(Mat img, Rect cropROI);
+	Rect makeMinimalCrop(Point p1, Point p2, Point p3, Point p4, Mat &refImg);
+	void assertPointInsideImage(Point& p, Mat& refImg);
+	Mat cropImage(Mat img, Rect cropROI);
 
 	void makeCrossSpectralStereo(Mat imgNIR_L, Mat imgRGB_R, Mat &out_disp);
 
@@ -152,9 +152,9 @@ private:
 	bool output_image_size_set_;
 	CrossSpectralStereoType stereo_Type_;
 
-    //crop rectangles for final crop
-    Rect finalCropRect_byRGB;
-    Rect finalCropRect_byKinectDepth;
+	//crop rectangles for final crop
+	Rect finalCropRect_byRGB;
+	Rect finalCropRect_byKinectDepth;
 };
 
 #endif // IMAGEPREPROCESSOR_H
