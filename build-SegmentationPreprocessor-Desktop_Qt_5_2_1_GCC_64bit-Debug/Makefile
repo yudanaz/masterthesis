@@ -54,7 +54,8 @@ SOURCES       = ../SegmentationPreprocessor/main.cpp \
 		../SegmentationPreprocessor/hog_crossspectralstereomatcher.cpp \
 		../SegmentationPreprocessor/locnorm_crossspectralstereomatcher.cpp \
 		../SegmentationPreprocessor/stereomatching_params.cpp \
-		../SegmentationPreprocessor/CThinPlateSpline.cpp moc_mainwindow.cpp \
+		../SegmentationPreprocessor/CThinPlateSpline.cpp \
+		../SegmentationPreprocessor/seeds/seeds2.cpp moc_mainwindow.cpp \
 		moc_stereomatching_params.cpp
 OBJECTS       = main.o \
 		mainwindow.o \
@@ -66,6 +67,7 @@ OBJECTS       = main.o \
 		locnorm_crossspectralstereomatcher.o \
 		stereomatching_params.o \
 		CThinPlateSpline.o \
+		seeds2.o \
 		moc_mainwindow.o \
 		moc_stereomatching_params.o
 DIST          = ../../../Qt5.2.1/5.2.1/gcc_64/mkspecs/features/spec_pre.prf \
@@ -433,7 +435,7 @@ qmake_all: FORCE
 
 dist: 
 	@test -d .tmp/SegmentationPreprocessor1.0.0 || mkdir -p .tmp/SegmentationPreprocessor1.0.0
-	$(COPY_FILE) --parents $(SOURCES) $(DIST) .tmp/SegmentationPreprocessor1.0.0/ && $(COPY_FILE) --parents ../SegmentationPreprocessor/mainwindow.h ../SegmentationPreprocessor/io.h ../SegmentationPreprocessor/imagepreprocessor.h ../SegmentationPreprocessor/crossBilateralFilter/array.h ../SegmentationPreprocessor/crossBilateralFilter/array_n.h ../SegmentationPreprocessor/crossBilateralFilter/chrono.h ../SegmentationPreprocessor/crossBilateralFilter/fast_lbf.h ../SegmentationPreprocessor/crossBilateralFilter/geom.h ../SegmentationPreprocessor/crossBilateralFilter/math_tools.h ../SegmentationPreprocessor/crossBilateralFilter/mixed_vector.h ../SegmentationPreprocessor/crossBilateralFilter/msg_stream.h ../SegmentationPreprocessor/crossbilateralfilterwrapper.h ../SegmentationPreprocessor/helper.h ../SegmentationPreprocessor/hog_crossspectralstereomatcher.h ../SegmentationPreprocessor/crossspectralstereomatcher.h ../SegmentationPreprocessor/locnorm_crossspectralstereomatcher.h ../SegmentationPreprocessor/stereomatching_params.h ../SegmentationPreprocessor/CThinPlateSpline.h .tmp/SegmentationPreprocessor1.0.0/ && $(COPY_FILE) --parents ../SegmentationPreprocessor/main.cpp ../SegmentationPreprocessor/mainwindow.cpp ../SegmentationPreprocessor/io.cpp ../SegmentationPreprocessor/imagepreprocessor.cpp ../SegmentationPreprocessor/crossbilateralfilterwrapper.cpp ../SegmentationPreprocessor/helper.cpp ../SegmentationPreprocessor/hog_crossspectralstereomatcher.cpp ../SegmentationPreprocessor/locnorm_crossspectralstereomatcher.cpp ../SegmentationPreprocessor/stereomatching_params.cpp ../SegmentationPreprocessor/CThinPlateSpline.cpp .tmp/SegmentationPreprocessor1.0.0/ && $(COPY_FILE) --parents ../SegmentationPreprocessor/mainwindow.ui ../SegmentationPreprocessor/stereomatching_params.ui .tmp/SegmentationPreprocessor1.0.0/ && (cd `dirname .tmp/SegmentationPreprocessor1.0.0` && $(TAR) SegmentationPreprocessor1.0.0.tar SegmentationPreprocessor1.0.0 && $(COMPRESS) SegmentationPreprocessor1.0.0.tar) && $(MOVE) `dirname .tmp/SegmentationPreprocessor1.0.0`/SegmentationPreprocessor1.0.0.tar.gz . && $(DEL_FILE) -r .tmp/SegmentationPreprocessor1.0.0
+	$(COPY_FILE) --parents $(SOURCES) $(DIST) .tmp/SegmentationPreprocessor1.0.0/ && $(COPY_FILE) --parents ../SegmentationPreprocessor/mainwindow.h ../SegmentationPreprocessor/io.h ../SegmentationPreprocessor/imagepreprocessor.h ../SegmentationPreprocessor/crossBilateralFilter/array.h ../SegmentationPreprocessor/crossBilateralFilter/array_n.h ../SegmentationPreprocessor/crossBilateralFilter/chrono.h ../SegmentationPreprocessor/crossBilateralFilter/fast_lbf.h ../SegmentationPreprocessor/crossBilateralFilter/geom.h ../SegmentationPreprocessor/crossBilateralFilter/math_tools.h ../SegmentationPreprocessor/crossBilateralFilter/mixed_vector.h ../SegmentationPreprocessor/crossBilateralFilter/msg_stream.h ../SegmentationPreprocessor/crossbilateralfilterwrapper.h ../SegmentationPreprocessor/helper.h ../SegmentationPreprocessor/hog_crossspectralstereomatcher.h ../SegmentationPreprocessor/crossspectralstereomatcher.h ../SegmentationPreprocessor/locnorm_crossspectralstereomatcher.h ../SegmentationPreprocessor/stereomatching_params.h ../SegmentationPreprocessor/CThinPlateSpline.h ../SegmentationPreprocessor/seeds/seeds2.h ../SegmentationPreprocessor/seeds/seedsHelper.h .tmp/SegmentationPreprocessor1.0.0/ && $(COPY_FILE) --parents ../SegmentationPreprocessor/main.cpp ../SegmentationPreprocessor/mainwindow.cpp ../SegmentationPreprocessor/io.cpp ../SegmentationPreprocessor/imagepreprocessor.cpp ../SegmentationPreprocessor/crossbilateralfilterwrapper.cpp ../SegmentationPreprocessor/helper.cpp ../SegmentationPreprocessor/hog_crossspectralstereomatcher.cpp ../SegmentationPreprocessor/locnorm_crossspectralstereomatcher.cpp ../SegmentationPreprocessor/stereomatching_params.cpp ../SegmentationPreprocessor/CThinPlateSpline.cpp ../SegmentationPreprocessor/seeds/seeds2.cpp .tmp/SegmentationPreprocessor1.0.0/ && $(COPY_FILE) --parents ../SegmentationPreprocessor/mainwindow.ui ../SegmentationPreprocessor/stereomatching_params.ui .tmp/SegmentationPreprocessor1.0.0/ && (cd `dirname .tmp/SegmentationPreprocessor1.0.0` && $(TAR) SegmentationPreprocessor1.0.0.tar SegmentationPreprocessor1.0.0 && $(COMPRESS) SegmentationPreprocessor1.0.0.tar) && $(MOVE) `dirname .tmp/SegmentationPreprocessor1.0.0`/SegmentationPreprocessor1.0.0.tar.gz . && $(DEL_FILE) -r .tmp/SegmentationPreprocessor1.0.0
 
 
 clean:compiler_clean 
@@ -2141,7 +2143,9 @@ hog_crossspectralstereomatcher.o: ../SegmentationPreprocessor/hog_crossspectrals
 		../../../Qt5.2.1/5.2.1/gcc_64/include/QtCore/qvector.h \
 		../../../Qt5.2.1/5.2.1/gcc_64/include/QtCore/qpoint.h \
 		../../../Qt5.2.1/5.2.1/gcc_64/include/QtCore/qset.h \
-		../../../Qt5.2.1/5.2.1/gcc_64/include/QtCore/qcontiguouscache.h
+		../../../Qt5.2.1/5.2.1/gcc_64/include/QtCore/qcontiguouscache.h \
+		../SegmentationPreprocessor/seeds/seeds2.h \
+		../SegmentationPreprocessor/seeds/seedsHelper.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o hog_crossspectralstereomatcher.o ../SegmentationPreprocessor/hog_crossspectralstereomatcher.cpp
 
 locnorm_crossspectralstereomatcher.o: ../SegmentationPreprocessor/locnorm_crossspectralstereomatcher.cpp ../SegmentationPreprocessor/locnorm_crossspectralstereomatcher.h \
@@ -2364,8 +2368,13 @@ stereomatching_params.o: ../SegmentationPreprocessor/stereomatching_params.cpp .
 		../../../Qt5.2.1/5.2.1/gcc_64/include/QtGui/qtextoption.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o stereomatching_params.o ../SegmentationPreprocessor/stereomatching_params.cpp
 
-CThinPlateSpline.o: ../SegmentationPreprocessor/CThinPlateSpline.cpp 
+CThinPlateSpline.o: ../SegmentationPreprocessor/CThinPlateSpline.cpp /usr/local/include/opencv/cv.h \
+		/usr/local/include/opencv/cxcore.h \
+		../SegmentationPreprocessor/CThinPlateSpline.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o CThinPlateSpline.o ../SegmentationPreprocessor/CThinPlateSpline.cpp
+
+seeds2.o: ../SegmentationPreprocessor/seeds/seeds2.cpp ../SegmentationPreprocessor/seeds/seeds2.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o seeds2.o ../SegmentationPreprocessor/seeds/seeds2.cpp
 
 moc_mainwindow.o: moc_mainwindow.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_mainwindow.o moc_mainwindow.cpp

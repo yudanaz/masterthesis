@@ -39,6 +39,8 @@ private:
 
 	float getL1Distance(vector<float>& a, int index_a, vector<float>& b, int index_b, int binsInDescriptor);
 
+	Mat improveDisparityMap(int nrOfSuperPixel, Mat superpixelMap, Mat disparityMap);
+
 	//parameters
 	int disparityOptimimizationStragey;
 	int minDisp;
@@ -49,8 +51,8 @@ private:
 	int uniquenessRatio;
 	int speckleWindow;
 	int speckleRange;
-    int blockSize;
-    int cellSize;
+	int blockSize;
+	int cellSize;
 
 	//best matching HOG descriptors (this is an extra feature)
 	void setBestDescriptors(int w, int h, int x1, int x2, int y, float dist);

@@ -1,5 +1,7 @@
 #include "hog_crossspectralstereomatcher.h"
 #include <QDebug>
+#include "seeds/seeds2.h"
+#include "seeds/seedsHelper.h"
 
 #define CV_SSE2 true
 
@@ -91,9 +93,17 @@ void HOG_crossSpectralStereoMatcher::process(Mat img_L, Mat img_R, Mat& out_disp
 	resize(disp, disp, Size(orig_w, orig_h), INTER_AREA);
 
 	//improve disparity map using superpixels
+	int NR_BINS = 5;
+	int channels = img_L.channels();
+	SEEDS seeds(orig_w, orig_h, channels, NR_BINS);
+	seeds.initialize(4, 4, 4); //hard-coded for now, see makeSeedsSuperpixels() method
+	seeds.update_image_ycbcr(img_L);
+	seeds.iterate();
+	Mat dispImproved = improveDisparityMap(seeds.count_superpixels(), seeds.getLabelsAsMat(), disp);
 
 
-	out_disp = disp;
+	//set result to output
+	out_disp = dispImproved;
 }
 
 Mat HOG_crossSpectralStereoMatcher::makeDisparity_WTA(vector<float> &values_L, vector<float> &values_R,
@@ -172,6 +182,66 @@ float HOG_crossSpectralStereoMatcher::getL1Distance(vector<float>& a, int index_
 	}
 	return dist;
 }
+
+Mat HOG_crossSpectralStereoMatcher::improveDisparityMap(int nrOfSuperPixel, Mat superpixelMap, Mat disparityMap)
+{
+	nrOfSuperPixel += 30; //there seem to be always some numbers that are jumbed, resulting in unused indices
+
+	Mat res (disparityMap.size(), disparityMap.type(), Scalar(0));
+
+	//make 2D-vector to hold sum of disparities and pixel amount for each superpixel
+	//(vector type is long in order to hold summed value, although disparity map type is short)
+	vector< vector<long> > superpxs(nrOfSuperPixel, vector<long>(2));
+
+	//if superpixel map not in ushort format, return emtpy
+	int type1 = superpixelMap.type();
+	if( type1 != CV_16UC1)
+	{
+		return res;
+	}
+
+	//init superpixel vector
+	for(int i = 0; i < nrOfSuperPixel; ++i )
+	{
+		superpxs[i][0] = 0;
+		superpxs[i][1] = 0;
+	}
+
+	//sum and count all disparity values for each superpixel
+	MatIterator_<ushort> it_superpx, end;
+	MatIterator_<uchar> it_disp;
+	for( it_superpx = superpixelMap.begin<ushort>(), it_disp = disparityMap.begin<uchar>(),
+		 end = superpixelMap.end<ushort>(); it_superpx != end; ++it_superpx, ++it_disp )
+	{
+		uchar dispVal = *it_disp;
+		if(dispVal > 0)
+		{
+			superpxs[*it_superpx][0] += dispVal; //add disparity value
+			superpxs[*it_superpx][1]++; //count number of pixels in superpixel
+		}
+	}
+
+	//average values for each superpixel
+	for(int i = 0; i < nrOfSuperPixel; ++i )
+	{
+		ushort amountInSuperPx = superpxs[i][1];
+		if(amountInSuperPx > 0)
+		{
+			superpxs[i][0] /= amountInSuperPx;
+		}
+	}
+
+	//write averaged values in output matrix
+	MatIterator_<uchar> it_res;
+	for( it_superpx = superpixelMap.begin<ushort>(), it_res = res.begin<uchar>(),
+		 end = superpixelMap.end<ushort>(); it_superpx != end; ++it_superpx, ++it_res )
+	{
+		*it_res = superpxs[*it_superpx][0];
+	}
+
+	return res;
+}
+
 
 void HOG_crossSpectralStereoMatcher::getBestDescriptors(vector<KeyPoint> &outDescr_L, vector<KeyPoint> &outDescr_R, vector<DMatch> &dmatches, float threshold)
 {
