@@ -24,7 +24,7 @@ VimbaCamManager::VimbaCamManager(VimbaCamType camType):
 	connected_flashlight(false),
 	flashLightRunning(false),
 	exceptionCnt(0),
-	maxFPS(30), nrOfWavebands(3), nrOfWavebands2Trigger(4)
+	maxFPS(30), nrOfWavebands(3), nrOfWavebands2Trigger(4), USBportNr(1)
 {
 	myCamType = camType;
 
@@ -96,7 +96,7 @@ void VimbaCamManager::connectCameras()
 	{
 		try
 		{
-			flashlight->connect("/dev/ttyUSB1");
+			flashlight->connect("/dev/ttyUSB" + QString::number(USBportNr));
 			connected_flashlight = true;
 
 

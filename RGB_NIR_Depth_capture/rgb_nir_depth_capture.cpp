@@ -317,6 +317,7 @@ QString RGB_NIR_Depth_Capture::getUniquePrefixFromDateAndTime()
 
 void RGB_NIR_Depth_Capture::startAcquisition()
 {
+	myImgAcqWorker_Goldeye->setUSB(ui->lineEdit_usbPort->text().toInt());
 	myImgAcqWorker_Prosilica->setAcquiring(true);
 	myImgAcqWorker_Goldeye->setAcquiring(true);
 	myImgAcqWorker_Kinect->setAcquiring(true);

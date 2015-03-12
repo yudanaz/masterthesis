@@ -75,6 +75,7 @@ public:
 	bool prosilicaIsConnected();
 
 	void toggleMultichannelCapture(bool captureMultiChannel);
+	void setUSB(int port){ USBportNr = port; }
 
 
 private:
@@ -109,6 +110,7 @@ private:
 	MyImageSource myImageSource;
 
 	quint16 maxFPS;
+	int USBportNr;
 };
 
 #endif // VIMBACAMMANAGER_H

@@ -10,6 +10,8 @@ public:
 	GoldeyeWorker();
 	~GoldeyeWorker();
 
+	void setUSB(int port);
+
 public slots:
 	void startAcquisition();
 	void toggleMultiChannelCapture(bool captureMulti);

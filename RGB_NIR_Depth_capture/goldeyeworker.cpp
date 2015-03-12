@@ -12,6 +12,11 @@ GoldeyeWorker::~GoldeyeWorker()
 	vimbaCamManager.closeCameras();
 }
 
+void GoldeyeWorker::setUSB(int port)
+{
+	vimbaCamManager.setUSB(port);
+}
+
 void GoldeyeWorker::startAcquisition()
 {
 	if(vimbaCamManager.goldeyeIsConnected())
