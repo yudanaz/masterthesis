@@ -1,6 +1,8 @@
 #include <QDir>
 #include <QDateTime>
 #include <QDesktopServices>
+#include <QFile>
+#include <QTextStream>
 #include "rgb_nir_depth_capture.h"
 #include "ui_rgbnird_mainwindow.h"
 
@@ -21,6 +23,22 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	//start the worker threads and connect signals:
 	qRegisterMetaType<RGBDNIR_MAP>();
 
+	//read correct USB port from file
+	int usbport = 0;
+	QFile f("misc/settings.config");
+	if(f.open(QFile::ReadOnly))
+	{
+		QTextStream ts(&f);
+		QStringList sl = ts.readLine().split(" ");
+		if(sl.first() == "usbport:"){ usbport = sl.last().toInt(); }
+		f.close();
+	}
+	else
+	{
+		QMessageBox::information(this, "Error", "No config file found!", QMessageBox::Ok);
+	}
+
+
 	//Prosilica worker
 	myImgAcqWorker_Prosilica = new ProsilicaWorker();
 	myImgAcqWorker_Prosilica->moveToThread(&workerThread_Prosilica);
@@ -31,7 +49,7 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	workerThread_Prosilica.start(QThread::HighPriority);
 
 	//Goldeye worker
-	myImgAcqWorker_Goldeye = new GoldeyeWorker();
+	myImgAcqWorker_Goldeye = new GoldeyeWorker(usbport);
 	myImgAcqWorker_Goldeye->moveToThread(&workerThread_Goldeye);
 	connect(&workerThread_Goldeye, SIGNAL(finished()), myImgAcqWorker_Goldeye, SLOT(deleteLater()));
 	connect(this, SIGNAL(startImgAcquisition()), myImgAcqWorker_Goldeye, SLOT(startAcquisition()));
@@ -317,7 +335,6 @@ QString RGB_NIR_Depth_Capture::getUniquePrefixFromDateAndTime()
 
 void RGB_NIR_Depth_Capture::startAcquisition()
 {
-	myImgAcqWorker_Goldeye->setUSB(ui->lineEdit_usbPort->text().toInt());
 	myImgAcqWorker_Prosilica->setAcquiring(true);
 	myImgAcqWorker_Goldeye->setAcquiring(true);
 	myImgAcqWorker_Kinect->setAcquiring(true);

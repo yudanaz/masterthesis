@@ -7,10 +7,8 @@ class GoldeyeWorker : public ImgAcquisitionWorker
 {
 	Q_OBJECT
 public:
-	GoldeyeWorker();
+	GoldeyeWorker(int USBPortNr);
 	~GoldeyeWorker();
-
-	void setUSB(int port);
 
 public slots:
 	void startAcquisition();

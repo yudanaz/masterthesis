@@ -1,20 +1,16 @@
 #include "goldeyeworker.h"
 
-GoldeyeWorker::GoldeyeWorker() :
+GoldeyeWorker::GoldeyeWorker(int USBPortNr) :
 	ImgAcquisitionWorker(),
 	vimbaCamManager(Vimba_Goldeye)
 {
+	vimbaCamManager.setUSB(USBPortNr);
 	vimbaCamManager.connectCameras();
 }
 
 GoldeyeWorker::~GoldeyeWorker()
 {
 	vimbaCamManager.closeCameras();
-}
-
-void GoldeyeWorker::setUSB(int port)
-{
-	vimbaCamManager.setUSB(port);
 }
 
 void GoldeyeWorker::startAcquisition()
