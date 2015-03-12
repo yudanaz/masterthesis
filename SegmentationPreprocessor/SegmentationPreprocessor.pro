@@ -37,7 +37,8 @@ SOURCES += main.cpp\
     hog_crossspectralstereomatcher.cpp \
     locnorm_crossspectralstereomatcher.cpp \
     stereomatching_params.cpp \
-    CThinPlateSpline.cpp
+    CThinPlateSpline.cpp \
+    seeds/seeds2.cpp
 
 HEADERS  += mainwindow.h \
     io.h \
@@ -56,7 +57,9 @@ HEADERS  += mainwindow.h \
     crossspectralstereomatcher.h \
     locnorm_crossspectralstereomatcher.h \
     stereomatching_params.h \
-    CThinPlateSpline.h
+    CThinPlateSpline.h \
+    seeds/seeds2.h \
+    seeds/seedsHelper.h
 
 
 FORMS    += mainwindow.ui \

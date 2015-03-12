@@ -13,7 +13,7 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	ptr_RGBScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene)),
 	ptr_NIRScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene)),
 	ptr_depthScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene)),
-	sound_click("sound/cameraClick.wav"), sound_beep("sound/beep.wav"), sound_beep2("sound/beep2.wav"),
+	sound_click("misc/cameraClick.wav"), sound_beep("misc/beep.wav"), sound_beep2("misc/beep2.wav"),
 	simulatingRGBCalib(true), flipImgs(false)
 {
 	ui->setupUi(this);

@@ -8,7 +8,7 @@ HOG_crossSpectralStereoMatcher::HOG_crossSpectralStereoMatcher():
 	minDisp(4), maxDisp(20),
 	wtaThreshold(1.0),
 	SADwindow(3), preFilterCAP(11), uniquenessRatio(1), speckleWindow(7), speckleRange(4),
-    bestDescrRasterDiv(16)
+	bestDescrRasterDiv(16)
 {
 	//fill best descriptor candidates vector with as many positions as the raster dictates
 	for(int i = 0; i< bestDescrRasterDiv*bestDescrRasterDiv; ++i)
@@ -89,6 +89,9 @@ void HOG_crossSpectralStereoMatcher::process(Mat img_L, Mat img_R, Mat& out_disp
 
 	//resize back to original size
 	resize(disp, disp, Size(orig_w, orig_h), INTER_AREA);
+
+	//improve disparity map using superpixels
+
 
 	out_disp = disp;
 }
@@ -221,10 +224,10 @@ void HOG_crossSpectralStereoMatcher::setParams(std::vector<float> params)
 	if(params.size() > 7) speckleWindow = (float)params[7];
 	if(params.size() > 8) speckleRange = (float)params[8];
 
-    if(params.size() > 9) blockSize = (float)params[9];
-    if(params.size() > 10) cellSize = (float)params[10];
-    //make sure blockSize is multiple of cellSize
-    while(blockSize % cellSize != 0){ blockSize++; }
+	if(params.size() > 9) blockSize = (float)params[9];
+	if(params.size() > 10) cellSize = (float)params[10];
+	//make sure blockSize is multiple of cellSize
+	while(blockSize % cellSize != 0){ blockSize++; }
 }
 
 

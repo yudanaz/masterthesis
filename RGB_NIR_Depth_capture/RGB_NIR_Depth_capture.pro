@@ -45,8 +45,8 @@ SOURCES += \
 	prosilicaworker.cpp \
 	goldeyeworker.cpp \
 	kinectworker.cpp \
-    saveimgsworker.cpp \
-    helper.cpp
+	saveimgsworker.cpp \
+	helper.cpp
 HEADERS += \
 	vimbacammanager.h \
 	rgb_nir_depth_capture.h \
@@ -67,8 +67,8 @@ HEADERS += \
 	prosilicaworker.h \
 	goldeyeworker.h \
 	kinectworker.h \
-    saveimgsworker.h \
-    helper.h
+	saveimgsworker.h \
+	helper.h
 
 DEFINES += AVT_VIMBA
 
@@ -79,10 +79,10 @@ HEADERS  +=
 FORMS    += rgbnird_mainwindow.ui
 
 OTHER_FILES += \
-        misc/beep.wav \
-        misc/cameraClick.wav \
-        misc/beep2.wav \
-        misc/rgbCam.config
+		misc/beep.wav \
+		misc/cameraClick.wav \
+		misc/beep2.wav \
+		misc/rgbCam.config
 
 #COPY SOUNDS FROM SOURCE TO BUILD DIR
 copydata.commands = $(COPY_DIR) $$PWD/misc $$OUT_PWD
