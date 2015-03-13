@@ -201,7 +201,7 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 			ptr_RGBScene->addPixmap(QPixmap::fromImage(qimg.rgbSwapped()));
 			ui->graphicsView2->setScene(ptr_RGBScene.data());
 		}
-		else if(type == NIR_Dark)//NIR_1300)
+        else if(type == NIR_1300)
 		{
 			//make target cross
 			Mat imgColor;

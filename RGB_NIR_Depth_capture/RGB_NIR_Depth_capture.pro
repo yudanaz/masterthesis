@@ -82,7 +82,8 @@ OTHER_FILES += \
 		misc/beep.wav \
 		misc/cameraClick.wav \
 		misc/beep2.wav \
-		misc/rgbCam.config
+		misc/rgbCam.config \
+    misc/settings.config
 
 #COPY SOUNDS FROM SOURCE TO BUILD DIR
 copydata.commands = $(COPY_DIR) $$PWD/misc $$OUT_PWD
