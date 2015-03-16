@@ -184,7 +184,7 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 			if(simulatingRGBCalib)
 			{
 				undistort(rgbWithCross, rgbWithRect, cam_RGB, distCoeff_RGB);
-				cv::rectangle(rgbWithRect, drawRect_RGB, Scalar(255,0,0), 3);
+                cv::rectangle(rgbWithRect, drawRect_RGB, Scalar(255,0,0), 10);
 			}
 			else
 			{
