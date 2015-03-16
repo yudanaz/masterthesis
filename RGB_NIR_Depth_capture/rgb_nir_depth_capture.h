@@ -65,6 +65,8 @@ private slots:
 
 	void on_btn_saveImgs_2_released();
 
+    void on_checkBox_drawTargetCross_clicked();
+
 protected:
 	void keyPressEvent(QKeyEvent *event);
 
@@ -73,6 +75,7 @@ private:
 	void stopAcquisition();
 	bool acquiring;
 	QString getUniquePrefixFromDateAndTime();
+    void triggerSelfTimer();
 	void captureSeries();
 	Mat drawCross(Mat& img, int lineStrength = 1);
 
@@ -123,6 +126,7 @@ private:
 	bool simulatingRGBCalib;
 
 	bool flipImgs;
+    bool drawTargetCross;
 };
 
 #endif // RGBNIRD_MAINWINDOW_H

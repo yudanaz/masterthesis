@@ -16,7 +16,7 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	ptr_NIRScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene)),
 	ptr_depthScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene)),
 	sound_click("misc/cameraClick.wav"), sound_beep("misc/beep.wav"), sound_beep2("misc/beep2.wav"),
-	simulatingRGBCalib(true), flipImgs(false)
+    simulatingRGBCalib(true), flipImgs(false), drawTargetCross(false)
 {
 	ui->setupUi(this);
 
@@ -38,6 +38,10 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 		QMessageBox::information(this, "Error", "No config file found!", QMessageBox::Ok);
 	}
 
+    //set flags according to GUI
+    simulatingRGBCalib = ui->checkBox_simulateRGBcalib->isChecked();
+    flipImgs = ui->checkBox_flipImgs->isChecked();
+    drawTargetCross = ui->checkBox_drawTargetCross->isChecked();
 
 	//Prosilica worker
 	myImgAcqWorker_Prosilica = new ProsilicaWorker();
@@ -173,7 +177,7 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 		{
 			//make target cross
 			Mat rgbWithCross;
-			if(ui->checkBox_drawTargetCross->isChecked())
+            if(drawTargetCross)
 			{
 				rgbWithCross = drawCross(img, 6);
 			}
@@ -273,7 +277,19 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 	threadLock.unlock();
 }
 
-
+void RGB_NIR_Depth_Capture::triggerSelfTimer()
+{
+    capturingSeries = true;
+    countingDown = true;
+    countdownSeconds = ui->lineEdit_countdown->text().toInt();
+    countdownTime = countdownSeconds * 1000;
+    seriesCnt = 0;
+    seriesMax = ui->lineEdit_amount->text().toInt();
+    seriesInterval = ui->lineEdit_interval->text().toDouble() * 1000.0;
+    myTimer.start();
+    myBeepTimer.start();
+    sound_beep.play();
+}
 
 void RGB_NIR_Depth_Capture::captureSeries()
 {
@@ -377,6 +393,12 @@ void RGB_NIR_Depth_Capture::keyPressEvent(QKeyEvent *event)
 		ui->checkBox_flipImgs->setChecked(flipImgs);
 	}
 
+    //trigger series / selbstausloeser when "T" is pressed
+    if(event->key() == 84)
+    {
+        triggerSelfTimer();
+    }
+
 	//open output folder if "o" is pressed
 	if(event->key() == 79)
 	{
@@ -415,16 +437,7 @@ void RGB_NIR_Depth_Capture::on_checkBox_showAllChannels_clicked()
 
 void RGB_NIR_Depth_Capture::on_pushButton_saveSeries_released()
 {
-	capturingSeries = true;
-	countingDown = true;
-	countdownSeconds = ui->lineEdit_countdown->text().toInt();
-	countdownTime = countdownSeconds * 1000;
-	seriesCnt = 0;
-	seriesMax = ui->lineEdit_amount->text().toInt();
-	seriesInterval = ui->lineEdit_interval->text().toDouble() * 1000.0;
-	myTimer.start();
-	myBeepTimer.start();
-	sound_beep.play();
+    triggerSelfTimer();
 }
 
 void RGB_NIR_Depth_Capture::on_checkBox_switchKinectRGB_IR_clicked()
@@ -455,4 +468,9 @@ void RGB_NIR_Depth_Capture::on_btn_saveImgs_2_released()
 {
 	QDir d;
 	QDesktopServices::openUrl(d.absolutePath() + "/out");
+}
+
+void RGB_NIR_Depth_Capture::on_checkBox_drawTargetCross_clicked()
+{
+    drawTargetCross = ui->checkBox_drawTargetCross->isChecked();
 }
