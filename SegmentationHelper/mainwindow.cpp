@@ -91,9 +91,12 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 		QString colorFileName = "";
 		QString grayFileName = "";
 		bool collectingPoints = false;
-		QList<Point> polygon;
 		int x = 0;
 		int colorIndex;
+
+		Polygon polygon;
+		QList<Polygon> polygons;
+
 
 		while (!xml.atEnd())
 		{
@@ -126,7 +129,7 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 				if (tagName == "object")
 				{
 					collectingPoints = true;
-					polygon.clear();
+					polygon.points.clear(); //init
 				}
 				if(tagName == "name")
 				{
@@ -142,6 +145,11 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 							break;
 						}
 					}
+					polygon.color = colorIndex;
+				}
+				if(tagName == "attributes")
+				{
+					polygon.index == xml.readElementText().toInt();
 				}
 
 				//collect all points of the polygon
@@ -155,40 +163,46 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 					{
 						int y = xml.readElementText().toInt();
 						Point p(x, y);
-						polygon.append(p);
+						polygon.points.append(p);
 					}
 				}
 
 			}
 			else if (xml.isEndElement())
 			{
-				//when object tag is closed, draw the polygon in color according to object type
+				//when object tag is closed, add polygon to list
 				if(xml.name().toString() == "object")
 				{
 					collectingPoints = false;
-
-					Point points[1][polygon.count()];
-
-					for(int i = 0; i < polygon.count(); ++i)
-					{
-						points[0][i] = polygon[i];
-					}
-
-					const Point* ppt[1] = { points[0] };
-					int npt[] = { polygon.length() };
-
-					//paint labels in color and grayscale images
-					if(colorIndex != 999) //if matching label has been found
-					{
-						Scalar color(colorMap[colorIndex][0], colorMap[colorIndex][1], colorMap[colorIndex][2]);
-						Scalar gray(1 + colorIndex);
-						fillPoly( colorImg, ppt, npt, 1, color, 8 );
-						fillPoly( grayImg, ppt, npt, 1, gray, 8 );
-					}
+					polygons.append(polygon.clone());
 				}
 			}
 
 			xml.readNext();
+		}
+
+		//draw the polygons in color according to object type
+
+		foreach(Polygon polygon, polygons)
+		{
+			Point points[1][polygon.points.count()];
+
+			for(int i = 0; i < polygon.points.count(); ++i)
+			{
+				points[0][i] = polygon.points[i];
+			}
+
+			const Point* ppt[1] = { points[0] };
+			int npt[] = { polygon.points.length() };
+
+			//paint labels in color and grayscale images
+			if(colorIndex != 999) //if matching label has been found
+			{
+				Scalar color(colorMap[colorIndex][0], colorMap[colorIndex][1], colorMap[colorIndex][2]);
+				Scalar gray(1 + colorIndex);
+				fillPoly( colorImg, ppt, npt, 1, color, 8 );
+				fillPoly( grayImg, ppt, npt, 1, gray, 8 );
+			}
 		}
 
 		//save images to disk
@@ -1272,51 +1286,51 @@ void MainWindow::on_btn_makeTrainVal_released()
  *****************************************************************************************/
 void MainWindow::on_pushButton_test_released()
 {
-    //////////////////////////////////////////////////////////////
-    // TRANSFORM STANFORD BACKGROUND DATASET LABELS INTO PNG
-    //////////////////////////////////////////////////////////////
-    QString fileName = QFileDialog::getOpenFileName(this, "Select File", lastDir, "horizons.txt");
-    if(fileName == ""){ return; }
-    lastDir = QFileInfo(fileName).path();
+	//////////////////////////////////////////////////////////////
+	// TRANSFORM STANFORD BACKGROUND DATASET LABELS INTO PNG
+	//////////////////////////////////////////////////////////////
+	QString fileName = QFileDialog::getOpenFileName(this, "Select File", lastDir, "horizons.txt");
+	if(fileName == ""){ return; }
+	lastDir = QFileInfo(fileName).path();
 
-    QFile f(fileName);
-    f.open(QFile::ReadOnly);
-    QTextStream in(&f);
+	QFile f(fileName);
+	f.open(QFile::ReadOnly);
+	QTextStream in(&f);
 
-    QDir dir;
-    dir.mkdir(lastDir + "/labelsImgs");
+	QDir dir;
+	dir.mkdir(lastDir + "/labelsImgs");
 
-    while(!in.atEnd())
-    {
-        QStringList sl = in.readLine().split(" ");
-        QString nm = sl.at(0);
-        int w = sl.at(1).toInt();
-        int h = sl.at(2).toInt();
+	while(!in.atEnd())
+	{
+		QStringList sl = in.readLine().split(" ");
+		QString nm = sl.at(0);
+		int w = sl.at(1).toInt();
+		int h = sl.at(2).toInt();
 
-        Mat img(h, w, CV_8UC1);
+		Mat img(h, w, CV_8UC1);
 
-        QFile lblf(lastDir + "/labels/" + nm + ".regions.txt");
-        lblf.open(QFile::ReadOnly);
-        QTextStream lblin(&lblf);
+		QFile lblf(lastDir + "/labels/" + nm + ".regions.txt");
+		lblf.open(QFile::ReadOnly);
+		QTextStream lblin(&lblf);
 
-        for (int y = 0; y < h; ++y)
-        {
-            QStringList line = lblin.readLine().split(" ");
-            for (int x = 0; x < w; ++x)
-            {
-                uchar val = line.at(x).toInt();
-                if(val < 0){ img.at<uchar>(y,x) = 255; }//in original, <0 is unknown, in our case 255 is unknown
-                else{ img.at<uchar>(y,x) = val; }
-            }
-        }
+		for (int y = 0; y < h; ++y)
+		{
+			QStringList line = lblin.readLine().split(" ");
+			for (int x = 0; x < w; ++x)
+			{
+				uchar val = line.at(x).toInt();
+				if(val < 0){ img.at<uchar>(y,x) = 255; }//in original, <0 is unknown, in our case 255 is unknown
+				else{ img.at<uchar>(y,x) = val; }
+			}
+		}
 
-        imwrite((lastDir + "/labelsImgs/" + nm + "_labels.png").toStdString(), img);
-    }
+		imwrite((lastDir + "/labelsImgs/" + nm + "_labels.png").toStdString(), img);
+	}
 
-    f.close();
-    //////////////////////////////////////////////////////////////
-    // endof TRANSFORM STANFORD BACKGROUND DATASET LABELS INTO PNG
-    //////////////////////////////////////////////////////////////
+	f.close();
+	//////////////////////////////////////////////////////////////
+	// endof TRANSFORM STANFORD BACKGROUND DATASET LABELS INTO PNG
+	//////////////////////////////////////////////////////////////
 
 //	QString fileName = QFileDialog::getOpenFileName(this, "Select File", lastDir, IMGTYPES);
 //	if(fileName == ""){ return; }

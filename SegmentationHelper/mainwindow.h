@@ -28,6 +28,17 @@
 
 using namespace cv;
 
+class Polygon
+{
+public:
+	Polygon(){}
+	Polygon(int i, int c, QList<Point> pts){ index = i; color = c; points = pts; }
+	Polygon clone(){ return Polygon(index, color, points); }
+	int index;
+	int color;
+	QList<Point> points;
+};
+
 namespace Ui {
 class MainWindow;
 }
