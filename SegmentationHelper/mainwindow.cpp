@@ -91,8 +91,7 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 		QString colorFileName = "";
 		QString grayFileName = "";
 		bool collectingPoints = false;
-		int x = 0;
-		int colorIndex;
+        int x = 0;
 
 		Polygon polygon;
 		QList<Polygon> polygons;
@@ -136,7 +135,7 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 					QString objType = xml.readElementText();
 
 					//set color according to label
-					colorIndex = 999; //in case no matching label name is found
+                    int colorIndex = 999; //in case no matching label name is found
 					for (int i = 0; i < 256; ++i)
 					{
 						if(objectMap[i] == objType)
@@ -145,11 +144,16 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 							break;
 						}
 					}
-					polygon.color = colorIndex;
+                    polygon.color = colorIndex;
 				}
 				if(tagName == "attributes")
 				{
-					polygon.index == xml.readElementText().toInt();
+                    QString s = xml.readElementText();
+                    if(s == "") polygon.index = 0;
+                    else if(s.contains('d'))
+                    {
+                        polygon.index = s.remove('d').toInt();
+                    }
 				}
 
 				//collect all points of the polygon
@@ -181,8 +185,10 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 			xml.readNext();
 		}
 
-		//draw the polygons in color according to object type
+        //sort the polygon list
+        qSort(polygons.begin(), polygons.end(), Polygon::polygonLessThan);
 
+		//draw the polygons in color according to object type
 		foreach(Polygon polygon, polygons)
 		{
 			Point points[1][polygon.points.count()];
@@ -196,6 +202,7 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 			int npt[] = { polygon.points.length() };
 
 			//paint labels in color and grayscale images
+            int colorIndex = polygon.color;
 			if(colorIndex != 999) //if matching label has been found
 			{
 				Scalar color(colorMap[colorIndex][0], colorMap[colorIndex][1], colorMap[colorIndex][2]);

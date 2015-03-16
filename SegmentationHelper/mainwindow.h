@@ -37,7 +37,14 @@ public:
 	int index;
 	int color;
 	QList<Point> points;
+
+    static bool polygonLessThan(const Polygon &p1, const Polygon &p2)
+    {
+        return p1.index < p2.index;
+    }
 };
+
+
 
 namespace Ui {
 class MainWindow;
@@ -139,7 +146,7 @@ private slots:
 	void on_btn_registerImages_released();
 
 private:
-	void makeLabelImages(QStringList fileNames);
+    void makeLabelImages(QStringList fileNames);
 	void makeSeedsSuperpixels(QString fileName);
 	void makeSlicSuperpixels(QString fileName);
 	void makeFelsenzwalbSuperpixels(QString fileName);
