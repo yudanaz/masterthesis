@@ -117,9 +117,10 @@ void MainWindow::on_pushButton_preproc_released()
 	if(img_rgb == "" || img_depth == "" || img_nir == "" ){ return; }
 
 	rgb = imread(img_rgb.toStdString(), IMREAD_COLOR);
-	depth = imread(img_depth.toStdString(), IMREAD_GRAYSCALE);
+	depth = imread(img_depth.toStdString(), IMREAD_ANYDEPTH);
 	nir = imread(img_nir.toStdString(), IMREAD_COLOR);
-	qDebug() << IO::getOpenCVTypeName(nir.type());
+	qDebug() << "NIR type" << IO::getOpenCVTypeName(nir.type());
+	qDebug() << "Depth type" << IO::getOpenCVTypeName(depth.type());
 
 	preprocessImages();
 }

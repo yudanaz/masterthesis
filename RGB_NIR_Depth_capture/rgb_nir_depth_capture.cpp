@@ -201,7 +201,7 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 			ptr_RGBScene->addPixmap(QPixmap::fromImage(qimg.rgbSwapped()));
 			ui->graphicsView2->setScene(ptr_RGBScene.data());
 		}
-        else if(type == NIR_1300)
+		else if(type == NIR_1300)
 		{
 			//make target cross
 			Mat imgColor;
@@ -222,9 +222,14 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 		}
 		else if(capturing_kinectRGB && type == Kinect_Depth || !capturing_kinectRGB && type == Kinect_IR)
 		{
+			//if 16 bit convert to 8 bit
+			Mat img8bit;
+			if(img.type() == CV_16UC1){ img.convertTo(img8bit, CV_8UC1, 255.0/2047.0); }
+			else{ img8bit = img; }
+
 			//make cross
 			Mat imgColor;
-			cvtColor(img, imgColor, CV_GRAY2RGB);
+			cvtColor(img8bit, imgColor, CV_GRAY2RGB);
 			Mat imgCross;
 			if(ui->checkBox_drawTargetCross->isChecked()){ imgCross = drawCross(imgColor); }
 			else{ imgCross = imgColor; }

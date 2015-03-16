@@ -105,10 +105,13 @@ void KinectCamManager::getImages(QMap<RGBDNIR_captureType, Mat> &camImgs)
 				success = freenectDevice->getDepth(depthMat);
 			}
 			//scale to 8 bit and turn by 180° (kinect is upside down in camera rig)
-			depthMat.convertTo(depthMat_8bit, CV_8UC1, 255.0/2047.0);
-			flip(depthMat_8bit, depthMat_8bit, 0);
-			flip(depthMat_8bit, depthMat_8bit, 1);
-			camImgs[Kinect_Depth] = depthMat_8bit;
+			flip(depthMat, depthMat, 0);
+			flip(depthMat, depthMat, 1);
+			camImgs[Kinect_Depth] = depthMat;
+//			depthMat.convertTo(depthMat_8bit, CV_8UC1, 255.0/2047.0);
+//			flip(depthMat_8bit, depthMat_8bit, 0);
+//			flip(depthMat_8bit, depthMat_8bit, 1);
+//			camImgs[Kinect_Depth] = depthMat_8bit;
 		}
 		else
 		{

@@ -167,6 +167,11 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 	undistort(RGB, RGB_undist, cam_RGB, distCoeff_RGB);
 	Mat RGB_resized = resizeAndCropRGBImg(RGB_undist);
 
+	//convert depth to 8 bit if necessary
+	Mat depth8bit;
+	if(depth_kinect.type() == CV_16UC1){ depth_kinect.convertTo(depth8bit, CV_8UC1, 255.0/2047.0); }
+	else{ depth8bit = depth_kinect; }
+	//remap depth to NIR-camera space
 	Mat depth_remapped = mapKinectDepth2NIR(depth_kinect, NIR);
 
 	//rectify
@@ -600,6 +605,9 @@ Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
 
 	//again fill holes in the resulting reprojected depth map
 	Mat depth2D_fixed = fixHolesInDepthMap(depth2D, 3); //fix bottom-up, i.e. shadows on lower side of objects
+
+	equalizeHist(depth2D_fixed, depth2D_fixed);
+
 	return depth2D_fixed;
 
 	//fill gaps in re-mapped depth map with crossbilateral filter
@@ -830,7 +838,7 @@ Mat ImagePreprocessor::registerRGB2NIR(Mat& RGB_img, Mat& NIR_img)
 		Mat matches;
 		drawMatches(NIR_img, matchedDescrL, RGB_img, matchedDescrR, dmatches, matches);
 		imshow("descriptor matches", matches);
-//		imwrite("HOG_descriptors_matches.png", matches);
+		imwrite("HOG_descriptors_matches.png", matches);
 		//DEBUG show matches//
 
 	}

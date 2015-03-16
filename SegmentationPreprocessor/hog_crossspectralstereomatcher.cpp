@@ -93,17 +93,17 @@ void HOG_crossSpectralStereoMatcher::process(Mat img_L, Mat img_R, Mat& out_disp
 	resize(disp, disp, Size(orig_w, orig_h), INTER_AREA);
 
 	//improve disparity map using superpixels
-	int NR_BINS = 5;
-	int channels = img_L.channels();
-	SEEDS seeds(orig_w, orig_h, channels, NR_BINS);
-	seeds.initialize(4, 4, 4); //hard-coded for now, see makeSeedsSuperpixels() method
-	seeds.update_image_ycbcr(img_L);
-	seeds.iterate();
-	Mat dispImproved = improveDisparityMap(seeds.count_superpixels(), seeds.getLabelsAsMat(), disp);
+//	int NR_BINS = 5;
+//	int channels = img_L.channels();
+//	SEEDS seeds(orig_w, orig_h, channels, NR_BINS);
+//	seeds.initialize(2, 2, 5); //hard-coded for now, see makeSeedsSuperpixels() method
+//	seeds.update_image_ycbcr(img_L);
+//	seeds.iterate();
+//	Mat dispImproved = improveDisparityMap(seeds.count_superpixels(), seeds.getLabelsAsMat(), disp);
 
 
 	//set result to output
-	out_disp = dispImproved;
+	out_disp = disp;
 }
 
 Mat HOG_crossSpectralStereoMatcher::makeDisparity_WTA(vector<float> &values_L, vector<float> &values_R,
