@@ -53,6 +53,9 @@ void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchS
     //define random patches that should be read from this image
 //    setRandomPatches();
     setUniformPatches();
+
+    //debug
+    iteration = 0;
 }
 
 template<typename Dtype>
@@ -108,14 +111,26 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
         //read the current patch from the image (orig. scale 0)
         if(hasRGB)
         {
+//            LOG(INFO) << "has RGB \n";
             patch_rgb0 = getImgPatch(img_rgb0, x, y);
             if(multiscale)
             {
+//                LOG(INFO) << "is multiscale\n";
                 /*if(patchCnt % 2 == 0)*/{ patch_rgb1 = getImgPatch(img_rgb1, x/2, y/2); }
                 /*if(patchCnt % 4 == 0)*/{ patch_rgb2 = getImgPatch(img_rgb2, x/4, y/4); }
             }
 
-//            //DEBUG//
+            //DEBUG//
+//            stringstream prefix;
+//            prefix << "/home/maurice/Data/iccv09Data_stanfordBackgroundDataset/CNN_test2/debug_images/p_"
+//                   << iteration << "_" << batchCnt << "_label" << currentLabel << "_";
+//            string nm0 = prefix.str() + "rgb0.png";
+//            string nm1 = prefix.str() + "rgb1.png";
+//            string nm2 = prefix.str() + "rgb2.png";
+//            cv::imwrite(nm0, patch_rgb0);
+//            cv::imwrite(nm1, patch_rgb1);
+//            cv::imwrite(nm2, patch_rgb2);
+
 //            cv::Mat patch_rgb0_, patch_rgb1_, patch_rgb2_;
 ////            cv::line(img_rgb0, cv::Point(x+borderSz,y+borderSz), cv::Point(x+borderSz,y+borderSz), cv::Scalar(0,0,255), 2);
 //            cv::resize(patch_rgb0, patch_rgb0_, cv::Size(), 4, 4, cv::INTER_CUBIC);
@@ -129,12 +144,13 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 ////            cvWaitKey();
 //            imshow("sc2", patch_rgb2_);
 //            cvWaitKey();
-//            //DEBUG//
+            //DEBUG//
 
         }
 
         if(hasNIR)
         {
+//            LOG(INFO) << "has NIR \n";
             patch_nir0 = getImgPatch(img_nir0, x, y);
             if(multiscale)
             {
@@ -145,6 +161,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 
         if(hasDepth)
         {
+//            LOG(INFO) << "has Depth \n";
             patch_depth0 = getImgPatch(img_depth0, x, y);
             if(multiscale)
             {
@@ -266,6 +283,9 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
                 { ((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_depth2); } }
         }
     }
+
+    //debug
+    iteration++;
 }
 
 template<typename Dtype>

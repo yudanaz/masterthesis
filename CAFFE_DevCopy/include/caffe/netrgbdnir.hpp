@@ -66,6 +66,9 @@ protected:
     cv::Mat patch_depth0;
     cv::Mat patch_depth1;
     cv::Mat patch_depth2;
+
+    //debug
+    long iteration;
 };
 
 } //namespace caffe
