@@ -110,17 +110,24 @@ void MainWindow::on_pushButton_preproc_released()
 		return;
 	}
 
-	QString img_rgb = io.getFileName("Select RGB image", IMGTYPES);
-	QString img_nir = io.getFileName("Select NIR image", IMGTYPES);
-	QString img_depth = io.getFileName("Select Depth image", IMGTYPES);
+//	QString img_rgb = io.getFileName("Select RGB image", IMGTYPES);
+//	QString img_nir = io.getFileName("Select NIR image", IMGTYPES);
+//	QString img_depth = io.getFileName("Select Depth image", IMGTYPES);
+
+	QString img_nir = io.getFileName("Select NIR image", "*NIR_MultiCh.png");
+	QString img_rgb = img_nir;
+	img_rgb = img_rgb.remove("NIR_MultiCh.png").append("RGB.png");
+	QString img_depth = img_nir;
+	img_depth = img_depth.remove("NIR_MultiCh.png").append("Kinect_Depth.png");
+
 
 	if(img_rgb == "" || img_depth == "" || img_nir == "" ){ return; }
 
 	rgb = imread(img_rgb.toStdString(), IMREAD_COLOR);
 	depth = imread(img_depth.toStdString(), IMREAD_ANYDEPTH);
 	nir = imread(img_nir.toStdString(), IMREAD_COLOR);
-	qDebug() << "NIR type" << IO::getOpenCVTypeName(nir.type());
-	qDebug() << "Depth type" << IO::getOpenCVTypeName(depth.type());
+//	qDebug() << "NIR type" << IO::getOpenCVTypeName(nir.type());
+//	qDebug() << "Depth type" << IO::getOpenCVTypeName(depth.type());
 
 	preprocessImages();
 }

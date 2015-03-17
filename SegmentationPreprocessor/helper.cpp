@@ -1,5 +1,17 @@
 #include "helper.h"
 #include "opencv2/opencv.hpp"
+#include <QString>
+
+int Helper::debugImgCnt = 0;
+
+void Helper::debugImage(Mat img, QString msg)
+{
+	QString s;
+	if(msg == ""){ s = "debug image" + QString::number(debugImgCnt++); }
+	else{ s = msg; }
+	imshow(s.toStdString().c_str(), img);
+	cvWaitKey();
+}
 
 Helper::Helper()
 {

@@ -68,6 +68,7 @@ private:
 	Mat resizeAndCropRGBImg(Mat rgbImg);
 
 
+	Mat convertKinectDepthTo8Bit(Mat kinectDepth);
 	Mat mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img);
 	Mat fixHolesInDepthMap(Mat depth, int direction);
 	vector<Point3f> projectKinectDepthTo3DSpace(Mat depth);

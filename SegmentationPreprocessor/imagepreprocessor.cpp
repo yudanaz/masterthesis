@@ -131,35 +131,12 @@ void ImagePreprocessor::calibRig(QStringList calibImgs_RGB, QStringList calibImg
 					 rectifyMapX_RGB, rectifyMapY_RGB, rectifyMapX_NIR, rectifyMapY_NIR,
 					 rotation_RGB2NIR, transl_RGB2NIR, dummy3, "RGB (for RGB->NIR)", "NIR (for RGB->NIR)");
 
-//	make_RectifyMaps(imgsIR, imgsRGB, distCoeff_IR, distCoeff_RGB, cam_IR, cam_RGB,
-//					 rectifyMapX_IR, rectifyMapY_IR, rectifyMapX_RGB, rectifyMapY_RGB,
-//					 rotation_IR2NIR, transl_IR2NIR, "IR", "RGB");
-//	make_RectifyMaps(imgsNIR, imgsRGB_resized, distCoeff_NIR, distCoeff_RGB_resized, cam_NIR, cam_RGB_resized,
-//					 rectifyMapX_NIR, rectifyMapY_NIR, rectifyMapX_RGB, rectifyMapY_RGB,
-//					 rotation_RGB2NIR, transl_RGB2NIR, "NIR_rectify", "RGB_rectify");
-
-
 	rig_is_calibrated_ = true;
 	makeMsg("Success!", "Camera rig has been calibrated.");
 }
 
 void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out, Mat& NIR_out, Mat& depth_stereo_out, Mat& depth_remapped_out)
 {
-//    ////////////////////////////////////////////////////////////////////////////////////////
-//    /// TEST CROSS SPECTRAL STEREO MATCHING ON TEST STEREO IMAGES WITHOUT RECTIFICATION
-//    //make disparity image from RGB and NIR images (cross/multi - spectral)
-//    Mat disp2;
-//    makeCrossSpectralStereo(RGB, NIR, disp2);
-
-//    //put results in output imgs
-//    RGB_out = RGB;
-//    NIR_out = NIR;
-////    depth_remapped_out = depth_rect;
-//    depth_stereo_out = disp2;
-//    return;
-//    ///endof TEST CROSS SPECTRAL STEREO MATCHING ON TEST STEREO IMAGES WITHOUT RECTIFICATION
-//    /////////////////////////////////////////////////////////////////////////////////////////
-
 	if(!rig_is_calibrated_){ return; }
 
 	//undistort, resize and crop RGB img
@@ -169,15 +146,23 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 
 	//convert depth to 8 bit if necessary
 	Mat depth8bit;
-	if(depth_kinect.type() == CV_16UC1){ depth_kinect.convertTo(depth8bit, CV_8UC1, 255.0/2047.0); }
+	if(depth_kinect.type() == CV_16UC1)
+	{
+//		depth_kinect.convertTo(depth8bit, CV_8UC1, 255.0/2047.0);
+		depth8bit = convertKinectDepthTo8Bit(depth_kinect);
+	}
 	else{ depth8bit = depth_kinect; }
+//	imshow("d16bit", depth_kinect); imshow("d8bit", depth8bit); cvWaitKey();
+
 	//remap depth to NIR-camera space
-	Mat depth_remapped = mapKinectDepth2NIR(depth_kinect, NIR);
+	Mat depth_remapped = mapKinectDepth2NIR(depth8bit, NIR);
 
 	//rectify
 	Mat RGB_rect, NIR_rect;
 	remap(RGB_resized, RGB_rect, rectifyMapX_RGB, rectifyMapY_RGB, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
 	remap(NIR, NIR_rect, rectifyMapX_NIR, rectifyMapY_NIR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
+//	imwrite("RGB_rect.png", RGB_rect);
+//	imwrite("NIR_rect.png", NIR_rect);
 
 	//make disparity image from RGB and NIR images (cross/multi - spectral)
 	Mat disp;
@@ -357,8 +342,8 @@ void ImagePreprocessor::make_RectifyMaps(QList<Mat> srcImgs, QList<Mat> dstImgs,
 	stereoRectify(cam_src, distCoeff_src,
 				  cam_dst, distCoeff_dst, imgSize, out_Rot, out_Transl,
 				  Rect_src, Rect_dst, Proj_src, Proj_dst, Q, CALIB_ZERO_DISPARITY,
-				  1);
-//				  0); //set alpha to zero -> zoom and shift so no black areas remain after rectification
+				  0); //set alpha = 0 ==> zoom and shift so no black areas remain after rectification
+//				  1);
 
 	//make the rectify maps
 	initUndistortRectifyMap(cam_src, distCoeff_src, Rect_src, Proj_src, imgSize, CV_32FC1, out_rectifMapX_src, out_rectifMapY_src);
@@ -537,7 +522,7 @@ Rect ImagePreprocessor::makeMinimalCrop(Rect r1, Rect r2)
 	int r2yy = r2.y + r2.height;
 
 	r.x = r1.x > r2.x ? r1.x : r2.x;
-	r.y = r1.y > r2.y ? r2.y : r2.y;
+	r.y = r1.y > r2.y ? r1.y : r2.y;
 	int xx = r1xx < r2xx ? r1xx : r2xx;
 	int yy = r1yy < r2yy ? r1yy : r2yy;
 	r.width = xx - r.x;
@@ -578,15 +563,54 @@ Mat ImagePreprocessor::cropImage(Mat img, Rect cropROI)
 	return cropCopy;
 }
 
+Mat ImagePreprocessor::convertKinectDepthTo8Bit(Mat kinectDepth)
+{
+	Mat out(kinectDepth.size(), CV_8UC1);
+
+	MatIterator_<ushort> it, end;
+	MatIterator_<uchar> it8bit;
+	for( it = kinectDepth.begin<ushort>(), end = kinectDepth.end<ushort>(), it8bit = out.begin<uchar>();
+		 it != end; ++it, ++it8bit)
+	{
+		if(*it == 2047) //unknown depth!
+		{
+			*it8bit = 255;
+		}
+		else
+		{
+			//swap bytes
+//			unsigned short tmp = *(it + 1);
+//			tmp <<= 8;
+//			tmp += *it;
+			ushort x = *it;
+			ushort tmp = (x << 8)+(x >> 8);//(ushort)((ushort)((x & 0xff) << 8) | ((x >> 8) & 0xff));
+
+			//mask unused bytes, i.e. bites 0,1,2 (player ids) and 15 (unused in depth, depth is 12-bit)
+			tmp &= 0x7ff8;
+			tmp >>= 3;
+			*it8bit = (tmp / 4096.0) * 255.0;
+		}
+	}
+
+	return out;
+}
+
 Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
 {
+	Helper::debugImage(depth_kinect);
+
+	//remove outliers
+
 	//invert colors so depth encoding is similar to disparity map
 	Mat depth_kinect_inverted;
 	Mat white(depth_kinect.size(), depth_kinect.type(), Scalar(255));
 	subtract(white, depth_kinect, depth_kinect_inverted);
+	Helper::debugImage(depth_kinect_inverted);
 
 	//fill holes in depth map by simple "shadow"-assumption
 	Mat depth_fixed = fixHolesInDepthMap(depth_kinect_inverted, 1); //fix from right-to-left, i.e. shadows on right side of objects
+	depth_fixed = fixHolesInDepthMap(depth_fixed, 0); //alos got left-to-right to fix some other holes caused by specular surfaces
+	Helper::debugImage(depth_fixed);
 
 	//map Kinect depth to NIR
 	//map from depth map to 3d space
@@ -602,11 +626,14 @@ Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
 											rectifyMapX_NIR, rectifyMapY_NIR,
 											Size(NIR_img.cols, NIR_img.rows), horizontalShift, verticalShift,
 											depth_kinect_undist);
+	Helper::debugImage(depth2D);
 
-	//again fill holes in the resulting reprojected depth map
-	Mat depth2D_fixed = fixHolesInDepthMap(depth2D, 3); //fix bottom-up, i.e. shadows on lower side of objects
+	//again fill holes in the resulting reprojected depth map, caused by reprojection
+	Mat depth2D_fixed = fixHolesInDepthMap(depth2D, 2); //fix top-down, i.e. shadows on upper side of objects
+//	depth2D_fixed = fixHolesInDepthMap(depth2D, 3); //fix bottom-up, i.e. shadows on lower side of objects
+	Helper::debugImage(depth2D_fixed);
 
-	equalizeHist(depth2D_fixed, depth2D_fixed);
+//	equalizeHist(depth2D_fixed, depth2D_fixed);
 
 	return depth2D_fixed;
 
@@ -658,14 +685,14 @@ Mat ImagePreprocessor::fixHolesInDepthMap(Mat depth, int direction) //0 = L-R, 1
 			{
 				bool isBorder = false;
 
-				//quick fix: also check if we're not targetting a white border caused by reprojection
-				//do this by checking if the next n pixels are also white
+				//quick fix: also check if we're not targetting a black border caused by reprojection
+				//do this by checking if the next n pixels are also black
 				if(direction >=2)
 				{
 					isBorder = true;
 					for(int i = 0; i < 40; ++i)
 					{
-						if(depth_.at<uchar>(y,x+i) != 0) //if at least one of the next pixels isnt't white, it's not a border
+						if(depth_.at<uchar>(y,x+i) != 0) //if at least one of the next pixels isnt't black, it's not a border
 						{
 							isBorder = false;
 							break;
@@ -837,7 +864,7 @@ Mat ImagePreprocessor::registerRGB2NIR(Mat& RGB_img, Mat& NIR_img)
 		//DEBUG show matches//
 		Mat matches;
 		drawMatches(NIR_img, matchedDescrL, RGB_img, matchedDescrR, dmatches, matches);
-		imshow("descriptor matches", matches);
+//		imshow("descriptor matches", matches);
 		imwrite("HOG_descriptors_matches.png", matches);
 		//DEBUG show matches//
 

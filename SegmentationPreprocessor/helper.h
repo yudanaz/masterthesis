@@ -1,6 +1,7 @@
 #ifndef HELPER_H
 #define HELPER_H
 
+#include <QString>
 #include "opencv2/opencv.hpp"
 using namespace cv;
 
@@ -20,8 +21,12 @@ public:
 	//thinning operation on binary image using the Zhang-Suen algorithm
 	static void thinning(cv::Mat& im);
 
+	static void debugImage(Mat img, QString msg = "");
+
 private:
 	static void thinningIteration(cv::Mat& im, int iter);
+
+	static int debugImgCnt;
 };
 
 #endif // HELPER_H
