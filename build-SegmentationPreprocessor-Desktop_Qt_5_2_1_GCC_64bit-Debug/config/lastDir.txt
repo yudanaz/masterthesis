@@ -1,1 +1,1 @@
-/home/maurice/Data/RGBDNIR_Data_kinectTEST
+/home/maurice/Data/RGBDNIR_Data_03182015

@@ -144,6 +144,8 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 	undistort(RGB, RGB_undist, cam_RGB, distCoeff_RGB);
 	Mat RGB_resized = resizeAndCropRGBImg(RGB_undist);
 
+//	Helper::debugImage(RGB_resized);
+
 	//remap depth to NIR-camera space
 	Mat depth_remapped = mapKinectDepth2NIR(depth_kinect, NIR);
 
@@ -168,7 +170,7 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 	Mat depth_cropped = cropImage(depth_remapped, finalCropRect);
 	Mat disp_cropped = cropImage(disp, finalCropRect);
 
-	//fill eventually remaining black spots in depth map
+	//fill eventually remaining black spots close to borders in depth map
 	depth_cropped = fixHolesInDepthMap(depth_cropped, 0);
 	depth_cropped = fixHolesInDepthMap(depth_cropped, 1);
 	depth_cropped = fixHolesInDepthMap(depth_cropped, 2);
@@ -563,6 +565,8 @@ Mat ImagePreprocessor::convertKinectDepthTo8Bit(Mat kinectDepth)
 		 it != end; ++it, ++it8bit)
 	{
 		float mm = raw_depth_to_mm(*it);
+		//throw away values closer than 80 mm
+		mm = mm < 800 ? 0 : mm;
 		*it8bit = mm / 10000.0 * 255;
 	}
 
@@ -571,7 +575,7 @@ Mat ImagePreprocessor::convertKinectDepthTo8Bit(Mat kinectDepth)
 
 float ImagePreprocessor::raw_depth_to_mm(int raw_depth)
 {
-  if (raw_depth < 2047)
+  if (raw_depth < 2046)
   {
    return 1.0 / (raw_depth * -0.0030711016 + 3.3309495161) * 1000.0;
   }
@@ -589,26 +593,24 @@ Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
 	}
 	else{ depth_8bit = depth_kinect; }
 
-	Helper::debugImage(depth_8bit);
-
-	//remove outliers
+//	Helper::debugImage(depth_8bit);
 
 	//invert colors so depth encoding is similar to disparity map
 	Mat depth_inverted = depth_8bit;
 //	Mat white(depth_kinect.size(), CV_8UC1, Scalar(255));
 //	subtract(white, depth_8bit, depth_inverted);
-//	Helper::debugImage(depth_inverted);
 
 	//fill holes in depth map by simple "shadow"-assumption
 	Mat depth_fixed = fixHolesInDepthMap(depth_inverted, 1); //fix from right-to-left, i.e. shadows on right side of objects
 	depth_fixed = fixHolesInDepthMap(depth_fixed, 0); //alos got left-to-right to fix some other holes caused by specular surfaces
-	Helper::debugImage(depth_fixed);
 
-	//map Kinect depth to NIR
-	//map from depth map to 3d space
+//	Helper::debugImage(depth_fixed);
+
+	//undistort using intrinsics of depth camera
 	Mat depth_kinect_undist;
 	undistort(depth_fixed, depth_kinect_undist, cam_IR, distCoeff_IR);
 
+	//map from depth map to 3d space
 	vector<Point3f> depth3D = projectKinectDepthTo3DSpace(depth_kinect_undist);
 
 	//mape from 3d space to 2d image in coordinate system of NIR camera
@@ -618,30 +620,47 @@ Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
 											rectifyMapX_NIR, rectifyMapY_NIR,
 											Size(NIR_img.cols, NIR_img.rows), horizontalShift, verticalShift,
 											depth_kinect_undist);
-	Helper::debugImage(depth2D);
+//	Helper::debugImage(depth2D);
+
+
 
 	//again fill holes in the resulting reprojected depth map, caused by reprojection
 //	Mat depth2D_fixed = fixHolesInDepthMap(depth2D, 2); //fix top-down, i.e. shadows on upper side of objects
 	Mat depth2D_fixed = fixHolesInDepthMap(depth2D, 3); //fix bottom-up, i.e. shadows on lower side of objects
-	Helper::debugImage(depth2D_fixed);
 
-//	equalizeHist(depth2D_fixed, depth2D_fixed);
+//	Helper::debugImage(depth2D_fixed);
 
-//	return depth2D_fixed;
+	return depth2D_fixed;
 
 	//fill gaps in re-mapped depth map with crossbilateral filter
-	Mat NIR_gray, NIR_gray_undist;
-	cvtColor(NIR_img, NIR_gray, CV_RGB2GRAY);
-	undistort(NIR_gray, NIR_gray_undist, cam_NIR, distCoeff_NIR);
-	Mat depth_refined = crossbilatFilter.filter(depth2D_fixed, NIR_gray_undist, 4.0, 1.0);
-	Helper::debugImage(depth_refined);
+//	Mat NIR_gray, NIR_gray2;
+//	cvtColor(NIR_img, NIR_gray, CV_RGB2GRAY);
+//	undistort(NIR_gray, NIR_gray2, cam_NIR, distCoeff_NIR);
+//	equalizeHist(NIR_gray2, NIR_gray);
+//	Mat depth_refined = crossbilatFilter.filter(depth2D_fixed, NIR_gray, 4.0, 1.0);
+//	Helper::debugImage(depth_refined);
 
-	return depth_refined;
+//	return depth_refined;
 }
 
-Mat ImagePreprocessor::fixHolesInDepthMap(Mat depth, int direction) //0 = L-R, 1 = R-L, 2 = Top-Down, 3 = Bottom-Up
+Mat ImagePreprocessor::fixHolesInDepthMap(Mat depth, int direction, bool avoidBorders) //0 = L-R, 1 = R-L, 2 = Top-Down, 3 = Bottom-Up
 {
-	Mat depth_;
+	Mat depth_, depthBlur;
+
+	//use "small-kernel" median filter against salt'n'pepper
+	medianBlur(depth, depth, 3);
+	//use "big-kernel" median filter values on black pixels only
+	medianBlur(depth, depthBlur, 11);
+	MatIterator_<uchar> it, itBlur, end, endBlur;
+	for(it = depth.begin<uchar>(), itBlur = depthBlur.begin<uchar>(),
+		end = depth.end<uchar>(), endBlur = depthBlur.end<uchar>();
+		it != end; it++, itBlur++)
+	{
+		//if black pixel in original, use median blurred value
+		*it = *it == 0 ? *it = *itBlur : *it;
+	}
+
+//	Helper::debugImage(depth);
 
 	//define the direction of the depth-shadow fix
 	if(direction == 0)//default: shawdows on left side of objects
@@ -669,13 +688,13 @@ Mat ImagePreprocessor::fixHolesInDepthMap(Mat depth, int direction) //0 = L-R, 1
 		{
 			//if pixel value is black (0 = unknown depth), fill with last value in row
 			uchar val = depth_.at<uchar>(y,x);
-			if(val == 0)
+			if(val <= 0)
 			{
 				bool isBorder = false;
 
 				//quick fix: also check if we're not targetting a black border caused by reprojection
 				//do this by checking if the next n pixels are also black
-				if(direction >=2)
+				if(avoidBorders)
 				{
 					isBorder = true;
 					for(int i = 0; i < 40; ++i)
@@ -696,6 +715,8 @@ Mat ImagePreprocessor::fixHolesInDepthMap(Mat depth, int direction) //0 = L-R, 1
 	if(direction == 1){ flip(depth_, depth_, 1); } //flip back
 	else if(direction == 2){ transpose(depth_, depth_); } //transpose back
 	else if(direction == 3){ flip(depth_, depth_, 1); transpose(depth_, depth_); } //transpose and flip back
+
+//	Helper::debugImage(depth_);
 
 	return depth_;
 }
