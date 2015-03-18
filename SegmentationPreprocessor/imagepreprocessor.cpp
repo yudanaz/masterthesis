@@ -144,18 +144,8 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 	undistort(RGB, RGB_undist, cam_RGB, distCoeff_RGB);
 	Mat RGB_resized = resizeAndCropRGBImg(RGB_undist);
 
-	//convert depth to 8 bit if necessary
-	Mat depth8bit;
-	if(depth_kinect.type() == CV_16UC1)
-	{
-//		depth_kinect.convertTo(depth8bit, CV_8UC1, 255.0/2047.0);
-		depth8bit = convertKinectDepthTo8Bit(depth_kinect);
-	}
-	else{ depth8bit = depth_kinect; }
-//	imshow("d16bit", depth_kinect); imshow("d8bit", depth8bit); cvWaitKey();
-
 	//remap depth to NIR-camera space
-	Mat depth_remapped = mapKinectDepth2NIR(depth8bit, NIR);
+	Mat depth_remapped = mapKinectDepth2NIR(depth_kinect, NIR);
 
 	//rectify
 	Mat RGB_rect, NIR_rect;
@@ -567,9 +557,9 @@ Mat ImagePreprocessor::convertKinectDepthTo8Bit(Mat kinectDepth)
 {
 	Mat out(kinectDepth.size(), CV_8UC1);
 
-	MatIterator_<ushort> it, end;
+	MatIterator_<short> it, end;
 	MatIterator_<uchar> it8bit;
-	for( it = kinectDepth.begin<ushort>(), end = kinectDepth.end<ushort>(), it8bit = out.begin<uchar>();
+	for( it = kinectDepth.begin<short>(), end = kinectDepth.end<short>(), it8bit = out.begin<uchar>();
 		 it != end; ++it, ++it8bit)
 	{
 		if(*it == 2047) //unknown depth!
@@ -582,13 +572,25 @@ Mat ImagePreprocessor::convertKinectDepthTo8Bit(Mat kinectDepth)
 //			unsigned short tmp = *(it + 1);
 //			tmp <<= 8;
 //			tmp += *it;
-			ushort x = *it;
+			ushort x = ((ushort)*it);
+
+//			QString s =  QString::number(x);
+
 			ushort tmp = (x << 8)+(x >> 8);//(ushort)((ushort)((x & 0xff) << 8) | ((x >> 8) & 0xff));
 
+//			 s += " --> " + QString::number(tmp);
+
 			//mask unused bytes, i.e. bites 0,1,2 (player ids) and 15 (unused in depth, depth is 12-bit)
-			tmp &= 0x7ff8;
+			tmp &= 0x7FF8;
+
+//			s +=  " --> " + QString::number(tmp);
+
 			tmp >>= 3;
+
+//			qDebug() << s << " --> " << QString::number(tmp);
+
 			*it8bit = (tmp / 4096.0) * 255.0;
+//			*it8bit = (tmp / 65536.0) * 255.0;
 		}
 	}
 
@@ -597,18 +599,27 @@ Mat ImagePreprocessor::convertKinectDepthTo8Bit(Mat kinectDepth)
 
 Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
 {
-	Helper::debugImage(depth_kinect);
+	//convert depth to 8 bit if necessary
+	Mat depth_8bit;
+	if(depth_kinect.type() == CV_16UC1)
+	{
+//		depth_kinect.convertTo(depth8bit, CV_8UC1, 255.0/2047.0);
+		depth_8bit = convertKinectDepthTo8Bit(depth_kinect);
+	}
+	else{ depth_8bit = depth_kinect; }
+
+	Helper::debugImage(depth_8bit);
 
 	//remove outliers
 
 	//invert colors so depth encoding is similar to disparity map
-	Mat depth_kinect_inverted;
-	Mat white(depth_kinect.size(), depth_kinect.type(), Scalar(255));
-	subtract(white, depth_kinect, depth_kinect_inverted);
-	Helper::debugImage(depth_kinect_inverted);
+	Mat depth_inverted;
+	Mat white(depth_kinect.size(), CV_8UC1, Scalar(255));
+	subtract(white, depth_8bit, depth_inverted);
+	Helper::debugImage(depth_inverted);
 
 	//fill holes in depth map by simple "shadow"-assumption
-	Mat depth_fixed = fixHolesInDepthMap(depth_kinect_inverted, 1); //fix from right-to-left, i.e. shadows on right side of objects
+	Mat depth_fixed = fixHolesInDepthMap(depth_inverted, 1); //fix from right-to-left, i.e. shadows on right side of objects
 	depth_fixed = fixHolesInDepthMap(depth_fixed, 0); //alos got left-to-right to fix some other holes caused by specular surfaces
 	Helper::debugImage(depth_fixed);
 
