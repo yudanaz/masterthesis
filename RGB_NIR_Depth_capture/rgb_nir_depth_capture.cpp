@@ -226,32 +226,20 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 		}
 		else if(capturing_kinectRGB && type == Kinect_Depth || !capturing_kinectRGB && type == Kinect_IR)
 		{
-			//if 16 bit convert to 8 bit
+			//if 16 bit convert to 8 bit and millimeter precision, for display only! the image is saved as raw depth
 			Mat img8bit;
 			if(img.type() == CV_16UC1)
 			{
-//				img.convertTo(img8bit, CV_8UC1, 255.0/2047.0);
 				img8bit = Mat(img.size(), CV_8UC1);
 
-				MatIterator_<short> it, end;
+				MatIterator_<ushort> it, end;
 				MatIterator_<uchar> it8bit;
-				for( it = img.begin<short>(), end = img.end<short>(), it8bit = img8bit.begin<uchar>();
+				for( it = img.begin<ushort>(), end = img.end<ushort>(), it8bit = img8bit.begin<uchar>();
 					 it != end; ++it, ++it8bit)
 				{
-					if(*it == 2047) //unknown depth!
-					{
-						*it8bit = 255;
-					}
-					else
-					{
-						//swap bytes
-						short x = *it;
-						short tmp = (x << 8)+(x >> 8);//(ushort)((ushort)((x & 0xff) << 8) | ((x >> 8) & 0xff));
-						tmp &= 0x7FF8;
-						tmp >>= 3;
-						*it8bit = (tmp / 4096.0) * 255.0;
-			//			*it8bit = (tmp / 65536.0) * 255.0;
-					}
+					float mm = 0;
+					if (*it < 2047){ mm = 1.0 / (*it * -0.0030711016 + 3.3309495161) * 1000.0; }
+					*it8bit = mm / 10000.0 * 255;
 				}
 
 			}

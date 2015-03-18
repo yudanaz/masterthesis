@@ -69,6 +69,7 @@ private:
 
 
 	Mat convertKinectDepthTo8Bit(Mat kinectDepth);
+	float raw_depth_to_mm(int raw_depth);
 	Mat mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img);
 	Mat fixHolesInDepthMap(Mat depth, int direction);
 	vector<Point3f> projectKinectDepthTo3DSpace(Mat depth);

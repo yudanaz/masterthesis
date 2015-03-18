@@ -1,4 +1,6 @@
 #include "myfreenectopencvdevice.h"
+#include "libfreenect.h"
+#include "libfreenect.hpp"
 
 MyFreenectOpenCVDevice::MyFreenectOpenCVDevice(freenect_context *_ctx, int _index):
 	Freenect::FreenectDevice(_ctx, _index),
@@ -119,6 +121,6 @@ void MyFreenectOpenCVDevice::toggleIRMode(bool ir_on)
 		freenect_set_video_mode((_freenect_device*)getDevice(), mode_RGB);
 	}
 	freenect_start_video((_freenect_device*)getDevice());
-}
 
+}
 

@@ -557,44 +557,25 @@ Mat ImagePreprocessor::convertKinectDepthTo8Bit(Mat kinectDepth)
 {
 	Mat out(kinectDepth.size(), CV_8UC1);
 
-	MatIterator_<short> it, end;
+	MatIterator_<ushort> it, end;
 	MatIterator_<uchar> it8bit;
-	for( it = kinectDepth.begin<short>(), end = kinectDepth.end<short>(), it8bit = out.begin<uchar>();
+	for( it = kinectDepth.begin<ushort>(), end = kinectDepth.end<ushort>(), it8bit = out.begin<uchar>();
 		 it != end; ++it, ++it8bit)
 	{
-		if(*it == 2047) //unknown depth!
-		{
-			*it8bit = 255;
-		}
-		else
-		{
-			//swap bytes
-//			unsigned short tmp = *(it + 1);
-//			tmp <<= 8;
-//			tmp += *it;
-			short x = *it;
-
-//			QString s =  QString::number(x);
-
-			short tmp = (x << 8)+(x >> 8);//(ushort)((ushort)((x & 0xff) << 8) | ((x >> 8) & 0xff));
-
-//			 s += " --> " + QString::number(tmp);
-
-			//mask unused bytes, i.e. bites 0,1,2 (player ids) and 15 (unused in depth, depth is 12-bit)
-			tmp &= 0x7FF8;
-
-//			s +=  " --> " + QString::number(tmp);
-
-			tmp >>= 3;
-
-//			qDebug() << s << " --> " << QString::number(tmp);
-
-			*it8bit = (tmp / 4096.0) * 255.0;
-//			*it8bit = (tmp / 65536.0) * 255.0;
-		}
+		float mm = raw_depth_to_mm(*it);
+		*it8bit = mm / 10000.0 * 255;
 	}
 
 	return out;
+}
+
+float ImagePreprocessor::raw_depth_to_mm(int raw_depth)
+{
+  if (raw_depth < 2047)
+  {
+   return 1.0 / (raw_depth * -0.0030711016 + 3.3309495161) * 1000.0;
+  }
+  return 0;
 }
 
 Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
@@ -613,10 +594,10 @@ Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
 	//remove outliers
 
 	//invert colors so depth encoding is similar to disparity map
-	Mat depth_inverted;
-	Mat white(depth_kinect.size(), CV_8UC1, Scalar(255));
-	subtract(white, depth_8bit, depth_inverted);
-	Helper::debugImage(depth_inverted);
+	Mat depth_inverted = depth_8bit;
+//	Mat white(depth_kinect.size(), CV_8UC1, Scalar(255));
+//	subtract(white, depth_8bit, depth_inverted);
+//	Helper::debugImage(depth_inverted);
 
 	//fill holes in depth map by simple "shadow"-assumption
 	Mat depth_fixed = fixHolesInDepthMap(depth_inverted, 1); //fix from right-to-left, i.e. shadows on right side of objects
@@ -640,26 +621,22 @@ Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
 	Helper::debugImage(depth2D);
 
 	//again fill holes in the resulting reprojected depth map, caused by reprojection
-	Mat depth2D_fixed = fixHolesInDepthMap(depth2D, 2); //fix top-down, i.e. shadows on upper side of objects
-//	depth2D_fixed = fixHolesInDepthMap(depth2D, 3); //fix bottom-up, i.e. shadows on lower side of objects
+//	Mat depth2D_fixed = fixHolesInDepthMap(depth2D, 2); //fix top-down, i.e. shadows on upper side of objects
+	Mat depth2D_fixed = fixHolesInDepthMap(depth2D, 3); //fix bottom-up, i.e. shadows on lower side of objects
 	Helper::debugImage(depth2D_fixed);
 
 //	equalizeHist(depth2D_fixed, depth2D_fixed);
 
-	return depth2D_fixed;
+//	return depth2D_fixed;
 
 	//fill gaps in re-mapped depth map with crossbilateral filter
-//	Mat NIR_gray, NIR_gray_undist;
-//	cvtColor(NIR_img, NIR_gray, CV_RGB2GRAY);
-//	undistort(NIR_gray, NIR_gray_undist, cam_NIR, distCoeff_NIR);
-//	Mat depth_refined = crossbilatFilter.filter(depth2D_fixed, NIR_gray_undist, 4.0, 0.1);
+	Mat NIR_gray, NIR_gray_undist;
+	cvtColor(NIR_img, NIR_gray, CV_RGB2GRAY);
+	undistort(NIR_gray, NIR_gray_undist, cam_NIR, distCoeff_NIR);
+	Mat depth_refined = crossbilatFilter.filter(depth2D_fixed, NIR_gray_undist, 4.0, 1.0);
+	Helper::debugImage(depth_refined);
 
-//	imwrite("depth_before.png", depth2D);
-//	imwrite("depth before fixed.png", depth2D_fixed);
-//	imwrite("nir_gray_undist.png", NIR_gray_undist);
-//	imwrite("depth_after.png", depth_refined);
-
-//	return depth_refined;
+	return depth_refined;
 }
 
 Mat ImagePreprocessor::fixHolesInDepthMap(Mat depth, int direction) //0 = L-R, 1 = R-L, 2 = Top-Down, 3 = Bottom-Up
@@ -755,28 +732,28 @@ Mat ImagePreprocessor::projectFrom3DSpaceToImage(std::vector<Point3f> points3D, 
 //    qDebug() << IO::getOpenCVTypeName(img3D.type());
 
 	vector<Point2f> points2D;
-//	projectPoints(points3D, rot, transl, cam_Matrix, noArray(), points2D);
+	projectPoints(points3D, rot, transl, cam_Matrix, noArray(), points2D);
 
 	//DEBUG//
 	//test to see if projectPoints() does anything different from Burrus' method [http://nicolas.burrus.name/index.php/Research/KinectCalibration]
 	//turns out it does exactly the same thing. reprojection errror is elsewhere.
-	float fx = cam_Matrix.at<double>(0,0);
-	float cx = cam_Matrix.at<double>(0,2);
-	float fy = cam_Matrix.at<double>(1,1);
-	float cy = cam_Matrix.at<double>(1,2);
-	for (uint j = 0; j < points3D.size(); ++j)
-	{
-		//project using camera intrinsics
-		Mat p3d = Mat(points3D[j]);
-		p3d.convertTo(p3d, rot.type()); //matrices have to be same type for matrix multiplication
-		Mat m3d_ =  rot * p3d + transl ;
-		const double *d = m3d_.ptr<double>(0);
-		Point3f p3d_((float)d[0], (float)d[1], (float)d[2]);
-		Point2f p2d;
-		p2d.x = ( (p3d_.x + shiftX) * fx / p3d_.z) + cx;
-		p2d.y = ( (p3d_.y + shiftY) * fy / p3d_.z) + cy;
-		points2D.push_back(p2d);
-	}
+//	float fx = cam_Matrix.at<double>(0,0);
+//	float cx = cam_Matrix.at<double>(0,2);
+//	float fy = cam_Matrix.at<double>(1,1);
+//	float cy = cam_Matrix.at<double>(1,2);
+//	for (uint j = 0; j < points3D.size(); ++j)
+//	{
+//		//project using camera intrinsics
+//		Mat p3d = Mat(points3D[j]);
+//		p3d.convertTo(p3d, rot.type()); //matrices have to be same type for matrix multiplication
+//		Mat m3d_ =  rot * p3d + transl ;
+//		const double *d = m3d_.ptr<double>(0);
+//		Point3f p3d_((float)d[0], (float)d[1], (float)d[2]);
+//		Point2f p2d;
+//		p2d.x = ( (p3d_.x + shiftX) * fx / p3d_.z) + cx;
+//		p2d.y = ( (p3d_.y + shiftY) * fy / p3d_.z) + cy;
+//		points2D.push_back(p2d);
+//	}
 
 	//remember reprojected coordinates of corner points of original depth map
 	int i1 = 0;

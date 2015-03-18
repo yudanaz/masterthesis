@@ -34,7 +34,6 @@ class MyFreenectOpenCVDevice : public Freenect::FreenectDevice
 public:
 		MyFreenectOpenCVDevice(freenect_context *_ctx, int _index);
 
-
 		// Do not call directly even in child
 		void VideoCallback(void* _rgb, uint32_t timestamp);
 
