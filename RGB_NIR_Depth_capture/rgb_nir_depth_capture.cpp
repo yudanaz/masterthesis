@@ -16,7 +16,7 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 	ptr_NIRScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene)),
 	ptr_depthScene(QSharedPointer<QGraphicsScene>(new QGraphicsScene)),
 	sound_click("misc/cameraClick.wav"), sound_beep("misc/beep.wav"), sound_beep2("misc/beep2.wav"),
-    simulatingRGBCalib(true), flipImgs(false), drawTargetCross(false)
+	simulatingRGBCalib(true), flipImgs(false), drawTargetCross(false)
 {
 	ui->setupUi(this);
 
@@ -38,10 +38,10 @@ RGB_NIR_Depth_Capture::RGB_NIR_Depth_Capture(QWidget *parent) :
 		QMessageBox::information(this, "Error", "No config file found!", QMessageBox::Ok);
 	}
 
-    //set flags according to GUI
-    simulatingRGBCalib = ui->checkBox_simulateRGBcalib->isChecked();
-    flipImgs = ui->checkBox_flipImgs->isChecked();
-    drawTargetCross = ui->checkBox_drawTargetCross->isChecked();
+	//set flags according to GUI
+	simulatingRGBCalib = ui->checkBox_simulateRGBcalib->isChecked();
+	flipImgs = ui->checkBox_flipImgs->isChecked();
+	drawTargetCross = ui->checkBox_drawTargetCross->isChecked();
 
 	//Prosilica worker
 	myImgAcqWorker_Prosilica = new ProsilicaWorker();
@@ -177,7 +177,7 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 		{
 			//make target cross
 			Mat rgbWithCross;
-            if(drawTargetCross)
+			if(drawTargetCross)
 			{
 				rgbWithCross = drawCross(img, 6);
 			}
@@ -188,7 +188,7 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 			if(simulatingRGBCalib)
 			{
 				undistort(rgbWithCross, rgbWithRect, cam_RGB, distCoeff_RGB);
-                cv::rectangle(rgbWithRect, drawRect_RGB, Scalar(255,0,0), 10);
+				cv::rectangle(rgbWithRect, drawRect_RGB, Scalar(255,0,0), 10);
 			}
 			else
 			{
@@ -228,7 +228,33 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 		{
 			//if 16 bit convert to 8 bit
 			Mat img8bit;
-			if(img.type() == CV_16UC1){ img.convertTo(img8bit, CV_8UC1, 255.0/2047.0); }
+			if(img.type() == CV_16UC1)
+			{
+//				img.convertTo(img8bit, CV_8UC1, 255.0/2047.0);
+				img8bit = Mat(img.size(), CV_8UC1);
+
+				MatIterator_<short> it, end;
+				MatIterator_<uchar> it8bit;
+				for( it = img.begin<short>(), end = img.end<short>(), it8bit = img8bit.begin<uchar>();
+					 it != end; ++it, ++it8bit)
+				{
+					if(*it == 2047) //unknown depth!
+					{
+						*it8bit = 255;
+					}
+					else
+					{
+						//swap bytes
+						short x = *it;
+						short tmp = (x << 8)+(x >> 8);//(ushort)((ushort)((x & 0xff) << 8) | ((x >> 8) & 0xff));
+						tmp &= 0x7FF8;
+						tmp >>= 3;
+						*it8bit = (tmp / 4096.0) * 255.0;
+			//			*it8bit = (tmp / 65536.0) * 255.0;
+					}
+				}
+
+			}
 			else{ img8bit = img; }
 
 			//make cross
@@ -279,16 +305,16 @@ void RGB_NIR_Depth_Capture::imagesReady(RGBDNIR_MAP capturedImgs)
 
 void RGB_NIR_Depth_Capture::triggerSelfTimer()
 {
-    capturingSeries = true;
-    countingDown = true;
-    countdownSeconds = ui->lineEdit_countdown->text().toInt();
-    countdownTime = countdownSeconds * 1000;
-    seriesCnt = 0;
-    seriesMax = ui->lineEdit_amount->text().toInt();
-    seriesInterval = ui->lineEdit_interval->text().toDouble() * 1000.0;
-    myTimer.start();
-    myBeepTimer.start();
-    sound_beep.play();
+	capturingSeries = true;
+	countingDown = true;
+	countdownSeconds = ui->lineEdit_countdown->text().toInt();
+	countdownTime = countdownSeconds * 1000;
+	seriesCnt = 0;
+	seriesMax = ui->lineEdit_amount->text().toInt();
+	seriesInterval = ui->lineEdit_interval->text().toDouble() * 1000.0;
+	myTimer.start();
+	myBeepTimer.start();
+	sound_beep.play();
 }
 
 void RGB_NIR_Depth_Capture::captureSeries()
@@ -393,11 +419,11 @@ void RGB_NIR_Depth_Capture::keyPressEvent(QKeyEvent *event)
 		ui->checkBox_flipImgs->setChecked(flipImgs);
 	}
 
-    //trigger series / selbstausloeser when "T" is pressed
-    if(event->key() == 84)
-    {
-        triggerSelfTimer();
-    }
+	//trigger series / selbstausloeser when "T" is pressed
+	if(event->key() == 84)
+	{
+		triggerSelfTimer();
+	}
 
 	//open output folder if "o" is pressed
 	if(event->key() == 79)
@@ -437,7 +463,7 @@ void RGB_NIR_Depth_Capture::on_checkBox_showAllChannels_clicked()
 
 void RGB_NIR_Depth_Capture::on_pushButton_saveSeries_released()
 {
-    triggerSelfTimer();
+	triggerSelfTimer();
 }
 
 void RGB_NIR_Depth_Capture::on_checkBox_switchKinectRGB_IR_clicked()
@@ -472,5 +498,5 @@ void RGB_NIR_Depth_Capture::on_btn_saveImgs_2_released()
 
 void RGB_NIR_Depth_Capture::on_checkBox_drawTargetCross_clicked()
 {
-    drawTargetCross = ui->checkBox_drawTargetCross->isChecked();
+	drawTargetCross = ui->checkBox_drawTargetCross->isChecked();
 }

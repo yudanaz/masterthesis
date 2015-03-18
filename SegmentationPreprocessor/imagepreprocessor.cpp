@@ -572,11 +572,11 @@ Mat ImagePreprocessor::convertKinectDepthTo8Bit(Mat kinectDepth)
 //			unsigned short tmp = *(it + 1);
 //			tmp <<= 8;
 //			tmp += *it;
-			ushort x = ((ushort)*it);
+			short x = *it;
 
 //			QString s =  QString::number(x);
 
-			ushort tmp = (x << 8)+(x >> 8);//(ushort)((ushort)((x & 0xff) << 8) | ((x >> 8) & 0xff));
+			short tmp = (x << 8)+(x >> 8);//(ushort)((ushort)((x & 0xff) << 8) | ((x >> 8) & 0xff));
 
 //			 s += " --> " + QString::number(tmp);
 
