@@ -26,6 +26,8 @@ void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchS
         imgs.push_back(line);
         imgs_uniformSubpatchSize.push_back(0); //just init here, set correct value in readNextImage()
         imgs_uniformSubpatchIndex.push_back(0); //init here, incremented in setUniformPatches()
+        imgs_uniformSubpatchIndex_inits.push_back(false); //set all to "not initialized with random start index"
+
         imgMax++;
     }
 //    LOG(INFO) << "max imgs in list: " << imgMax;
@@ -341,7 +343,7 @@ void NetRGBDNIR<Dtype>::readNextImage()
 
     //get next image URL, also circle through images (if iterations are > all available patches)
     std::string imageURL = imgs[imgCnt];
-    LOG(INFO) << "Read next image: " << imageURL;
+//    LOG(INFO) << "Read next image: " << imageURL;
 
     //load all image types (RGB, NIR and Depth) if available, create scales (image pyramid) pad images (make borders)
     std::string labelsNm = imageURL + std::string("_labels.png"); //labels lossless, always png
@@ -354,7 +356,19 @@ void NetRGBDNIR<Dtype>::readNextImage()
 
     //set amount of patches for each image and set size of suppatches for uniform patch selection
     patchMax = img_labels.cols * img_labels.rows;
-    imgs_uniformSubpatchSize[imgCnt] = patchMax / sparsePatchesCntMax;
+    int patchSize = patchMax / sparsePatchesCntMax;
+    imgs_uniformSubpatchSize[imgCnt] = patchSize;
+
+    //init indices for sub patches randomly ONCE
+    if(!imgs_uniformSubpatchIndex_inits[imgCnt])
+    {
+        boost::uniform_int<> distribution(0, patchSize - 1);
+        boost::variate_generator<boost::mt19937&, boost::uniform_int<> > die(gen, distribution);
+        int randomIndex = die();
+        imgs_uniformSubpatchIndex[imgCnt] = randomIndex;
+        imgs_uniformSubpatchIndex_inits[imgCnt] = true;
+//        LOG(INFO) << "random index: " << randomIndex;
+    }
 
     cv::Mat temp1, temp2, temp3;
 

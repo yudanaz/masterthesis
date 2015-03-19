@@ -34,6 +34,7 @@ protected:
     int batchSz;
     std::vector<int> imgs_uniformSubpatchSize; //stores the size of the uniform subpatches for each image
     std::vector<int> imgs_uniformSubpatchIndex; //stores the index in the uniform subpatches for each image
+    std::vector<bool> imgs_uniformSubpatchIndex_inits; //stores whether this subpatch index has been initialized with a random index
 
     boost::mt19937 gen; //random number generator
     int sparsePatchesCntMax;

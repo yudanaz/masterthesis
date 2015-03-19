@@ -6,9 +6,9 @@
 #include <fstream>  // NOLINT(readability/streams)
 #include <iostream>  // NOLINT(readability/streams)
 
-#include "caffe/caffe.hpp"
-#include "caffe/util/io.hpp"
-#include "caffe/util/upgrade_proto.hpp"
+#include "../include/caffe/caffe.hpp"
+#include "../include/caffe/util/io.hpp"
+#include "../include/caffe/util/upgrade_proto.hpp"
 
 using std::ofstream;
 

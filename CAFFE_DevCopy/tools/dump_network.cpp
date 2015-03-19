@@ -14,13 +14,13 @@
 #include "fcntl.h"
 #include "google/protobuf/text_format.h"
 
-#include "caffe/blob.hpp"
-#include "caffe/common.hpp"
-#include "caffe/filler.hpp"
-#include "caffe/net.hpp"
-#include "caffe/proto/caffe.pb.h"
-#include "caffe/solver.hpp"
-#include "caffe/util/io.hpp"
+#include "../include/caffe/blob.hpp"
+#include "../include/caffe/common.hpp"
+#include "../include/caffe/filler.hpp"
+#include "../include/caffe/net.hpp"
+#include "../build/src/caffe/proto/caffe.pb.h"
+#include "../include/caffe/solver.hpp"
+#include "../include/caffe/util/io.hpp""
 
 using namespace caffe;  // NOLINT(build/namespaces)
 
