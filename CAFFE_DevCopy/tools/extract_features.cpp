@@ -7,12 +7,12 @@
 #include "leveldb/db.h"
 #include "leveldb/write_batch.h"
 
-#include "caffe/blob.hpp"
-#include "caffe/common.hpp"
-#include "caffe/net.hpp"
-#include "caffe/proto/caffe.pb.h"
-#include "caffe/util/io.hpp"
-#include "caffe/vision_layers.hpp"
+#include "../include/caffe/blob.hpp"
+#include "../include/caffe/common.hpp"
+#include "../include/caffe/net.hpp"
+#include "../build/src/caffe/proto/caffe.pb.h"
+#include "../include/caffe/util/io.hpp"
+#include "../include/caffe/vision_layers.hpp"
 
 using namespace caffe;  // NOLINT(build/namespaces)
 

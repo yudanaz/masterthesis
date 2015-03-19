@@ -21,9 +21,9 @@
 #include <utility>
 #include <vector>
 
-#include "caffe/proto/caffe.pb.h"
-#include "caffe/util/io.hpp"
-#include "caffe/util/rng.hpp"
+#include "../build/src/caffe/proto/caffe.pb.h"
+#include "../include/caffe/util/io.hpp"
+#include "../include/caffe/util/rng.hpp"
 
 using namespace caffe;  // NOLINT(build/namespaces)
 using std::pair;

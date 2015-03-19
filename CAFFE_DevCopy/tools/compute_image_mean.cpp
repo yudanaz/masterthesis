@@ -6,8 +6,8 @@
 #include <algorithm>
 #include <string>
 
-#include "caffe/proto/caffe.pb.h"
-#include "caffe/util/io.hpp"
+#include "../build/src/caffe/proto/caffe.pb.h"
+#include "../include/caffe/util/io.hpp"
 
 using caffe::Datum;
 using caffe::BlobProto;
