@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "hog_crossspectralstereomatcher.h"
+#include <QDir>
+#include <QDesktopServices>
 
 #define IMGTYPES "*.jpg *.png *.ppm"
 
@@ -164,4 +166,10 @@ void MainWindow::on_pushButton_load_released()
 void MainWindow::on_actionStereoM_Params_triggered()
 {
 	ui_stereoMparams->show();
+}
+
+void MainWindow::on_pushButton_openFomeFolder_released()
+{
+	QDir d;
+	QDesktopServices::openUrl(d.absolutePath());
 }

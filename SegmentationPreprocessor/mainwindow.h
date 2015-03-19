@@ -12,40 +12,42 @@ class MainWindow;
 
 class MainWindow : public QMainWindow
 {
-    Q_OBJECT
+	Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = 0);
-    ~MainWindow();
+	explicit MainWindow(QWidget *parent = 0);
+	~MainWindow();
 
 private slots:
-    void on_pushButton_calibCams_released();
+	void on_pushButton_calibCams_released();
 
-    void on_pushButton_preproc_released();
+	void on_pushButton_preproc_released();
 
-    void on_pushButton_save_released();
+	void on_pushButton_save_released();
 
-    void on_pushButton_load_released();
+	void on_pushButton_load_released();
 
-    void on_pushButton_calibCamRig_released();
+	void on_pushButton_calibCamRig_released();
 
-    void on_pushButton_reproc_released();
+	void on_pushButton_reproc_released();
 
-    void on_actionStereoM_Params_triggered();
+	void on_actionStereoM_Params_triggered();
+
+	void on_pushButton_openFomeFolder_released();
 
 private:
 
-    void preprocessImages();
+	void preprocessImages();
 
-    Mat rgb;
-    Mat depth;
-    Mat nir;
+	Mat rgb;
+	Mat depth;
+	Mat nir;
 
-    Ui::MainWindow *ui;
-    StereoMatching_params *ui_stereoMparams;
+	Ui::MainWindow *ui;
+	StereoMatching_params *ui_stereoMparams;
 
-    IO io;
-    ImagePreprocessor preproc;
+	IO io;
+	ImagePreprocessor preproc;
 };
 
 #endif // MAINWINDOW_H

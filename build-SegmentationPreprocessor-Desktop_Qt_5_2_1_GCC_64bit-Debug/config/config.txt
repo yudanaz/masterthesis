@@ -1,2 +1,2 @@
 %YAML:1.0
-lastCamParamURL: "/home/maurice/Data/RGBDNIR_Data_calib/cam_rig.camparam"
+lastCamParamURL: "/home/maurice/Data/CALIB TEST3/cams_rig.camparam"

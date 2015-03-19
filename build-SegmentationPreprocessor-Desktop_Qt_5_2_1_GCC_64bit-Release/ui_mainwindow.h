@@ -36,6 +36,8 @@ public:
     QPushButton *pushButton_calibCamRig;
     QPushButton *pushButton_preproc;
     QPushButton *pushButton_reproc;
+    QSpacerItem *verticalSpacer_2;
+    QPushButton *pushButton_openFomeFolder;
     QSpacerItem *verticalSpacer;
     QPushButton *pushButton_save;
     QPushButton *pushButton_load;
@@ -90,6 +92,15 @@ public:
 
         verticalLayout->addWidget(pushButton_reproc);
 
+        verticalSpacer_2 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+
+        verticalLayout->addItem(verticalSpacer_2);
+
+        pushButton_openFomeFolder = new QPushButton(verticalLayoutWidget);
+        pushButton_openFomeFolder->setObjectName(QStringLiteral("pushButton_openFomeFolder"));
+
+        verticalLayout->addWidget(pushButton_openFomeFolder);
+
         verticalSpacer = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
 
         verticalLayout->addItem(verticalSpacer);
@@ -109,7 +120,7 @@ public:
         MainWindow->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(MainWindow);
         menuBar->setObjectName(QStringLiteral("menuBar"));
-        menuBar->setGeometry(QRect(0, 0, 400, 25));
+        menuBar->setGeometry(QRect(0, 0, 400, 20));
         menuParameters = new QMenu(menuBar);
         menuParameters->setObjectName(QStringLiteral("menuParameters"));
         MainWindow->setMenuBar(menuBar);
@@ -133,6 +144,7 @@ public:
         pushButton_calibCamRig->setText(QApplication::translate("MainWindow", "Calibrate Cam Rig", 0));
         pushButton_preproc->setText(QApplication::translate("MainWindow", "Pre-Process", 0));
         pushButton_reproc->setText(QApplication::translate("MainWindow", "Re-Process", 0));
+        pushButton_openFomeFolder->setText(QApplication::translate("MainWindow", "Open Home Folder", 0));
         pushButton_save->setText(QApplication::translate("MainWindow", "Save Camera Parameters", 0));
         pushButton_load->setText(QApplication::translate("MainWindow", "Load Camera Parameters", 0));
         menuParameters->setTitle(QApplication::translate("MainWindow", "Config", 0));
