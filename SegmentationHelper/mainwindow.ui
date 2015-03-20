@@ -59,6 +59,22 @@
          </property>
         </widget>
        </item>
+       <item>
+        <widget class="QPushButton" name="btn_thinOut">
+         <property name="maximumSize">
+          <size>
+           <width>60</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(244, 172, 172)</string>
+         </property>
+         <property name="text">
+          <string>Thin</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </item>
      <item>

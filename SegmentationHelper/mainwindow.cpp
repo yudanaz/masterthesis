@@ -91,7 +91,7 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 		QString colorFileName = "";
 		QString grayFileName = "";
 		bool collectingPoints = false;
-        int x = 0;
+		int x = 0;
 
 		Polygon polygon;
 		QList<Polygon> polygons;
@@ -135,7 +135,7 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 					QString objType = xml.readElementText();
 
 					//set color according to label
-                    int colorIndex = 999; //in case no matching label name is found
+					int colorIndex = 999; //in case no matching label name is found
 					for (int i = 0; i < 256; ++i)
 					{
 						if(objectMap[i] == objType)
@@ -144,16 +144,16 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 							break;
 						}
 					}
-                    polygon.color = colorIndex;
+					polygon.color = colorIndex;
 				}
 				if(tagName == "attributes")
 				{
-                    QString s = xml.readElementText();
-                    if(s == "") polygon.index = 0;
-                    else if(s.contains('d'))
-                    {
-                        polygon.index = s.remove('d').toInt();
-                    }
+					QString s = xml.readElementText();
+					if(s == "") polygon.index = 0;
+					else if(s.contains('d'))
+					{
+						polygon.index = s.remove('d').toInt();
+					}
 				}
 
 				//collect all points of the polygon
@@ -185,8 +185,8 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 			xml.readNext();
 		}
 
-        //sort the polygon list
-        qSort(polygons.begin(), polygons.end(), Polygon::polygonLessThan);
+		//sort the polygon list
+		qSort(polygons.begin(), polygons.end(), Polygon::polygonLessThan);
 
 		//draw the polygons in color according to object type
 		foreach(Polygon polygon, polygons)
@@ -202,7 +202,7 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 			int npt[] = { polygon.points.length() };
 
 			//paint labels in color and grayscale images
-            int colorIndex = polygon.color;
+			int colorIndex = polygon.color;
 			if(colorIndex != 999) //if matching label has been found
 			{
 				Scalar color(colorMap[colorIndex][0], colorMap[colorIndex][1], colorMap[colorIndex][2]);
@@ -1545,4 +1545,30 @@ void MainWindow::on_btn_registerImages_released()
 	fs.release();
 
 	imwrite( (fileNameA.remove(".png") + "_registered.png").toStdString(), aa );
+}
+
+void MainWindow::on_btn_thinOut_released()
+{
+	QString fileName = QFileDialog::getOpenFileName(this, "Select text file to thin out", lastDir);
+	if(fileName ==""){ return; }
+	double percentage = QInputDialog::getDouble(this, "Percentage", "How much?", 0.05, 0.00001, 1.0, 5);
+	int interval = 1.0 / percentage + .5;
+	int cnt = 0;
+
+	QFile f(fileName);
+	QFile f2(fileName + "_thinnedBy_" + QString::number(percentage));
+	f.open(QFile::ReadOnly);
+	f2.open(QFile::WriteOnly);
+	QTextStream ts(&f);
+	QTextStream ts2(&f2);
+	while(!ts.atEnd())
+	{
+		if(cnt == 0){ ts2 << ts.readLine() << "\n"; } //read line and write to new file
+		else{ ts.readLine(); } //read line without writing
+		cnt = ++cnt % interval;
+	}
+
+	f.close();
+	f2.close();
+
 }
