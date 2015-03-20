@@ -28,8 +28,11 @@ LIBS += -lopencv_objdetect
 LIBS += -lopencv_nonfree
 
 SOURCES += main.cpp\
-		mainwindow.cpp
+		mainwindow.cpp \
+    seeds/seeds2.cpp
 
-HEADERS  += mainwindow.h
+HEADERS  += mainwindow.h \
+    seeds/seeds2.h \
+    seeds/seedsHelper.h
 
 FORMS    += mainwindow.ui

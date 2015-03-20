@@ -19,8 +19,8 @@
 
 QT_BEGIN_MOC_NAMESPACE
 struct qt_meta_stringdata_MainWindow_t {
-    QByteArrayData data[10];
-    char stringdata[86];
+    QByteArrayData data[13];
+    char stringdata[139];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -32,17 +32,22 @@ static const qt_meta_stringdata_MainWindow_t qt_meta_stringdata_MainWindow = {
 QT_MOC_LITERAL(0, 0, 10),
 QT_MOC_LITERAL(1, 11, 20),
 QT_MOC_LITERAL(2, 32, 0),
-QT_MOC_LITERAL(3, 33, 13),
-QT_MOC_LITERAL(4, 47, 5),
-QT_MOC_LITERAL(5, 53, 1),
-QT_MOC_LITERAL(6, 55, 1),
-QT_MOC_LITERAL(7, 57, 5),
-QT_MOC_LITERAL(8, 63, 5),
-QT_MOC_LITERAL(9, 69, 15)
+QT_MOC_LITERAL(3, 33, 11),
+QT_MOC_LITERAL(4, 45, 13),
+QT_MOC_LITERAL(5, 59, 5),
+QT_MOC_LITERAL(6, 65, 1),
+QT_MOC_LITERAL(7, 67, 1),
+QT_MOC_LITERAL(8, 69, 5),
+QT_MOC_LITERAL(9, 75, 5),
+QT_MOC_LITERAL(10, 81, 15),
+QT_MOC_LITERAL(11, 97, 31),
+QT_MOC_LITERAL(12, 129, 8)
     },
     "MainWindow\0on_btn_load_released\0\0"
-    "mouseCallback\0event\0x\0y\0flags\0param\0"
-    "doMouseCallback\0"
+    "drawAndShow\0mouseCallback\0event\0x\0y\0"
+    "flags\0param\0doMouseCallback\0"
+    "on_horizontalSlider_sliderMoved\0"
+    "position\0"
 };
 #undef QT_MOC_LITERAL
 
@@ -52,7 +57,7 @@ static const uint qt_meta_data_MainWindow[] = {
        7,       // revision
        0,       // classname
        0,    0, // classinfo
-       3,   14, // methods
+       5,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -60,14 +65,18 @@ static const uint qt_meta_data_MainWindow[] = {
        0,       // signalCount
 
  // slots: name, argc, parameters, tag, flags
-       1,    0,   29,    2, 0x08,
-       3,    5,   30,    2, 0x08,
-       9,    4,   41,    2, 0x08,
+       1,    0,   39,    2, 0x08,
+       3,    0,   40,    2, 0x08,
+       4,    5,   41,    2, 0x08,
+      10,    4,   52,    2, 0x08,
+      11,    1,   61,    2, 0x08,
 
  // slots: parameters
     QMetaType::Void,
-    QMetaType::Void, QMetaType::Int, QMetaType::Int, QMetaType::Int, QMetaType::Int, QMetaType::VoidStar,    4,    5,    6,    7,    8,
-    QMetaType::Void, QMetaType::Int, QMetaType::Int, QMetaType::Int, QMetaType::Int,    4,    5,    6,    7,
+    QMetaType::Void,
+    QMetaType::Void, QMetaType::Int, QMetaType::Int, QMetaType::Int, QMetaType::Int, QMetaType::VoidStar,    5,    6,    7,    8,    9,
+    QMetaType::Void, QMetaType::Int, QMetaType::Int, QMetaType::Int, QMetaType::Int,    5,    6,    7,    8,
+    QMetaType::Void, QMetaType::Int,   12,
 
        0        // eod
 };
@@ -78,8 +87,10 @@ void MainWindow::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, 
         MainWindow *_t = static_cast<MainWindow *>(_o);
         switch (_id) {
         case 0: _t->on_btn_load_released(); break;
-        case 1: _t->mouseCallback((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2])),(*reinterpret_cast< int(*)>(_a[3])),(*reinterpret_cast< int(*)>(_a[4])),(*reinterpret_cast< void*(*)>(_a[5]))); break;
-        case 2: _t->doMouseCallback((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2])),(*reinterpret_cast< int(*)>(_a[3])),(*reinterpret_cast< int(*)>(_a[4]))); break;
+        case 1: _t->drawAndShow(); break;
+        case 2: _t->mouseCallback((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2])),(*reinterpret_cast< int(*)>(_a[3])),(*reinterpret_cast< int(*)>(_a[4])),(*reinterpret_cast< void*(*)>(_a[5]))); break;
+        case 3: _t->doMouseCallback((*reinterpret_cast< int(*)>(_a[1])),(*reinterpret_cast< int(*)>(_a[2])),(*reinterpret_cast< int(*)>(_a[3])),(*reinterpret_cast< int(*)>(_a[4]))); break;
+        case 4: _t->on_horizontalSlider_sliderMoved((*reinterpret_cast< int(*)>(_a[1]))); break;
         default: ;
         }
     }
@@ -110,13 +121,13 @@ int MainWindow::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 3)
+        if (_id < 5)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 3;
+        _id -= 5;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 3)
+        if (_id < 5)
             *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 3;
+        _id -= 5;
     }
     return _id;
 }

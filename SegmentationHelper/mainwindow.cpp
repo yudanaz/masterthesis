@@ -1552,6 +1552,7 @@ void MainWindow::on_btn_thinOut_released()
 	QString fileName = QFileDialog::getOpenFileName(this, "Select text file to thin out", lastDir);
 	if(fileName ==""){ return; }
 	double percentage = QInputDialog::getDouble(this, "Percentage", "How much?", 0.05, 0.00001, 1.0, 5);
+	bool doAvg = QMessageBox::Yes == QMessageBox::question(this, "AVG", "Average over interval?", QMessageBox::Yes|QMessageBox::No );
 	int interval = 1.0 / percentage + .5;
 	int cnt = 0;
 
@@ -1563,8 +1564,22 @@ void MainWindow::on_btn_thinOut_released()
 	QTextStream ts2(&f2);
 	while(!ts.atEnd())
 	{
-		if(cnt == 0){ ts2 << ts.readLine() << "\n"; } //read line and write to new file
-		else{ ts.readLine(); } //read line without writing
+		float avg = 0;
+		if(doAvg)
+		{
+			avg += ts.readLine().toDouble();
+			if(cnt == interval - 1)
+			{
+				avg /= (float)interval;
+				ts2 << avg << "\n";
+			}
+		}
+		else
+		{
+			if(cnt == 0){ ts2 << ts.readLine() << "\n"; } //read line and write to new file
+			else{ ts.readLine(); } //read line without writing
+		}
+
 		cnt = ++cnt % interval;
 	}
 

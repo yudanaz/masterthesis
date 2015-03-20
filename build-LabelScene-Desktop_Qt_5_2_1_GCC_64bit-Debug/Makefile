@@ -46,9 +46,11 @@ OBJECTS_DIR   = ./
 ####### Files
 
 SOURCES       = ../LabelScene/LabelScene/main.cpp \
-		../LabelScene/LabelScene/mainwindow.cpp moc_mainwindow.cpp
+		../LabelScene/LabelScene/mainwindow.cpp \
+		../LabelScene/LabelScene/seeds/seeds2.cpp moc_mainwindow.cpp
 OBJECTS       = main.o \
 		mainwindow.o \
+		seeds2.o \
 		moc_mainwindow.o
 DIST          = ../../Qt5.2.1/5.2.1/gcc_64/mkspecs/features/spec_pre.prf \
 		../../Qt5.2.1/5.2.1/gcc_64/mkspecs/common/shell-unix.conf \
@@ -413,7 +415,7 @@ qmake_all: FORCE
 
 dist: 
 	@test -d .tmp/LabelScene1.0.0 || mkdir -p .tmp/LabelScene1.0.0
-	$(COPY_FILE) --parents $(SOURCES) $(DIST) .tmp/LabelScene1.0.0/ && $(COPY_FILE) --parents ../LabelScene/LabelScene/mainwindow.h .tmp/LabelScene1.0.0/ && $(COPY_FILE) --parents ../LabelScene/LabelScene/main.cpp ../LabelScene/LabelScene/mainwindow.cpp .tmp/LabelScene1.0.0/ && $(COPY_FILE) --parents ../LabelScene/LabelScene/mainwindow.ui .tmp/LabelScene1.0.0/ && (cd `dirname .tmp/LabelScene1.0.0` && $(TAR) LabelScene1.0.0.tar LabelScene1.0.0 && $(COMPRESS) LabelScene1.0.0.tar) && $(MOVE) `dirname .tmp/LabelScene1.0.0`/LabelScene1.0.0.tar.gz . && $(DEL_FILE) -r .tmp/LabelScene1.0.0
+	$(COPY_FILE) --parents $(SOURCES) $(DIST) .tmp/LabelScene1.0.0/ && $(COPY_FILE) --parents ../LabelScene/LabelScene/mainwindow.h ../LabelScene/LabelScene/seeds/seeds2.h ../LabelScene/LabelScene/seeds/seedsHelper.h .tmp/LabelScene1.0.0/ && $(COPY_FILE) --parents ../LabelScene/LabelScene/main.cpp ../LabelScene/LabelScene/mainwindow.cpp ../LabelScene/LabelScene/seeds/seeds2.cpp .tmp/LabelScene1.0.0/ && $(COPY_FILE) --parents ../LabelScene/LabelScene/mainwindow.ui .tmp/LabelScene1.0.0/ && (cd `dirname .tmp/LabelScene1.0.0` && $(TAR) LabelScene1.0.0.tar LabelScene1.0.0 && $(COMPRESS) LabelScene1.0.0.tar) && $(MOVE) `dirname .tmp/LabelScene1.0.0`/LabelScene1.0.0.tar.gz . && $(DEL_FILE) -r .tmp/LabelScene1.0.0
 
 
 clean:compiler_clean 
@@ -550,6 +552,7 @@ moc_mainwindow.cpp: ../../../Qt5.2.1/5.2.1/gcc_64/include/QtWidgets/QMainWindow 
 		../../../Qt5.2.1/5.2.1/gcc_64/include/QtGui/qtouchdevice.h \
 		../../../Qt5.2.1/5.2.1/gcc_64/include/QtWidgets/qtabwidget.h \
 		../../../Qt5.2.1/5.2.1/gcc_64/include/QtGui/qicon.h \
+		../../../Qt5.2.1/5.2.1/gcc_64/include/QtGui/QKeyEvent \
 		../LabelScene/LabelScene/mainwindow.h
 	/home/maurice/Qt5.2.1/5.2.1/gcc_64/bin/moc $(DEFINES) $(INCPATH) ../LabelScene/LabelScene/mainwindow.h -o moc_mainwindow.cpp
 
@@ -683,6 +686,7 @@ main.o: ../LabelScene/LabelScene/main.cpp ../LabelScene/LabelScene/mainwindow.h 
 		../../../Qt5.2.1/5.2.1/gcc_64/include/QtGui/qtouchdevice.h \
 		../../../Qt5.2.1/5.2.1/gcc_64/include/QtWidgets/qtabwidget.h \
 		../../../Qt5.2.1/5.2.1/gcc_64/include/QtGui/qicon.h \
+		../../../Qt5.2.1/5.2.1/gcc_64/include/QtGui/QKeyEvent \
 		../../../Qt5.2.1/5.2.1/gcc_64/include/QtWidgets/QApplication \
 		../../../Qt5.2.1/5.2.1/gcc_64/include/QtWidgets/qapplication.h \
 		../../../Qt5.2.1/5.2.1/gcc_64/include/QtCore/qcoreapplication.h \
@@ -804,8 +808,15 @@ mainwindow.o: ../LabelScene/LabelScene/mainwindow.cpp ../LabelScene/LabelScene/m
 		../../../Qt5.2.1/5.2.1/gcc_64/include/QtGui/qtouchdevice.h \
 		../../../Qt5.2.1/5.2.1/gcc_64/include/QtWidgets/qtabwidget.h \
 		../../../Qt5.2.1/5.2.1/gcc_64/include/QtGui/qicon.h \
-		ui_mainwindow.h
+		../../../Qt5.2.1/5.2.1/gcc_64/include/QtGui/QKeyEvent \
+		ui_mainwindow.h \
+		../../../Qt5.2.1/5.2.1/gcc_64/include/QtCore/QDebug \
+		../LabelScene/LabelScene/seeds/seeds2.h \
+		../LabelScene/LabelScene/seeds/seedsHelper.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o mainwindow.o ../LabelScene/LabelScene/mainwindow.cpp
+
+seeds2.o: ../LabelScene/LabelScene/seeds/seeds2.cpp ../LabelScene/LabelScene/seeds/seeds2.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o seeds2.o ../LabelScene/LabelScene/seeds/seeds2.cpp
 
 moc_mainwindow.o: moc_mainwindow.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_mainwindow.o moc_mainwindow.cpp
