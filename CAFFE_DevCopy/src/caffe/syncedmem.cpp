@@ -4,10 +4,6 @@
 #include "caffe/syncedmem.hpp"
 #include "caffe/util/math_functions.hpp"
 
-#include "../../include/caffe/common.hpp"
-#include "../../include/caffe/syncedmem.hpp"
-#include "../../include/caffe/util/math_functions.hpp"
-
 namespace caffe {
 
 SyncedMemory::~SyncedMemory() {

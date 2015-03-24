@@ -13,7 +13,7 @@ class NetRGBDNIR : public Net<Dtype>
 {
 public:
     explicit NetRGBDNIR(const NetParameter& param) : Net<Dtype>(param){}
-    explicit NetRGBDNIR(const string& param_file) : Net<Dtype>(param_file){}
+    explicit NetRGBDNIR(const string& param_file, Phase phase) : Net<Dtype>(param_file, phase){}
 
     void setup(std::string imgsListURL, int patchsize, int batchSize, int imgsPerBatch, bool RGB, bool NIR, bool depth, bool isMultiscale, std::string imgType);
     void feedNextPatchesToInputLayers();

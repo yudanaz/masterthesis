@@ -27,9 +27,6 @@
 #include "../../include/caffe/util/upgrade_proto.hpp"
 #include "../../include/caffe/netrgbdnir.hpp"
 
-
-
-
 namespace caffe {
 
 template <typename Dtype>
@@ -51,6 +48,7 @@ void Solver<Dtype>::Init(const SolverParameter& param) {
   LOG(INFO) << "Initializing solver from parameters: " << std::endl
             << param.DebugString();
   param_ = param;
+  CHECK_GE(param_.average_loss(), 1) << "average_loss should be non-negative.";
   if (param_.random_seed() >= 0) {
     Caffe::set_random_seed(param_.random_seed());
   }
@@ -58,6 +56,8 @@ void Solver<Dtype>::Init(const SolverParameter& param) {
   InitTrainNet();
   InitTestNets();
   LOG(INFO) << "Solver scaffolding done.";
+  iter_ = 0;
+  current_step_ = 0;
 }
 
 template <typename Dtype>
@@ -221,56 +221,24 @@ void Solver<Dtype>::InitTestNets() {
     ////////////////////////////////////////////////////////////////////////////////
     /// endof RGBDNIR extension of original Solver class: //////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
-
+    test_nets_[i]->set_debug_info(param_.debug_info());
   }
 }
 
 template <typename Dtype>
-void Solver<Dtype>::Solve(const char* resume_file) {
-  Caffe::set_phase(Caffe::TRAIN);
-  LOG(INFO) << "Solving " << net_->name();
-  PreSolve();
-
-  iter_ = 0;
-  if (resume_file) {
-    LOG(INFO) << "Restoring previous solver status from " << resume_file;
-    Restore(resume_file);
-  }
-  // Remember the initial iter_ value; will be non-zero if we loaded from a
-  // resume_file above.
-  const int start_iter = iter_;
-
-  ////////////////////////////////////////////////////////////////////////////////
-  /// RGBDNIR extension of original Solver class: ////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////
-  //make logfile
-  std::ofstream lossLogFile;
-  if(param_.has_logfileurl())
-  {
-      time_t sec;
-      time(&sec);
-      std::string s = param_.logfileurl() + std::string("/lossLog_")
-              + boost::lexical_cast<std::string>(sec) + std::string(".txt");
-      lossLogFile.open((char*)s.c_str());
-  }
-  ////////////////////////////////////////////////////////////////////////////////
-  /// endof RGBDNIR extension of original Solver class: //////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////
-
-
-  // For a network that is trained by the solver, no bottom or top vecs
-  // should be given, and we will just provide dummy vecs.
+void Solver<Dtype>::Step(int iters, std::ofstream &lossLogFile, std::ofstream &testAccuracyLogFile)
+{
   vector<Blob<Dtype>*> bottom_vec;
-  for (; iter_ < param_.max_iter(); ++iter_) {
-    // Save a snapshot if needed.
-    if (param_.snapshot() && iter_ > start_iter &&
-        iter_ % param_.snapshot() == 0) {
-      Snapshot();
-    }
+  const int start_iter = iter_;
+  const int stop_iter = iter_ + iters;
+  int average_loss = this->param_.average_loss();
+  vector<Dtype> losses;
+  Dtype smoothed_loss = 0;
 
+  for (; iter_ < stop_iter; ++iter_) {
     if (param_.test_interval() && iter_ % param_.test_interval() == 0
         && (iter_ > 0 || param_.test_initialization())) {
-      TestAll();
+      TestAll(testAccuracyLogFile);
     }
 
     const bool display = param_.display() && iter_ % param_.display() == 0;
@@ -291,8 +259,17 @@ void Solver<Dtype>::Solve(const char* resume_file) {
     /// endof RGBDNIR extension of original Solver class: //////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
 
+    if (losses.size() < average_loss) {
+      losses.push_back(loss);
+      int size = losses.size();
+      smoothed_loss = (smoothed_loss * (size - 1) + loss) / size;
+    } else {
+      int idx = (iter_ - start_iter) % average_loss;
+      smoothed_loss += (loss - losses[idx]) / average_loss;
+      losses[idx] = loss;
+    }
     if (display) {
-      LOG(INFO) << "Iteration " << iter_ << ", loss = " << loss;
+      LOG(INFO) << "Iteration " << iter_ << ", loss = " << smoothed_loss;
       const vector<Blob<Dtype>*>& result = net_->output_blobs();
       int score_index = 0;
       for (int j = 0; j < result.size(); ++j) {
@@ -313,13 +290,60 @@ void Solver<Dtype>::Solve(const char* resume_file) {
         }
       }
     }
-
     ComputeUpdateValue();
     net_->Update();
+
+    // Save a snapshot if needed.
+    if (param_.snapshot() && (iter_ + 1) % param_.snapshot() == 0) {
+      Snapshot();
+    }
   }
-  // Always save a snapshot after optimization, unless overridden by setting
-  // snapshot_after_train := false.
-  if (param_.snapshot_after_train()) { Snapshot(); }
+}
+
+template <typename Dtype>
+void Solver<Dtype>::Solve(const char* resume_file)
+{
+    ////////////////////////////////////////////////////////////////////////////////
+    /// RGBDNIR extension of original Solver class: ////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+    //make logfile for loss and test accuracy
+    std::ofstream lossLogFile;
+    std::ofstream testAccurLossLogFile;
+    if(param_.has_logfileurl())
+    {
+        time_t sec;
+        time(&sec);
+
+        std::string s = param_.logfileurl() + std::string("/") + boost::lexical_cast<std::string>(sec) + std::string("_lossLog.txt");
+        lossLogFile.open((char*)s.c_str());
+        lossLogFile << "loss\n";
+
+        std::string s2 = param_.logfileurl() + std::string("/") + boost::lexical_cast<std::string>(sec) + std::string("_testAccuracyLossLog.txt");
+        testAccurLossLogFile.open((char*)s2.c_str());
+        testAccurLossLogFile << "accuracy\tloss\n";
+    }
+    ////////////////////////////////////////////////////////////////////////////////
+    /// endof RGBDNIR extension of original Solver class: //////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+
+
+  LOG(INFO) << "Solving " << net_->name();
+  LOG(INFO) << "Learning Rate Policy: " << param_.lr_policy();
+
+  if (resume_file) {
+    LOG(INFO) << "Restoring previous solver status from " << resume_file;
+    Restore(resume_file);
+  }
+
+  // For a network that is trained by the solver, no bottom or top vecs
+  // should be given, and we will just provide dummy vecs.
+  Step(param_.max_iter() - iter_, lossLogFile, testAccurLossLogFile);
+  // If we haven't already, save a snapshot after optimization, unless
+  // overridden by setting snapshot_after_train := false
+  if (param_.snapshot_after_train()
+      && (!param_.snapshot() || iter_ % param_.snapshot() != 0)) {
+    Snapshot();
+  }
   // After the optimization is done, run an additional train and test pass to
   // display the train and test loss/outputs if appropriate (based on the
   // display and test_interval settings, respectively).  Unlike in the rest of
@@ -328,30 +352,37 @@ void Solver<Dtype>::Solve(const char* resume_file) {
   // display the loss, which is computed in the forward pass.
   if (param_.display() && iter_ % param_.display() == 0) {
     Dtype loss;
-    net_->Forward(bottom_vec, &loss);
+    net_->ForwardPrefilled(&loss);
     LOG(INFO) << "Iteration " << iter_ << ", loss = " << loss;
   }
   if (param_.test_interval() && iter_ % param_.test_interval() == 0) {
-    TestAll();
+    TestAll(testAccurLossLogFile);
   }
   LOG(INFO) << "Optimization Done.";
+
+  ////////////////////////////////////////////////////////////////////////////////
+  /// RGBDNIR extension of original Solver class: ////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////
+  lossLogFile.close();
+  testAccurLossLogFile.close();
+  ////////////////////////////////////////////////////////////////////////////////
+  /// endof RGBDNIR extension of original Solver class: //////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////
 }
 
 
 template <typename Dtype>
-void Solver<Dtype>::TestAll() {
+void Solver<Dtype>::TestAll(std::ofstream &logFile) {
   for (int test_net_id = 0; test_net_id < test_nets_.size(); ++test_net_id) {
-    Test(test_net_id);
+    Test(logFile, test_net_id);
   }
 }
 
-
 template <typename Dtype>
-void Solver<Dtype>::Test(const int test_net_id) {
+void Solver<Dtype>::Test(std::ofstream &logFile, const int test_net_id)
+{
   LOG(INFO) << "Iteration " << iter_
             << ", Testing net (#" << test_net_id << ")";
-  // We need to set phase to test before running.
-  Caffe::set_phase(Caffe::TEST);
   CHECK_NOTNULL(test_nets_[test_net_id].get())->
       ShareTrainedLayersWith(net_.get());
   vector<Dtype> test_score;
@@ -414,8 +445,17 @@ void Solver<Dtype>::Test(const int test_net_id) {
     }
     LOG(INFO) << "    Test net output #" << i << ": " << output_name << " = "
         << mean_score << loss_msg_stream.str();
+
+    ////////////////////////////////////////////////////////////////////////////////
+    /// RGBDNIR extension of original Solver class: ////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+    logFile << mean_score << "\t";
   }
-  Caffe::set_phase(Caffe::TRAIN);
+  logFile << "\n";
+  logFile.flush();
+    ////////////////////////////////////////////////////////////////////////////////
+    /// endof RGBDNIR extension of original Solver class: //////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
 }
 
 
@@ -428,15 +468,17 @@ void Solver<Dtype>::Snapshot() {
   string model_filename, snapshot_filename;
   const int kBufferSize = 20;
   char iter_str_buffer[kBufferSize];
-  snprintf(iter_str_buffer, kBufferSize, "_iter_%d", iter_);
+  // Add one to iter_ to get the number of iterations that have completed.
+  snprintf(iter_str_buffer, kBufferSize, "_iter_%d", iter_ + 1);
   filename += iter_str_buffer;
   model_filename = filename + ".caffemodel";
   LOG(INFO) << "Snapshotting to " << model_filename;
   WriteProtoToBinaryFile(net_param, model_filename.c_str());
   SolverState state;
   SnapshotSolverState(&state);
-  state.set_iter(iter_);
+  state.set_iter(iter_ + 1);
   state.set_learned_net(model_filename);
+  state.set_current_step(current_step_);
   snapshot_filename = filename + ".solverstate";
   LOG(INFO) << "Snapshotting solver state to " << snapshot_filename;
   WriteProtoToBinaryFile(state, snapshot_filename.c_str());
@@ -448,10 +490,11 @@ void Solver<Dtype>::Restore(const char* state_file) {
   NetParameter net_param;
   ReadProtoFromBinaryFile(state_file, &state);
   if (state.has_learned_net()) {
-    ReadProtoFromBinaryFile(state.learned_net().c_str(), &net_param);
+    ReadNetParamsFromBinaryFileOrDie(state.learned_net().c_str(), &net_param);
     net_->CopyTrainedLayersFrom(net_param);
   }
   iter_ = state.iter();
+  current_step_ = state.current_step();
   RestoreSolverState(state);
 }
 
@@ -462,8 +505,15 @@ void Solver<Dtype>::Restore(const char* state_file) {
 //    - step: return base_lr * gamma ^ (floor(iter / step))
 //    - exp: return base_lr * gamma ^ iter
 //    - inv: return base_lr * (1 + gamma * iter) ^ (- power)
-// where base_lr, gamma, step and power are defined in the solver parameter
-// protocol buffer, and iter is the current iteration.
+//    - multistep: similar to step but it allows non uniform steps defined by
+//      stepvalue
+//    - poly: the effective learning rate follows a polynomial decay, to be
+//      zero by the max_iter. return base_lr (1 - iter/max_iter) ^ (power)
+//    - sigmoid: the effective learning rate follows a sigmod decay
+//      return base_lr ( 1/(1 + exp(-gamma * (iter - stepsize))))
+//
+// where base_lr, max_iter, gamma, step, stepvalue and power are defined
+// in the solver parameter protocol buffer, and iter is the current iteration.
 template <typename Dtype>
 Dtype SGDSolver<Dtype>::GetLearningRate() {
   Dtype rate;
@@ -471,54 +521,90 @@ Dtype SGDSolver<Dtype>::GetLearningRate() {
   if (lr_policy == "fixed") {
     rate = this->param_.base_lr();
   } else if (lr_policy == "step") {
-    int current_step = this->iter_ / this->param_.stepsize();
+    this->current_step_ = this->iter_ / this->param_.stepsize();
     rate = this->param_.base_lr() *
-        pow(this->param_.gamma(), current_step);
+        pow(this->param_.gamma(), this->current_step_);
   } else if (lr_policy == "exp") {
     rate = this->param_.base_lr() * pow(this->param_.gamma(), this->iter_);
   } else if (lr_policy == "inv") {
     rate = this->param_.base_lr() *
         pow(Dtype(1) + this->param_.gamma() * this->iter_,
             - this->param_.power());
+  } else if (lr_policy == "multistep") {
+    if (this->current_step_ < this->param_.stepvalue_size() &&
+          this->iter_ >= this->param_.stepvalue(this->current_step_)) {
+      this->current_step_++;
+      LOG(INFO) << "MultiStep Status: Iteration " <<
+      this->iter_ << ", step = " << this->current_step_;
+    }
+    rate = this->param_.base_lr() *
+        pow(this->param_.gamma(), this->current_step_);
+  } else if (lr_policy == "poly") {
+    rate = this->param_.base_lr() * pow(Dtype(1.) -
+        (Dtype(this->iter_) / Dtype(this->param_.max_iter())),
+        this->param_.power());
+  } else if (lr_policy == "sigmoid") {
+    rate = this->param_.base_lr() * (Dtype(1.) /
+        (Dtype(1.) + exp(-this->param_.gamma() * (Dtype(this->iter_) -
+          Dtype(this->param_.stepsize())))));
   } else {
     LOG(FATAL) << "Unknown learning rate policy: " << lr_policy;
   }
   return rate;
 }
 
-
 template <typename Dtype>
 void SGDSolver<Dtype>::PreSolve() {
   // Initialize the history
-  vector<shared_ptr<Blob<Dtype> > >& net_params = this->net_->params();
+  const vector<shared_ptr<Blob<Dtype> > >& net_params = this->net_->params();
   history_.clear();
   update_.clear();
   temp_.clear();
   for (int i = 0; i < net_params.size(); ++i) {
-    const Blob<Dtype>* net_param = net_params[i].get();
-    history_.push_back(shared_ptr<Blob<Dtype> >(new Blob<Dtype>(
-        net_param->num(), net_param->channels(), net_param->height(),
-        net_param->width())));
-    update_.push_back(shared_ptr<Blob<Dtype> >(new Blob<Dtype>(
-        net_param->num(), net_param->channels(), net_param->height(),
-        net_param->width())));
-    temp_.push_back(shared_ptr<Blob<Dtype> >(new Blob<Dtype>(
-        net_param->num(), net_param->channels(), net_param->height(),
-        net_param->width())));
+    const vector<int>& shape = net_params[i]->shape();
+    history_.push_back(shared_ptr<Blob<Dtype> >(new Blob<Dtype>(shape)));
+    update_.push_back(shared_ptr<Blob<Dtype> >(new Blob<Dtype>(shape)));
+    temp_.push_back(shared_ptr<Blob<Dtype> >(new Blob<Dtype>(shape)));
   }
 }
 
+template <typename Dtype>
+void SGDSolver<Dtype>::ClipGradients() {
+  const Dtype clip_gradients = this->param_.clip_gradients();
+  if (clip_gradients < 0) { return; }
+  const vector<shared_ptr<Blob<Dtype> > >& net_params = this->net_->params();
+  Dtype sumsq_diff = 0;
+  for (int i = 0; i < net_params.size(); ++i) {
+    if (this->net_->param_owners()[i] < 0) {
+      sumsq_diff += net_params[i]->sumsq_diff();
+    }
+  }
+  const Dtype l2norm_diff = std::sqrt(sumsq_diff);
+  if (l2norm_diff > clip_gradients) {
+    Dtype scale_factor = clip_gradients / l2norm_diff;
+    LOG(INFO) << "Gradient clipping: scaling down gradients (L2 norm "
+        << l2norm_diff << " > " << clip_gradients << ") "
+        << "by scale factor " << scale_factor;
+    for (int i = 0; i < net_params.size(); ++i) {
+      if (this->net_->param_owners()[i] < 0) {
+        net_params[i]->scale_diff(scale_factor);
+      }
+    }
+  }
+}
 
 template <typename Dtype>
 void SGDSolver<Dtype>::ComputeUpdateValue() {
-  vector<shared_ptr<Blob<Dtype> > >& net_params = this->net_->params();
-  vector<float>& net_params_lr = this->net_->params_lr();
-  vector<float>& net_params_weight_decay = this->net_->params_weight_decay();
+  const vector<shared_ptr<Blob<Dtype> > >& net_params = this->net_->params();
+  const vector<float>& net_params_lr = this->net_->params_lr();
+  const vector<float>& net_params_weight_decay =
+      this->net_->params_weight_decay();
   // get the learning rate
   Dtype rate = GetLearningRate();
   if (this->param_.display() && this->iter_ % this->param_.display() == 0) {
     LOG(INFO) << "Iteration " << this->iter_ << ", lr = " << rate;
   }
+  ClipGradients();
   Dtype momentum = this->param_.momentum();
   Dtype weight_decay = this->param_.weight_decay();
   string regularization_type = this->param_.regularization_type();
@@ -624,14 +710,16 @@ void SGDSolver<Dtype>::RestoreSolverState(const SolverState& state) {
 
 template <typename Dtype>
 void NesterovSolver<Dtype>::ComputeUpdateValue() {
-  vector<shared_ptr<Blob<Dtype> > >& net_params = this->net_->params();
-  vector<float>& net_params_lr = this->net_->params_lr();
-  vector<float>& net_params_weight_decay = this->net_->params_weight_decay();
+  const vector<shared_ptr<Blob<Dtype> > >& net_params = this->net_->params();
+  const vector<float>& net_params_lr = this->net_->params_lr();
+  const vector<float>& net_params_weight_decay =
+      this->net_->params_weight_decay();
   // get the learning rate
   Dtype rate = this->GetLearningRate();
   if (this->param_.display() && this->iter_ % this->param_.display() == 0) {
     LOG(INFO) << "Iteration " << this->iter_ << ", lr = " << rate;
   }
+  SGDSolver<Dtype>::ClipGradients();
   Dtype momentum = this->param_.momentum();
   Dtype weight_decay = this->param_.weight_decay();
   string regularization_type = this->param_.regularization_type();
@@ -739,15 +827,17 @@ void NesterovSolver<Dtype>::ComputeUpdateValue() {
 
 template <typename Dtype>
 void AdaGradSolver<Dtype>::ComputeUpdateValue() {
-  vector<shared_ptr<Blob<Dtype> > >& net_params = this->net_->params();
-  vector<float>& net_params_lr = this->net_->params_lr();
-  vector<float>& net_params_weight_decay = this->net_->params_weight_decay();
+  const vector<shared_ptr<Blob<Dtype> > >& net_params = this->net_->params();
+  const vector<float>& net_params_lr = this->net_->params_lr();
+  const vector<float>& net_params_weight_decay =
+      this->net_->params_weight_decay();
   // get the learning rate
   Dtype rate = this->GetLearningRate();
   Dtype delta = this->param_.delta();
   if (this->param_.display() && this->iter_ % this->param_.display() == 0) {
     LOG(INFO) << "Iteration " << this->iter_ << ", lr = " << rate;
   }
+  SGDSolver<Dtype>::ClipGradients();
   Dtype weight_decay = this->param_.weight_decay();
   string regularization_type = this->param_.regularization_type();
   switch (Caffe::mode()) {

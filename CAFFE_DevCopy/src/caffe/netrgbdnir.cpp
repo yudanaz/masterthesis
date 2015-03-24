@@ -7,6 +7,8 @@
 #include "../../include/caffe/data_layers.hpp"
 #include "../../include/caffe/util/io.hpp"
 
+using namespace cv;
+
 namespace caffe {
 
 template<typename Dtype>
@@ -64,15 +66,16 @@ template<typename Dtype>
 void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 {
 //    LOG(INFO) << "Feeding new patches to memory data layers";
-    vector<Datum> datums_rgb0;
-    vector<Datum> datums_rgb1;
-    vector<Datum> datums_rgb2;
-    vector<Datum> datums_nir0;
-    vector<Datum> datums_nir1;
-    vector<Datum> datums_nir2;
-    vector<Datum> datums_depth0;
-    vector<Datum> datums_depth1;
-    vector<Datum> datums_depth2;
+    std::vector<Mat> mats_rgb0;
+    std::vector<Mat> mats_rgb1;
+    std::vector<Mat> mats_rgb2;
+    std::vector<Mat> mats_nir0;
+    std::vector<Mat> mats_nir1;
+    std::vector<Mat> mats_nir2;
+    std::vector<Mat> mats_depth0;
+    std::vector<Mat> mats_depth1;
+    std::vector<Mat> mats_depth2;
+    std::vector<int> labels;
 
     int batchCnt = 0;
     for(batchCnt = 0; batchCnt < batchSz; ++batchCnt)
@@ -98,6 +101,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 
         //get label for this patch
         int currentLabel = img_labels.at<uchar>(y,x);
+        labels.push_back(currentLabel);
 //        LOG(INFO) << "label: " << currentLabel;
 
         //jump the "unknown" label, training with this label is useless
@@ -114,12 +118,12 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
         if(hasRGB)
         {
 //            LOG(INFO) << "has RGB \n";
-            patch_rgb0 = getImgPatch(img_rgb0, x, y);
+            mats_rgb0.push_back(getImgPatch(img_rgb0, x, y));
             if(multiscale)
             {
 //                LOG(INFO) << "is multiscale\n";
-                /*if(patchCnt % 2 == 0)*/{ patch_rgb1 = getImgPatch(img_rgb1, x/2, y/2); }
-                /*if(patchCnt % 4 == 0)*/{ patch_rgb2 = getImgPatch(img_rgb2, x/4, y/4); }
+                mats_rgb1.push_back(getImgPatch(img_rgb1, x/2, y/2));
+                mats_rgb2.push_back(getImgPatch(img_rgb2, x/4, y/4));
             }
 
             //DEBUG//
@@ -153,98 +157,22 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
         if(hasNIR)
         {
 //            LOG(INFO) << "has NIR \n";
-            patch_nir0 = getImgPatch(img_nir0, x, y);
+            mats_nir0.push_back(getImgPatch(img_nir0, x, y));
             if(multiscale)
             {
-                /*if(patchCnt % 2 == 0)*/{ patch_nir1 = getImgPatch(img_nir1, x/2, y/2); }
-                /*if(patchCnt % 4 == 0)*/{ patch_nir2 = getImgPatch(img_nir2, x/4, y/4); }
+                mats_nir1.push_back(getImgPatch(img_nir1, x/2, y/2));
+                mats_nir2.push_back(getImgPatch(img_nir2, x/4, y/4));
             }
         }
 
         if(hasDepth)
         {
 //            LOG(INFO) << "has Depth \n";
-            patch_depth0 = getImgPatch(img_depth0, x, y);
+            mats_depth0.push_back(getImgPatch(img_depth0, x, y));
             if(multiscale)
             {
-                /*if(patchCnt % 2 == 0)*/{ patch_depth1 = getImgPatch(img_depth1, x/2, y/2); }
-                /*if(patchCnt % 4 == 0)*/{ patch_depth2 = getImgPatch(img_depth2, x/4, y/4); }
-            }
-        }
-
-
-
-        //add patches to datum vectors
-        Datum datum_rgb0;
-        Datum datum_rgb1;
-        Datum datum_rgb2;
-        Datum datum_nir0;
-        Datum datum_nir1;
-        Datum datum_nir2;
-        Datum datum_depth0;
-        Datum datum_depth1;
-        Datum datum_depth2;
-
-        //LOG(INFO) << "Read opencv Mats to Datums";
-        if(hasRGB)
-        {
-            ReadOpenCVMatToDatum(patch_rgb0, currentLabel, true, &datum_rgb0);
-            if(multiscale)
-            {
-                ReadOpenCVMatToDatum(patch_rgb1, currentLabel, true, &datum_rgb1);
-                ReadOpenCVMatToDatum(patch_rgb2, currentLabel, true, &datum_rgb2);
-            }
-        }
-
-        if(hasNIR)
-        {
-            ReadOpenCVMatToDatum(patch_nir0, currentLabel, true, &datum_nir0);
-            if(multiscale)
-            {
-                ReadOpenCVMatToDatum(patch_nir1, currentLabel, true, &datum_nir1);
-                ReadOpenCVMatToDatum(patch_nir2, currentLabel, true, &datum_nir2);
-            }
-        }
-
-        if(hasDepth)
-        {
-            ReadOpenCVMatToDatum(patch_depth0, currentLabel, false, &datum_depth0);
-            if(multiscale)
-            {
-                ReadOpenCVMatToDatum(patch_depth1, currentLabel, false, &datum_depth1);
-                ReadOpenCVMatToDatum(patch_depth2, currentLabel, false, &datum_depth2);
-            }
-        }
-
-        //LOG(INFO) << "Push Datums into vectors";
-        if(hasRGB)
-        {
-            datums_rgb0.push_back(datum_rgb0);
-            if(multiscale)
-            {
-                datums_rgb1.push_back(datum_rgb1);
-                datums_rgb2.push_back(datum_rgb2);
-            }
-        }
-
-        if(hasNIR)
-        {
-            datums_nir0.push_back(datum_nir0);
-            if(multiscale)
-            {
-                datums_nir1.push_back(datum_nir1);
-                datums_nir2.push_back(datum_nir2);
-
-            }
-        }
-
-        if(hasDepth)
-        {
-            datums_depth0.push_back(datum_depth0);
-            if(multiscale)
-            {
-                datums_depth1.push_back(datum_depth1);
-                datums_depth2.push_back(datum_depth2);
+                mats_depth1.push_back(getImgPatch(img_depth1, x/2, y/2));
+                mats_depth2.push_back(getImgPatch(img_depth2, x/4, y/4));
             }
         }
 
@@ -260,29 +188,29 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
         Layer<Dtype>* layer = this->layers_[layer_id].get(); //get stored pointer from shared pointer
 
         //if memory data layer, add correct datum vector to layer
-        if(layer->type() == LayerParameter_LayerType_MEMORY_DATA)
+        if( strcmp( layer->type(), "MemoryData") == 0 )
         {
             std::string nm = layer->layer_param().name();
             if(nm == "rgb0"){ if(hasRGB)
-                { ((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_rgb0); } }
+                { ((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_rgb0, labels); } }
             else if(nm == "rgb1"){ if(hasRGB && multiscale)
-                { ((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_rgb1); } }
+                { ((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_rgb1, labels); } }
             else if(nm == "rgb2"){ if(hasRGB && multiscale)
-                { ((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_rgb2); } }
+                { ((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_rgb2, labels); } }
 
             else if(nm == "nir0"){ if(hasNIR)
-                { ((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_nir0); } }
+                { ((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_nir0, labels); } }
             else if(nm == "nir1"){ if(hasNIR && multiscale)
-                { ((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_nir1); } }
+                { ((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_nir1, labels); } }
             else if(nm == "nir2"){ if(hasNIR && multiscale)
-                { ((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_nir2); } }
+                { ((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_nir2, labels); } }
 
             else if(nm == "depth0"){ if(hasDepth)
-                {((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_depth0); } }
+                {((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_depth0, labels); } }
             else if(nm == "depth1"){ if(hasDepth && multiscale)
-                { ((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_depth1); } }
+                { ((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_depth1, labels); } }
             else if(nm == "depth2"){ if(hasDepth && multiscale)
-                { ((MemoryDataLayer<Dtype>*)layer)->AddDatumVector(datums_depth2); } }
+                { ((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_depth2, labels); } }
         }
     }
 
@@ -376,6 +304,7 @@ void NetRGBDNIR<Dtype>::readNextImage()
     //LOG(INFO) << "Making scales for RGB";
     if(hasRGB)
     {
+        //read image and normalize to [0,1]
         temp1 = cv::imread(rgbNm, cv::IMREAD_COLOR);
         cv::copyMakeBorder(temp1, img_rgb0, borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
 
@@ -390,15 +319,6 @@ void NetRGBDNIR<Dtype>::readNextImage()
             cv::copyMakeBorder(temp3, img_rgb2, borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 2 (1/4 the size)
         }
     }
-
-//    //DEBUG//
-//    imshow("rgb0_justLoaded", img_rgb0);
-//    cvWaitKey();
-//    imshow("rgb1_justLoaded", img_rgb1);
-//    cvWaitKey();
-//    imshow("rgb2_justLoaded", img_rgb2);
-//    cvWaitKey();
-//    //DEBUG//
 
     //LOG(INFO) << "Making scales for NIR";
     if(hasNIR)
@@ -416,7 +336,7 @@ void NetRGBDNIR<Dtype>::readNextImage()
         }
     }
 
-    //LOG(INFO) << "Making scales for Depth";
+//    LOG(INFO) << "Making scales for Depth";
     if(hasDepth)
     {
         temp1 = cv::imread(depthNm, cv::IMREAD_GRAYSCALE);

@@ -1,4 +1,4 @@
-#include "../include/caffe/common.hpp"
+#include "caffe/common.hpp"
 
 int main(int argc, char** argv) {
   LOG(FATAL) << "Deprecated. Use caffe device_query "
