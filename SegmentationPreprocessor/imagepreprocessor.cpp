@@ -20,7 +20,8 @@ ImagePreprocessor::ImagePreprocessor(QWidget *parent):
 	cams_are_calibrated_(false),
 	rig_is_calibrated_(false),
 	output_image_size_set_(false),
-	stereo_Type_(crossSpectrSt_HOG)
+	stereo_Type_(crossSpectrSt_HOG),
+	normalizeDepth(false), makeSkinBinaryImage(false)
 {
 	this->parent = parent;
 	//try loading last camera parameter file
@@ -158,10 +159,21 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 
 	//make disparity image from RGB and NIR images (cross/multi - spectral)
 	Mat disp;
-	makeCrossSpectralStereo(NIR_rect, RGB_rect, disp);
+	if(makeCSStereo){ makeCrossSpectralStereo(NIR_rect, RGB_rect, disp); }
+	else{ disp = Mat(NIR_rect.size(), CV_8UC1); } //empty img
 
 	//register RGB to NIR image using HOG descriptors
-	Mat RGB_registered = registerRGB2NIR(RGB_rect, NIR_rect);
+	Mat RGB_registered;
+	if(makeCSStereo)
+	{
+		RGB_registered = registerRGB2NIR(RGB_rect, NIR_rect);
+	}
+	else
+	{
+		//TODO: use median shift, computed from various iterations, if HOG descr. are not computed
+		RGB_registered = RGB_rect;
+		finalCropRect_byRGB = Rect(0, 0, RGB_rect.cols, RGB_rect.rows);
+	}
 
 	//crop images according to registered RGB and remapped kinect depth
 	Rect finalCropRect = makeMinimalCrop(finalCropRect_byKinectDepth, finalCropRect_byRGB);
@@ -214,6 +226,13 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 void ImagePreprocessor::setParameters(std::vector<float> params)
 {
 	CSstereoMatcher->setParams(params);
+}
+
+void ImagePreprocessor::setOptions(bool normDepth, bool makeSkinImg, bool makeCSStereo)
+{
+	this->normalizeDepth = normDepth;
+	this->makeSkinBinaryImage = makeSkinImg;
+	this->makeCSStereo = makeCSStereo;
 }
 
 void ImagePreprocessor::OutputImageSize(int w, int h)
@@ -629,6 +648,17 @@ Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
 	Mat depth2D_fixed = fixHolesInDepthMap(depth2D, 3); //fix bottom-up, i.e. shadows on lower side of objects
 
 //	Helper::debugImage(depth2D_fixed);
+
+	//normalize image if flag is set
+	if(normalizeDepth)
+	{
+		Mat depth2D_normed;
+		double min, max;
+		minMaxLoc(depth2D_fixed, &min, &max);
+		int range = max - min;
+		depth2D_fixed.convertTo(depth2D_normed, CV_8UC1, 255.0 / range, -min);
+		return depth2D_normed;
+	}
 
 	return depth2D_fixed;
 

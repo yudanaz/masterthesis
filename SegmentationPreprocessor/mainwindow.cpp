@@ -33,10 +33,18 @@ void MainWindow::preprocessImages()
 //	imshow("kinect depth", depth);
 //	cvWaitKey();
 
+	destroyAllWindows();
+
 	Mat rgb_, depth_, depthStereo_, nir_;
 
 	//set HOG parameters through static function (not very elegant, i know, but wtf...)
 	preproc.setParameters(ui_stereoMparams->getParams());
+
+	//set some options
+	bool normDepth = ui->actionNormalize_Depth->isChecked();
+	bool makeSkinBinary = ui->actionMake_Skine_Binary_Image->isChecked();
+	bool makeCSStereo = ui->actionMake_Cross_Spectral_Stereo->isChecked();
+	preproc.setOptions(normDepth, makeSkinBinary, makeCSStereo);
 
 	preproc.preproc(rgb, nir, depth, rgb_, nir_, depthStereo_, depth_);
 
@@ -44,12 +52,12 @@ void MainWindow::preprocessImages()
 	//show the images
 	imshow("RGB", rgb_);
 	imshow("NIR", nir_);
-	imshow("cross-spectral Stereo", depthStereo_);
+	if(makeCSStereo){ imshow("cross-spectral Stereo", depthStereo_); }
 	imshow("Kinect Depth", depth_);
 
 	imwrite("RGB.png", rgb_);
 	imwrite("NIR.png", nir_);
-	imwrite("Depth_CSStereo.png", depthStereo_);
+	if(makeCSStereo){ imwrite("Depth_CSStereo.png", depthStereo_); }
 	imwrite("Depth_Kinect.png", depth_);
 }
 

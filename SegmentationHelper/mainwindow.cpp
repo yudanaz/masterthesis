@@ -1296,45 +1296,45 @@ void MainWindow::on_pushButton_test_released()
 	//////////////////////////////////////////////////////////////
 	// TRANSFORM STANFORD BACKGROUND DATASET LABELS INTO PNG
 	//////////////////////////////////////////////////////////////
-	QString fileName = QFileDialog::getOpenFileName(this, "Select File", lastDir, "horizons.txt");
-	if(fileName == ""){ return; }
-	lastDir = QFileInfo(fileName).path();
+//	QString fileName = QFileDialog::getOpenFileName(this, "Select File", lastDir, "horizons.txt");
+//	if(fileName == ""){ return; }
+//	lastDir = QFileInfo(fileName).path();
 
-	QFile f(fileName);
-	f.open(QFile::ReadOnly);
-	QTextStream in(&f);
+//	QFile f(fileName);
+//	f.open(QFile::ReadOnly);
+//	QTextStream in(&f);
 
-	QDir dir;
-	dir.mkdir(lastDir + "/labelsImgs");
+//	QDir dir;
+//	dir.mkdir(lastDir + "/labelsImgs");
 
-	while(!in.atEnd())
-	{
-		QStringList sl = in.readLine().split(" ");
-		QString nm = sl.at(0);
-		int w = sl.at(1).toInt();
-		int h = sl.at(2).toInt();
+//	while(!in.atEnd())
+//	{
+//		QStringList sl = in.readLine().split(" ");
+//		QString nm = sl.at(0);
+//		int w = sl.at(1).toInt();
+//		int h = sl.at(2).toInt();
 
-		Mat img(h, w, CV_8UC1);
+//		Mat img(h, w, CV_8UC1);
 
-		QFile lblf(lastDir + "/labels/" + nm + ".regions.txt");
-		lblf.open(QFile::ReadOnly);
-		QTextStream lblin(&lblf);
+//		QFile lblf(lastDir + "/labels/" + nm + ".regions.txt");
+//		lblf.open(QFile::ReadOnly);
+//		QTextStream lblin(&lblf);
 
-		for (int y = 0; y < h; ++y)
-		{
-			QStringList line = lblin.readLine().split(" ");
-			for (int x = 0; x < w; ++x)
-			{
-				uchar val = line.at(x).toInt();
-				if(val < 0){ img.at<uchar>(y,x) = 255; }//in original, <0 is unknown, in our case 255 is unknown
-				else{ img.at<uchar>(y,x) = val; }
-			}
-		}
+//		for (int y = 0; y < h; ++y)
+//		{
+//			QStringList line = lblin.readLine().split(" ");
+//			for (int x = 0; x < w; ++x)
+//			{
+//				uchar val = line.at(x).toInt();
+//				if(val < 0){ img.at<uchar>(y,x) = 255; }//in original, <0 is unknown, in our case 255 is unknown
+//				else{ img.at<uchar>(y,x) = val; }
+//			}
+//		}
 
-		imwrite((lastDir + "/labelsImgs/" + nm + "_labels.png").toStdString(), img);
-	}
+//		imwrite((lastDir + "/labelsImgs/" + nm + "_labels.png").toStdString(), img);
+//	}
 
-	f.close();
+//	f.close();
 	//////////////////////////////////////////////////////////////
 	// endof TRANSFORM STANFORD BACKGROUND DATASET LABELS INTO PNG
 	//////////////////////////////////////////////////////////////
@@ -1342,6 +1342,26 @@ void MainWindow::on_pushButton_test_released()
 //	QString fileName = QFileDialog::getOpenFileName(this, "Select File", lastDir, IMGTYPES);
 //	if(fileName == ""){ return; }
 //	lastDir = QFileInfo(fileName).path();
+
+	//////////////////////////////////////////////////////////////
+	// Separate multi-channel image
+	//////////////////////////////////////////////////////////////
+	QList<QString>fileNames = QFileDialog::getOpenFileNames(this, "Select File", lastDir, IMGTYPES);
+	if(fileNames.size() == 0){ return; }
+	lastDir = QFileInfo(fileNames.first()).path();
+
+	foreach(QString nm, fileNames)
+	{
+		Mat img = imread(nm.toStdString(), IMREAD_ANYCOLOR);
+		vector<Mat> channels;
+		split(img, channels);
+		QString s = QString(nm).remove("MultiCh.png");
+		imwrite((s + "970.png").toStdString(), channels[0]);
+		imwrite((s + "1300.png").toStdString(), channels[1]);
+		imwrite((s + "1550.png").toStdString(), channels[2]);
+	}
+	//////////////////////////////////////////////////////////////
+
 //	ImagePreprocessor preproc;
 //	Mat a = imread(fileName.toStdString().c_str(), IMREAD_ANYDEPTH | IMREAD_ANYCOLOR);
 //	a.convertTo(a, CV_8UC1, 255.0/2047.0);

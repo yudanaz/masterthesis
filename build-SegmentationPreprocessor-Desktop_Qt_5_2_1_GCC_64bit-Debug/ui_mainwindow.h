@@ -29,6 +29,9 @@ class Ui_MainWindow
 {
 public:
     QAction *actionStereoM_Params;
+    QAction *actionNormalize_Depth;
+    QAction *actionMake_Skine_Binary_Image;
+    QAction *actionMake_Cross_Spectral_Stereo;
     QWidget *centralWidget;
     QWidget *verticalLayoutWidget;
     QVBoxLayout *verticalLayout;
@@ -36,11 +39,14 @@ public:
     QPushButton *pushButton_calibCamRig;
     QPushButton *pushButton_preproc;
     QPushButton *pushButton_reproc;
+    QSpacerItem *verticalSpacer_2;
+    QPushButton *pushButton_openFomeFolder;
     QSpacerItem *verticalSpacer;
     QPushButton *pushButton_save;
     QPushButton *pushButton_load;
     QMenuBar *menuBar;
     QMenu *menuParameters;
+    QMenu *menuPreproc_Options;
     QStatusBar *statusBar;
 
     void setupUi(QMainWindow *MainWindow)
@@ -51,6 +57,16 @@ public:
         MainWindow->setStyleSheet(QStringLiteral("background-color: rgb(196, 201, 222)"));
         actionStereoM_Params = new QAction(MainWindow);
         actionStereoM_Params->setObjectName(QStringLiteral("actionStereoM_Params"));
+        actionNormalize_Depth = new QAction(MainWindow);
+        actionNormalize_Depth->setObjectName(QStringLiteral("actionNormalize_Depth"));
+        actionNormalize_Depth->setCheckable(true);
+        actionNormalize_Depth->setChecked(true);
+        actionMake_Skine_Binary_Image = new QAction(MainWindow);
+        actionMake_Skine_Binary_Image->setObjectName(QStringLiteral("actionMake_Skine_Binary_Image"));
+        actionMake_Skine_Binary_Image->setCheckable(true);
+        actionMake_Cross_Spectral_Stereo = new QAction(MainWindow);
+        actionMake_Cross_Spectral_Stereo->setObjectName(QStringLiteral("actionMake_Cross_Spectral_Stereo"));
+        actionMake_Cross_Spectral_Stereo->setCheckable(true);
         centralWidget = new QWidget(MainWindow);
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
         verticalLayoutWidget = new QWidget(centralWidget);
@@ -90,6 +106,15 @@ public:
 
         verticalLayout->addWidget(pushButton_reproc);
 
+        verticalSpacer_2 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+
+        verticalLayout->addItem(verticalSpacer_2);
+
+        pushButton_openFomeFolder = new QPushButton(verticalLayoutWidget);
+        pushButton_openFomeFolder->setObjectName(QStringLiteral("pushButton_openFomeFolder"));
+
+        verticalLayout->addWidget(pushButton_openFomeFolder);
+
         verticalSpacer = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
 
         verticalLayout->addItem(verticalSpacer);
@@ -109,9 +134,11 @@ public:
         MainWindow->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(MainWindow);
         menuBar->setObjectName(QStringLiteral("menuBar"));
-        menuBar->setGeometry(QRect(0, 0, 400, 25));
+        menuBar->setGeometry(QRect(0, 0, 400, 20));
         menuParameters = new QMenu(menuBar);
         menuParameters->setObjectName(QStringLiteral("menuParameters"));
+        menuPreproc_Options = new QMenu(menuParameters);
+        menuPreproc_Options->setObjectName(QStringLiteral("menuPreproc_Options"));
         MainWindow->setMenuBar(menuBar);
         statusBar = new QStatusBar(MainWindow);
         statusBar->setObjectName(QStringLiteral("statusBar"));
@@ -119,6 +146,10 @@ public:
 
         menuBar->addAction(menuParameters->menuAction());
         menuParameters->addAction(actionStereoM_Params);
+        menuParameters->addAction(menuPreproc_Options->menuAction());
+        menuPreproc_Options->addAction(actionNormalize_Depth);
+        menuPreproc_Options->addAction(actionMake_Skine_Binary_Image);
+        menuPreproc_Options->addAction(actionMake_Cross_Spectral_Stereo);
 
         retranslateUi(MainWindow);
 
@@ -129,13 +160,18 @@ public:
     {
         MainWindow->setWindowTitle(QApplication::translate("MainWindow", "MainWindow", 0));
         actionStereoM_Params->setText(QApplication::translate("MainWindow", "StereoM. Params", 0));
+        actionNormalize_Depth->setText(QApplication::translate("MainWindow", "normalize Depth", 0));
+        actionMake_Skine_Binary_Image->setText(QApplication::translate("MainWindow", "make Skin Binary Image", 0));
+        actionMake_Cross_Spectral_Stereo->setText(QApplication::translate("MainWindow", "make Cross-Spectral Stereo", 0));
         pushButton_calibCams->setText(QApplication::translate("MainWindow", "Calibrate Cameras", 0));
         pushButton_calibCamRig->setText(QApplication::translate("MainWindow", "Calibrate Cam Rig", 0));
         pushButton_preproc->setText(QApplication::translate("MainWindow", "Pre-Process", 0));
         pushButton_reproc->setText(QApplication::translate("MainWindow", "Re-Process", 0));
+        pushButton_openFomeFolder->setText(QApplication::translate("MainWindow", "Open Home Folder", 0));
         pushButton_save->setText(QApplication::translate("MainWindow", "Save Camera Parameters", 0));
         pushButton_load->setText(QApplication::translate("MainWindow", "Load Camera Parameters", 0));
         menuParameters->setTitle(QApplication::translate("MainWindow", "Config", 0));
+        menuPreproc_Options->setTitle(QApplication::translate("MainWindow", "Preproc. Options", 0));
     } // retranslateUi
 
 };

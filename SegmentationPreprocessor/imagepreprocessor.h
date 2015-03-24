@@ -53,6 +53,7 @@ public:
 	bool rig_is_calibrated(){ return rig_is_calibrated_; }
 
 	void setParameters(std::vector<float> params);
+	void setOptions(bool normDepth = true, bool makeSkinImg = true, bool makeCSStereo = false);
 	void OutputImageSize(int w, int h);
 	void set_CSstereoType(CrossSpectralStereoType type);
 
@@ -158,6 +159,12 @@ private:
 	//crop rectangles for final crop
 	Rect finalCropRect_byRGB;
 	Rect finalCropRect_byKinectDepth;
+
+	//option flags:
+	bool normalizeDepth;
+	bool makeSkinBinaryImage;
+	bool makeCSStereo;
+
 };
 
 #endif // IMAGEPREPROCESSOR_H
