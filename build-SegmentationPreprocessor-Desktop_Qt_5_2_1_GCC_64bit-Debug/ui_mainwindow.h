@@ -32,6 +32,8 @@ public:
     QAction *actionNormalize_Depth;
     QAction *actionMake_Skine_Binary_Image;
     QAction *actionMake_Cross_Spectral_Stereo;
+    QAction *actionDistort;
+    QAction *actionThin_plate_spline;
     QWidget *centralWidget;
     QWidget *verticalLayoutWidget;
     QVBoxLayout *verticalLayout;
@@ -47,6 +49,7 @@ public:
     QMenuBar *menuBar;
     QMenu *menuParameters;
     QMenu *menuPreproc_Options;
+    QMenu *menuRGB_registration;
     QStatusBar *statusBar;
 
     void setupUi(QMainWindow *MainWindow)
@@ -67,6 +70,13 @@ public:
         actionMake_Cross_Spectral_Stereo = new QAction(MainWindow);
         actionMake_Cross_Spectral_Stereo->setObjectName(QStringLiteral("actionMake_Cross_Spectral_Stereo"));
         actionMake_Cross_Spectral_Stereo->setCheckable(true);
+        actionMake_Cross_Spectral_Stereo->setChecked(true);
+        actionDistort = new QAction(MainWindow);
+        actionDistort->setObjectName(QStringLiteral("actionDistort"));
+        actionDistort->setCheckable(true);
+        actionThin_plate_spline = new QAction(MainWindow);
+        actionThin_plate_spline->setObjectName(QStringLiteral("actionThin_plate_spline"));
+        actionThin_plate_spline->setCheckable(true);
         centralWidget = new QWidget(MainWindow);
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
         verticalLayoutWidget = new QWidget(centralWidget);
@@ -139,6 +149,8 @@ public:
         menuParameters->setObjectName(QStringLiteral("menuParameters"));
         menuPreproc_Options = new QMenu(menuParameters);
         menuPreproc_Options->setObjectName(QStringLiteral("menuPreproc_Options"));
+        menuRGB_registration = new QMenu(menuPreproc_Options);
+        menuRGB_registration->setObjectName(QStringLiteral("menuRGB_registration"));
         MainWindow->setMenuBar(menuBar);
         statusBar = new QStatusBar(MainWindow);
         statusBar->setObjectName(QStringLiteral("statusBar"));
@@ -150,6 +162,9 @@ public:
         menuPreproc_Options->addAction(actionNormalize_Depth);
         menuPreproc_Options->addAction(actionMake_Skine_Binary_Image);
         menuPreproc_Options->addAction(actionMake_Cross_Spectral_Stereo);
+        menuPreproc_Options->addAction(menuRGB_registration->menuAction());
+        menuRGB_registration->addAction(actionDistort);
+        menuRGB_registration->addAction(actionThin_plate_spline);
 
         retranslateUi(MainWindow);
 
@@ -163,6 +178,8 @@ public:
         actionNormalize_Depth->setText(QApplication::translate("MainWindow", "normalize Depth", 0));
         actionMake_Skine_Binary_Image->setText(QApplication::translate("MainWindow", "make Skin Binary Image", 0));
         actionMake_Cross_Spectral_Stereo->setText(QApplication::translate("MainWindow", "make Cross-Spectral Stereo", 0));
+        actionDistort->setText(QApplication::translate("MainWindow", "distort perspective", 0));
+        actionThin_plate_spline->setText(QApplication::translate("MainWindow", "thin plate spline", 0));
         pushButton_calibCams->setText(QApplication::translate("MainWindow", "Calibrate Cameras", 0));
         pushButton_calibCamRig->setText(QApplication::translate("MainWindow", "Calibrate Cam Rig", 0));
         pushButton_preproc->setText(QApplication::translate("MainWindow", "Pre-Process", 0));
@@ -172,6 +189,7 @@ public:
         pushButton_load->setText(QApplication::translate("MainWindow", "Load Camera Parameters", 0));
         menuParameters->setTitle(QApplication::translate("MainWindow", "Config", 0));
         menuPreproc_Options->setTitle(QApplication::translate("MainWindow", "Preproc. Options", 0));
+        menuRGB_registration->setTitle(QApplication::translate("MainWindow", "RGB registration", 0));
     } // retranslateUi
 
 };

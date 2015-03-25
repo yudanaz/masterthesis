@@ -53,7 +53,8 @@ public:
 	bool rig_is_calibrated(){ return rig_is_calibrated_; }
 
 	void setParameters(std::vector<float> params);
-	void setOptions(bool normDepth = true, bool makeSkinImg = true, bool makeCSStereo = false);
+	void setOptions(bool normDepth = true, bool makeSkinImg = true, bool makeCSStereo = false,
+					bool rgbRegist_dist = false, bool rgbRegist_tpspline = false);
 	void OutputImageSize(int w, int h);
 	void set_CSstereoType(CrossSpectralStereoType type);
 
@@ -164,6 +165,8 @@ private:
 	bool normalizeDepth;
 	bool makeSkinBinaryImage;
 	bool makeCSStereo;
+	bool RGBregist_distortPerspective;
+	bool RGBregist_thinPlateSpline;
 
 };
 

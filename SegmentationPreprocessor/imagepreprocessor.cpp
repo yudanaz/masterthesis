@@ -21,7 +21,8 @@ ImagePreprocessor::ImagePreprocessor(QWidget *parent):
 	rig_is_calibrated_(false),
 	output_image_size_set_(false),
 	stereo_Type_(crossSpectrSt_HOG),
-	normalizeDepth(false), makeSkinBinaryImage(false)
+	normalizeDepth(false), makeSkinBinaryImage(false),
+	RGBregist_distortPerspective(false), RGBregist_thinPlateSpline(false)
 {
 	this->parent = parent;
 	//try loading last camera parameter file
@@ -228,11 +229,13 @@ void ImagePreprocessor::setParameters(std::vector<float> params)
 	CSstereoMatcher->setParams(params);
 }
 
-void ImagePreprocessor::setOptions(bool normDepth, bool makeSkinImg, bool makeCSStereo)
+void ImagePreprocessor::setOptions(bool normDepth, bool makeSkinImg, bool makeCSStereo, bool rgbRegist_dist, bool rgbRegist_tpspline)
 {
 	this->normalizeDepth = normDepth;
 	this->makeSkinBinaryImage = makeSkinImg;
 	this->makeCSStereo = makeCSStereo;
+	this->RGBregist_distortPerspective = rgbRegist_dist;
+	this->RGBregist_thinPlateSpline = rgbRegist_tpspline;
 }
 
 void ImagePreprocessor::OutputImageSize(int w, int h)
@@ -871,39 +874,45 @@ Mat ImagePreprocessor::registerRGB2NIR(Mat& RGB_img, Mat& NIR_img)
 			pR.push_back(matchedDescrR[i].pt);
 		}
 
-//		//register RGB to NIR using homography matrix computed from best HOG descriptor matches (uniformly spaced)
-//		Mat homography = findHomography(pR, pL, CV_RANSAC);
-//		warpPerspective(RGB_img, RGB_registered, homography, RGB_img.size());
+		if(RGBregist_thinPlateSpline)
+		{
+			//register RGB using thin plate spline algorithm
+			vector<Point> pLs, pRs;
+			for (int i = 0; i < matchedDescrL.size(); ++i)
+			{
+				Point2f pL = matchedDescrL[i].pt;
+				Point2f pR = matchedDescrR[i].pt;
+				pLs.push_back(Point(pL.x, pL.y));
+				pRs.push_back(Point(pR.x, pL.y));
+			}
+			CThinPlateSpline tps(pRs, pLs);
+			tps.warpImage(RGB_img, RGB_registered);
+		}
+		else if(RGBregist_distortPerspective)
+		{
+			//register RGB to NIR using homography matrix computed from best HOG descriptor matches (uniformly spaced)
+			Mat homography = findHomography(pR, pL, CV_RANSAC);
+			warpPerspective(RGB_img, RGB_registered, homography, RGB_img.size());
 
-//		//also use homography matrix to get the 4 corner points of the warped image
-//		Point p1 = warpOnePoint(homography, Point(0,0));
-//		Point p2 = warpOnePoint(homography, Point(RGB_img.cols-1, 0));
-//		Point p3 = warpOnePoint(homography, Point(0,RGB_img.rows-1));
-//		Point p4 = warpOnePoint(homography, Point(RGB_img.cols-1, RGB_img.rows-1));
+			//also use homography matrix to get the 4 corner points of the warped image
+			Point p1 = warpOnePoint(homography, Point(0,0));
+			Point p2 = warpOnePoint(homography, Point(RGB_img.cols-1, 0));
+			Point p3 = warpOnePoint(homography, Point(0,RGB_img.rows-1));
+			Point p4 = warpOnePoint(homography, Point(RGB_img.cols-1, RGB_img.rows-1));
 
-//		//use these corner points to define the minimal crop rectangle
-//		finalCropRect_byRGB = makeMinimalCrop(p1, p2, p3, p4, RGB_img);
-
-		//register RGB to NIR using simple horizonzal shift
-		RGB_registered = registerImageByHorizontalShift(RGB_img, matchedDescrL, matchedDescrR);
-
-
-		//register RGB using thin plate spline algorithm
-//		vector<Point> pLs, pRs;
-//		for (int i = 0; i < matchedDescrL.size(); ++i)
-//		{
-//			Point2f pL = matchedDescrL[i].pt;
-//			Point2f pR = matchedDescrR[i].pt;
-//			pLs.push_back(Point(pL.x, pL.y));
-//			pRs.push_back(Point(pR.x, pL.y));
-//		}
-//		CThinPlateSpline tps(pRs, pLs);
-//		tps.warpImage(RGB_img, RGB_registered);
+			//use these corner points to define the minimal crop rectangle
+			finalCropRect_byRGB = makeMinimalCrop(p1, p2, p3, p4, RGB_img);
+		}
+		else //default
+		{
+			//register RGB to NIR using simple horizonzal shift
+			RGB_registered = registerImageByHorizontalShift(RGB_img, matchedDescrL, matchedDescrR);
+		}
 
 		//DEBUG show matches//
 		Mat matches;
 		drawMatches(NIR_img, matchedDescrL, RGB_img, matchedDescrR, dmatches, matches);
-//		imshow("descriptor matches", matches);
+		imshow("descriptor matches", matches);
 		imwrite("HOG_descriptors_matches.png", matches);
 		//DEBUG show matches//
 

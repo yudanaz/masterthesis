@@ -44,7 +44,9 @@ void MainWindow::preprocessImages()
 	bool normDepth = ui->actionNormalize_Depth->isChecked();
 	bool makeSkinBinary = ui->actionMake_Skine_Binary_Image->isChecked();
 	bool makeCSStereo = ui->actionMake_Cross_Spectral_Stereo->isChecked();
-	preproc.setOptions(normDepth, makeSkinBinary, makeCSStereo);
+	bool rgbRegDist = ui->actionDistort->isChecked();
+	bool rgbregTPSpline = ui->actionThin_plate_spline->isChecked();
+	preproc.setOptions(normDepth, makeSkinBinary, makeCSStereo, rgbRegDist, rgbregTPSpline);
 
 	preproc.preproc(rgb, nir, depth, rgb_, nir_, depthStereo_, depth_);
 
