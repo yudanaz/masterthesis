@@ -1,1 +1,1 @@
-/home/maurice/Data/RGBDNIR_Data_03232015
+/home/maurice/Data/RGBDNIR_Data_selected

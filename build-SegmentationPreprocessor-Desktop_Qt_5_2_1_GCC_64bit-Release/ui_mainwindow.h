@@ -41,6 +41,7 @@ public:
     QPushButton *pushButton_calibCamRig;
     QPushButton *pushButton_preproc;
     QPushButton *pushButton_reproc;
+    QPushButton *pushButton_batchProc;
     QSpacerItem *verticalSpacer_2;
     QPushButton *pushButton_openFomeFolder;
     QSpacerItem *verticalSpacer;
@@ -70,7 +71,7 @@ public:
         actionMake_Cross_Spectral_Stereo = new QAction(MainWindow);
         actionMake_Cross_Spectral_Stereo->setObjectName(QStringLiteral("actionMake_Cross_Spectral_Stereo"));
         actionMake_Cross_Spectral_Stereo->setCheckable(true);
-        actionMake_Cross_Spectral_Stereo->setChecked(true);
+        actionMake_Cross_Spectral_Stereo->setChecked(false);
         actionDistort = new QAction(MainWindow);
         actionDistort->setObjectName(QStringLiteral("actionDistort"));
         actionDistort->setCheckable(true);
@@ -115,6 +116,12 @@ public:
         pushButton_reproc->setStyleSheet(QStringLiteral("background-color: rgb(255, 185, 84)"));
 
         verticalLayout->addWidget(pushButton_reproc);
+
+        pushButton_batchProc = new QPushButton(verticalLayoutWidget);
+        pushButton_batchProc->setObjectName(QStringLiteral("pushButton_batchProc"));
+        pushButton_batchProc->setStyleSheet(QStringLiteral("background-color: rgb(255, 185, 84)"));
+
+        verticalLayout->addWidget(pushButton_batchProc);
 
         verticalSpacer_2 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
 
@@ -184,6 +191,7 @@ public:
         pushButton_calibCamRig->setText(QApplication::translate("MainWindow", "Calibrate Cam Rig", 0));
         pushButton_preproc->setText(QApplication::translate("MainWindow", "Pre-Process", 0));
         pushButton_reproc->setText(QApplication::translate("MainWindow", "Re-Process", 0));
+        pushButton_batchProc->setText(QApplication::translate("MainWindow", "Batch-Process", 0));
         pushButton_openFomeFolder->setText(QApplication::translate("MainWindow", "Open Home Folder", 0));
         pushButton_save->setText(QApplication::translate("MainWindow", "Save Camera Parameters", 0));
         pushButton_load->setText(QApplication::translate("MainWindow", "Load Camera Parameters", 0));

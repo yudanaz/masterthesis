@@ -912,7 +912,7 @@ Mat ImagePreprocessor::registerRGB2NIR(Mat& RGB_img, Mat& NIR_img)
 		//DEBUG show matches//
 		Mat matches;
 		drawMatches(NIR_img, matchedDescrL, RGB_img, matchedDescrR, dmatches, matches);
-		imshow("descriptor matches", matches);
+//		imshow("descriptor matches", matches);
 		imwrite("HOG_descriptors_matches.png", matches);
 		//DEBUG show matches//
 
