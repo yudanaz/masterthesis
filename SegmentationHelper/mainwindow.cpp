@@ -1189,7 +1189,7 @@ void MainWindow::on_btn_makeTrainVal_released()
 	while(fileNames.size() != 0)
 	{
 		int index = rand() % fileNames.size();
-		QString fileName = fileNames[index].remove(".jpg");
+		QString fileName = fileNames[index].remove(".jpg").remove(".png");
 		if(!(fileName.contains("_depth") || fileName.contains("_nir") || fileName.contains("_labels")) )
 		{
 			if( (rand() % 100) < trainPercentage) //add to training text file
@@ -1346,19 +1346,54 @@ void MainWindow::on_pushButton_test_released()
 	//////////////////////////////////////////////////////////////
 	// Separate multi-channel image
 	//////////////////////////////////////////////////////////////
-	QList<QString>fileNames = QFileDialog::getOpenFileNames(this, "Select File", lastDir, IMGTYPES);
+//	QList<QString>fileNames = QFileDialog::getOpenFileNames(this, "Select File", lastDir, IMGTYPES);
+//	if(fileNames.size() == 0){ return; }
+//	lastDir = QFileInfo(fileNames.first()).path();
+
+//	foreach(QString nm, fileNames)
+//	{
+//		Mat img = imread(nm.toStdString(), IMREAD_ANYCOLOR);
+//		vector<Mat> channels;
+//		split(img, channels);
+//		QString s = QString(nm).remove("MultiCh.png");
+//		imwrite((s + "970.png").toStdString(), channels[0]);
+//		imwrite((s + "1300.png").toStdString(), channels[1]);
+//		imwrite((s + "1550.png").toStdString(), channels[2]);
+//	}
+	//////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////
+	//print out labels for each stanford
+	//////////////////////////////////////////////////////////////
+	QList<QString>fileNames = QFileDialog::getOpenFileNames(this, "Select File", lastDir, "*_labels.png");
 	if(fileNames.size() == 0){ return; }
 	lastDir = QFileInfo(fileNames.first()).path();
 
-	foreach(QString nm, fileNames)
+	foreach (QString nm, fileNames)
 	{
-		Mat img = imread(nm.toStdString(), IMREAD_ANYCOLOR);
-		vector<Mat> channels;
-		split(img, channels);
-		QString s = QString(nm).remove("MultiCh.png");
-		imwrite((s + "970.png").toStdString(), channels[0]);
-		imwrite((s + "1300.png").toStdString(), channels[1]);
-		imwrite((s + "1550.png").toStdString(), channels[2]);
+		bool labels[8] = {false, false, false, false, false, false, false, false};
+		Mat img = imread(nm.toStdString(), IMREAD_GRAYSCALE);
+		MatIterator_<uchar> it, end;
+		for(it = img.begin<uchar>(), end = img.end<uchar>(); it != end; ++it)
+		{
+			labels[*it] = true;
+		}
+
+		QString s = nm.split("/").last().remove("_labels.png");
+
+		//print labels for every image
+//		for (int i = 0; i < 8; ++i)
+//		{
+//			if(labels[i]){ s += " " + QString::number(i) + ",";  }
+//		}
+//		qDebug() << s;
+
+		//only print image name if image has labels 0,1,2,5,7
+		if(labels[0] && labels[1] && labels[2] && !labels[3] &&
+			!labels[4] && labels[5] && !labels[6] && labels[7])
+		{
+			qDebug() << ("cp " + s +"*.* images2/");
+		}
 	}
 	//////////////////////////////////////////////////////////////
 
