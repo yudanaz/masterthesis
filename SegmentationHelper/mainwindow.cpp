@@ -1607,6 +1607,7 @@ void MainWindow::on_btn_thinOut_released()
 	QString fileName = QFileDialog::getOpenFileName(this, "Select text file to thin out", lastDir);
 	if(fileName ==""){ return; }
 	double percentage = QInputDialog::getDouble(this, "Percentage", "How much?", 0.05, 0.00001, 1.0, 5);
+	bool jumpFirstLine = QMessageBox::Yes == QMessageBox::question(this, "Label", "Jump first line?", QMessageBox::Yes|QMessageBox::No );
 	bool doAvg = QMessageBox::Yes == QMessageBox::question(this, "AVG", "Average over interval?", QMessageBox::Yes|QMessageBox::No );
 	int interval = 1.0 / percentage + .5;
 	int cnt = 0;
@@ -1617,16 +1618,38 @@ void MainWindow::on_btn_thinOut_released()
 	f2.open(QFile::WriteOnly);
 	QTextStream ts(&f);
 	QTextStream ts2(&f2);
+
+	if(jumpFirstLine){ ts2 << ts.readLine() << "\n"; }
+
+	QList<float> avgs;
+	bool avgs_initialized  = false;
+
 	while(!ts.atEnd())
 	{
-		float avg = 0;
 		if(doAvg)
 		{
-			avg += ts.readLine().toDouble();
-			if(cnt == interval - 1)
+			QStringList slst = ts.readLine().split("\t");
+			if(!avgs_initialized)
 			{
-				avg /= (float)interval;
-				ts2 << avg << "\n";
+				for(int i = 0; i < slst.size(); ++i){ avgs.append(0); }
+				avgs_initialized = true;
+			}
+			for(int i = 0; i < slst.size(); ++i)
+			{
+				avgs[i] += slst[i].toDouble();
+			}
+
+			if(cnt == interval - 1)//make average and empty reset average list
+			{
+				foreach(float avg, avgs)
+				{
+					avg /= (float)interval;
+					ts2 << avg << "\t";
+				}
+				ts2 << "\n";
+
+				avgs.clear();
+				avgs_initialized = false;
 			}
 		}
 		else
