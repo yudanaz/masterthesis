@@ -69,8 +69,8 @@ private:
 	bool fitRGBimgs2NIRimgs(QList<Mat> origNirs, QList<Mat> origRGBs);
 	Mat resizeAndCropRGBImg(Mat rgbImg);
 
-    QList<Mat> undistortNIRimagesChannelWise(QList<Mat> imgsNIR);
-    Mat undistortNIRimgChannelWise(Mat imgNIR);
+	QList<Mat> undistortNIRimagesChannelWise(QList<Mat> imgsNIR, bool convert2grayscale = true);
+	Mat undistortNIRimgChannelWise(Mat imgNIR);
 
 	Mat convertKinectDepthTo8Bit(Mat kinectDepth);
 	float raw_depth_to_mm(int raw_depth);
@@ -105,7 +105,7 @@ private:
 						bool useBlacklist, QList<int> &blacklist);
 
 
-	QList<Mat> readImgs2List(QStringList imgNames);
+	QList<Mat> readImgs2List(QStringList imgNames, bool color = false);
 
 	void makeMsg(QString title, QString msg);
 	void makeImgRelatedMsg(Mat img, QString title, QString msg);
@@ -123,19 +123,19 @@ private:
 	//camera instrinsics
 	Mat cam_RGB;
 	Mat cam_RGB_resized;
-    Mat cam_NIR_all;
-    Mat cam_NIR_970;
-    Mat cam_NIR_1300;
-    Mat cam_NIR_1550;
+	Mat cam_NIR_all;
+	Mat cam_NIR_970;
+	Mat cam_NIR_1300;
+	Mat cam_NIR_1550;
 	Mat cam_IR;
 
 	//undistortion maps
 	Mat distCoeff_RGB;
 	Mat distCoeff_RGB_resized;
-    Mat distCoeff_NIR_all;
-    Mat distCoeff_NIR_970;
-    Mat distCoeff_NIR_1300;
-    Mat distCoeff_NIR_1550;
+	Mat distCoeff_NIR_all;
+	Mat distCoeff_NIR_970;
+	Mat distCoeff_NIR_1300;
+	Mat distCoeff_NIR_1550;
 	Mat distCoeff_IR;
 
 	//resize and crop parameters
