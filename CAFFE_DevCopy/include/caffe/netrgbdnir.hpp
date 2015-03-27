@@ -24,25 +24,12 @@ protected:
     void setUniformPatches();
     cv::Mat getImgPatch(cv::Mat img, int x, int y);
 
-    /*!
-     * \brief Pre-processes an image to zero mean and unit variance
-     * (standard deviation) for local neighborhoods in order to make
-     * it more machine-learning-friendly.
-     * inspired by
-     * http://bigwww.epfl.ch/demo/jlocalnormalization/
-     * and
-     * http://bigwww.epfl.ch/sage/soft/localnormalization/]
-     *
-     * Local normalization is done using ESTIMATIONS for mean and
-     * standard deviation achieved with a gaussian smoothing filter.
-     * \param img is the original image. NOTE THAT IF IT'S A MULTICHANNEL IMAGE,
-     * NORMALIZATION IS DONE FOR EACH CHANNEL SEPARATELY, THIS HAS BEEN TESTED
-     * AND PROVED IN GIMP, SEE TEST IN MAINWINDOW!
-     * \param meanKernel: The Gaussian kernel size used for mean estimation.
-     * \param stdDevKernel: The Gaussian kernel size used for standard deviation estimation.
-     * \return the standardized image as a float matrix.
-     */
-    cv::Mat NormalizeLocally(cv::Mat img, int meanKernel, int stdDevKernel, bool outputAs8bit = true);
+    void normalizeZeroMeanUnitVariance(cv::Mat &img);
+    void normalizeEachChannelLocally(cv::Mat &img, int localNbrhd);
+    void normalizeLocally(cv::Mat &img, int localNbrhd);
+    void normalizeLocally2(cv::Mat &img, int kernel);
+    vector<cv::Mat> makeGaussianPyramid(cv::Mat img, int leveln=3);
+    vector<cv::Mat> makeLaplacianPyramid(cv::Mat img, int leveln=3);
 
 
     int patchSz;
@@ -69,9 +56,10 @@ protected:
 
     cv::Mat img_labels;
 
-    cv::Mat img_rgb0;
-    cv::Mat img_rgb1;
-    cv::Mat img_rgb2;
+    std::vector<cv::Mat> img_rgb0;
+    std::vector<cv::Mat> img_rgb1;
+    std::vector<cv::Mat> img_rgb2;
+
     cv::Mat img_nir0;
     cv::Mat img_nir1;
     cv::Mat img_nir2;
