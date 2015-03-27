@@ -298,14 +298,20 @@ void NetRGBDNIR<Dtype>::readNextImage()
 //        LOG(INFO) << "random index: " << randomIndex;
     }
 
-    cv::Mat temp1, temp2, temp3;
+    cv::Mat temp0, temp1, temp2, temp3;
 
     //Make the downsized images for the image pyramid and add the padding according to patch size
     //LOG(INFO) << "Making scales for RGB";
     if(hasRGB)
     {
         //read image and normalize to [0,1]
-        temp1 = cv::imread(rgbNm, cv::IMREAD_COLOR);
+        temp0 = cv::imread(rgbNm, cv::IMREAD_COLOR);
+//        imshow("RGB", temp0); cvWaitKey();
+        cvtColor(temp0, temp0, CV_BGR2YCrCb);
+//        imshow("YUV", temp0); cvWaitKey();
+        temp1 = NormalizeLocally(temp0, 15, 31);
+//        imshow("YUV normalized locally", temp1); cvWaitKey();
+
         cv::copyMakeBorder(temp1, img_rgb0, borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
 
         if(multiscale)
@@ -350,6 +356,48 @@ void NetRGBDNIR<Dtype>::readNextImage()
             cv::pyrDown(temp2, temp3);
             cv::copyMakeBorder(temp3, img_depth2, borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 2 (1/4 the size)
         }
+    }
+}
+
+template<typename Dtype>
+Mat NetRGBDNIR<Dtype>::NormalizeLocally(Mat img, int meanKernel, int stdDevKernel, bool outputAs8bit)
+{
+    Mat floatImg, mean, stdDev, out;
+
+    //convert to float image
+    img.convertTo(floatImg, CV_32F);//, 0.003921569); // 1/255 = 0.003921569
+
+//    //estimate image mean with gaussian blur
+//    GaussianBlur(floatImg, mean, Size(meanKernel, meanKernel), 0);
+//    floatImg = floatImg - mean;
+
+//    //estimate standard deviation with gaussian blur by doing sqrt( gauss_blur(img²) )
+//    GaussianBlur(floatImg.mul(floatImg), mean, Size(stdDevKernel, stdDevKernel), 0); //re-use mean matrix
+//    cv::pow(mean, 0.5, stdDev);
+//    floatImg = floatImg / stdDev;
+
+    Mat mu;
+    blur(floatImg, mu, Size(meanKernel, meanKernel));
+
+    Mat mu2;
+    blur(floatImg.mul(floatImg), mu2, Size(meanKernel, meanKernel));
+
+    Mat sigma;
+    cv::sqrt(mu2 - mu.mul(mu), sigma);
+
+    if(outputAs8bit)
+    {
+        //cast back to [0, 255] interval, so it can be saved as a JPG image (or other lossy compression)
+//        cv::normalize(floatImg, floatImg, 0, 1, NORM_MINMAX, -1);
+//        floatImg.convertTo(out, CV_8U, 255);
+        cv::normalize(sigma, sigma, 0, 1, NORM_MINMAX, -1);
+        sigma.convertTo(out, CV_8U, 255);
+        return out;
+    }
+    else
+    {
+//        return floatImg;
+        return sigma;
     }
 }
 

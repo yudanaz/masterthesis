@@ -24,6 +24,27 @@ protected:
     void setUniformPatches();
     cv::Mat getImgPatch(cv::Mat img, int x, int y);
 
+    /*!
+     * \brief Pre-processes an image to zero mean and unit variance
+     * (standard deviation) for local neighborhoods in order to make
+     * it more machine-learning-friendly.
+     * inspired by
+     * http://bigwww.epfl.ch/demo/jlocalnormalization/
+     * and
+     * http://bigwww.epfl.ch/sage/soft/localnormalization/]
+     *
+     * Local normalization is done using ESTIMATIONS for mean and
+     * standard deviation achieved with a gaussian smoothing filter.
+     * \param img is the original image. NOTE THAT IF IT'S A MULTICHANNEL IMAGE,
+     * NORMALIZATION IS DONE FOR EACH CHANNEL SEPARATELY, THIS HAS BEEN TESTED
+     * AND PROVED IN GIMP, SEE TEST IN MAINWINDOW!
+     * \param meanKernel: The Gaussian kernel size used for mean estimation.
+     * \param stdDevKernel: The Gaussian kernel size used for standard deviation estimation.
+     * \return the standardized image as a float matrix.
+     */
+    cv::Mat NormalizeLocally(cv::Mat img, int meanKernel, int stdDevKernel, bool outputAs8bit = true);
+
+
     int patchSz;
     int borderSz;
     std::vector<std::string> imgs;

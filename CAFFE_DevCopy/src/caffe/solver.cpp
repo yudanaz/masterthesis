@@ -253,6 +253,7 @@ void Solver<Dtype>::Step(int iters, std::ofstream &lossLogFile, std::ofstream &t
         boost::dynamic_pointer_cast<NetRGBDNIR<Dtype> >(net_)->feedNextPatchesToInputLayers();
     }
     Dtype loss = net_->ForwardBackward(bottom_vec);
+
     lossLogFile << loss << "\n";
     lossLogFile.flush();
     ////////////////////////////////////////////////////////////////////////////////
