@@ -20,7 +20,9 @@ ImagePreprocessor::ImagePreprocessor(QWidget *parent):
 	cams_are_calibrated_(false),
 	rig_is_calibrated_(false),
 	output_image_size_set_(false),
-	stereo_Type_(crossSpectrSt_HOG)
+	stereo_Type_(crossSpectrSt_HOG),
+	normalizeDepth(false), makeSkinBinaryImage(false),
+	RGBregist_distortPerspective(false), RGBregist_thinPlateSpline(false)
 {
 	this->parent = parent;
 	//try loading last camera parameter file
@@ -53,12 +55,33 @@ void ImagePreprocessor::calibCams(QStringList calibImgs_RGB,
 
 	//read calibration images from disk
 	QList<Mat> imgsRGB = readImgs2List(calibImgs_RGB);
-	QList<Mat> imgsNIR = readImgs2List(calibImgs_NIR);
+	QList<Mat> imgsNIR_all = readImgs2List(calibImgs_NIR, true);
 	QList<Mat> imgsIR = readImgs2List(calibImgs_IR);
 
-	//compute intrinsics and undistortion map
+	//create separate lists for the NIR channels
+	QList<Mat> imgsNIR_970, imgsNIR_1300, imgsNIR_1550;
+	foreach(Mat nir, imgsNIR_all)
+	{
+		vector<Mat> nirChannels(3);
+		split(nir, nirChannels);
+		imgsNIR_970.push_back(nirChannels[0]);
+		imgsNIR_1300.push_back(nirChannels[1]);
+		imgsNIR_1550.push_back(nirChannels[2]);
+	}
+
+	//compute intrinsics and undistortion map for NIR channels
+	make_Intrinsics_and_undistCoeffs(imgsNIR_970, cam_NIR_970, distCoeff_NIR_970, "NIR (970 nm)");
+	make_Intrinsics_and_undistCoeffs(imgsNIR_1300, cam_NIR_1300, distCoeff_NIR_1300, "NIR (1300 nm)");
+	make_Intrinsics_and_undistCoeffs(imgsNIR_1550, cam_NIR_1550, distCoeff_NIR_1550, "NIR (1550 nm)");
+
+	//undistort images channel-wise
+	QList<Mat> imgsNIR_all_undist = undistortNIRimagesChannelWise(imgsNIR_all);
+
+	//compute intrinsics and undistortion maps for channel-wise undistorted NIR
+	make_Intrinsics_and_undistCoeffs(imgsNIR_all_undist, cam_NIR_all, distCoeff_NIR_all, "NIR (all channels)");
+
+	//compute intrinsics and undistortion map for RGB and IR
 	make_Intrinsics_and_undistCoeffs(imgsRGB, cam_RGB, distCoeff_RGB, "RGB");
-	make_Intrinsics_and_undistCoeffs(imgsNIR, cam_NIR, distCoeff_NIR, "NIR");
 	make_Intrinsics_and_undistCoeffs(imgsIR, cam_IR, distCoeff_IR, "IR");
 
 	cams_are_calibrated_ = true;
@@ -77,10 +100,22 @@ void ImagePreprocessor::calibRig(QStringList calibImgs_RGB, QStringList calibImg
 
 	//read calibration images from disk
 	QList<Mat> imgsRGB = readImgs2List(calibImgs_RGB);
-	QList<Mat> imgsNIR_rgb = readImgs2List(calibImgs_NIR_rgb);
+	QList<Mat> imgsNIR_rgb = readImgs2List(calibImgs_NIR_rgb, true);
 	QList<Mat> imgsIR = readImgs2List(calibImgs_IR);
-	QList<Mat> imgsNIR_ir = readImgs2List(calibImgsNIR_ir);
+	QList<Mat> imgsNIR_ir = readImgs2List(calibImgsNIR_ir, true);
 
+	///////////////////////////////////////////////////////////////////////////
+	/// UNDISTORT NIR IMAGES CHANNEL-WISE
+	///////////////////////////////////////////////////////////////////////////
+	QList<Mat> imgsNIR_ir_undist = undistortNIRimagesChannelWise(imgsNIR_ir);
+	QList<Mat> imgsNir_rgb_undist = undistortNIRimagesChannelWise(imgsNIR_rgb);
+	///////////////////////////////////////////////////////////////////////////
+	/// endof UNDISTORT NIR IMAGES CHANNEL-WISE
+	///////////////////////////////////////////////////////////////////////////
+
+	///////////////////////////////////////////////////////////////////////////
+	/// RESIZE RGB IMAGES (and make new intrinsics and undistort coeff.)
+	///////////////////////////////////////////////////////////////////////////
 	//undistort RGB and NIR and store as temp images
 	QProgressDialog progress("Temporarily undistorting RGB and NIR images", "Cancel", 0, imgsRGB.size(), parent);
 	progress.setMinimumWidth(300); progress.setMinimumDuration(50); progress.setValue(0);
@@ -90,11 +125,11 @@ void ImagePreprocessor::calibRig(QStringList calibImgs_RGB, QStringList calibImg
 	for (int i = 0; i < imgsRGB.size(); ++i)
 	{
 		Mat rgb_ = imgsRGB[i];
-		Mat nir_ = imgsNIR_rgb[i];
+		Mat nir_ = imgsNir_rgb_undist[i];
 		Mat rgb_undist, nir_undist;
 
 		undistort(rgb_, rgb_undist, cam_RGB, distCoeff_RGB);
-		undistort(nir_, nir_undist, cam_NIR, distCoeff_NIR);
+		undistort(nir_, nir_undist, cam_NIR_all, distCoeff_NIR_all);
 		imgsRGB_undist.append(rgb_undist);
 		imgsNIR_undist.append(nir_undist);
 
@@ -119,15 +154,18 @@ void ImagePreprocessor::calibRig(QStringList calibImgs_RGB, QStringList calibImg
 	//calibrate RGB cam AGAIN with recized/cropped images
 	//(TODO: should yet another set im chessboard images be used for this step??)
 	make_Intrinsics_and_undistCoeffs(imgsRGB_resized, cam_RGB_resized, distCoeff_RGB_resized, "RGB_resized");
+	///////////////////////////////////////////////////////////////////////////
+	/// endof RESIZE RGB IMAGES
+	///////////////////////////////////////////////////////////////////////////
 
 	//make rectify maps for IR -> NIR mapping
 	Mat dummy1, dummy2, dummy3; //use dummies because NIR should compose a stereo pair with RGB, and not with IR
-	make_RectifyMaps(imgsIR, imgsNIR_ir, distCoeff_IR, distCoeff_NIR, cam_IR, cam_NIR,
+	make_RectifyMaps(imgsIR, imgsNIR_ir_undist, distCoeff_IR, distCoeff_NIR_all, cam_IR, cam_NIR_all,
 					 rectifyMapX_IR, rectifyMapY_IR, dummy1, dummy2,
 					 rotation_IR2NIR, transl_IR2NIR, proj_IR2NIR, "IR (for IR->NIR)", "NIR (for IR->NIR)");
 
 	//make rectify maps for RGB -> NIR mapping
-	make_RectifyMaps(imgsRGB_resized, imgsNIR_rgb, distCoeff_RGB_resized, distCoeff_NIR, cam_RGB_resized, cam_NIR,
+	make_RectifyMaps(imgsRGB_resized, imgsNir_rgb_undist, distCoeff_RGB_resized, distCoeff_NIR_all, cam_RGB_resized, cam_NIR_all,
 					 rectifyMapX_RGB, rectifyMapY_RGB, rectifyMapX_NIR, rectifyMapY_NIR,
 					 rotation_RGB2NIR, transl_RGB2NIR, dummy3, "RGB (for RGB->NIR)", "NIR (for RGB->NIR)");
 
@@ -143,25 +181,38 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 	Mat RGB_undist;
 	undistort(RGB, RGB_undist, cam_RGB, distCoeff_RGB);
 	Mat RGB_resized = resizeAndCropRGBImg(RGB_undist);
-
 //	Helper::debugImage(RGB_resized);
 
+	//undistort NIR image channel-wise
+	Mat NIR_undist = undistortNIRimgChannelWise(NIR);
+
 	//remap depth to NIR-camera space
-	Mat depth_remapped = mapKinectDepth2NIR(depth_kinect, NIR);
+	Mat depth_remapped = mapKinectDepth2NIR(depth_kinect, NIR_undist);
 
 	//rectify
 	Mat RGB_rect, NIR_rect;
 	remap(RGB_resized, RGB_rect, rectifyMapX_RGB, rectifyMapY_RGB, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
-	remap(NIR, NIR_rect, rectifyMapX_NIR, rectifyMapY_NIR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
+	remap(NIR_undist, NIR_rect, rectifyMapX_NIR, rectifyMapY_NIR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
 //	imwrite("RGB_rect.png", RGB_rect);
 //	imwrite("NIR_rect.png", NIR_rect);
 
 	//make disparity image from RGB and NIR images (cross/multi - spectral)
 	Mat disp;
-	makeCrossSpectralStereo(NIR_rect, RGB_rect, disp);
+	if(makeCSStereo){ makeCrossSpectralStereo(NIR_rect, RGB_rect, disp); }
+	else{ disp = Mat(NIR_rect.size(), CV_8UC1); } //empty img
 
 	//register RGB to NIR image using HOG descriptors
-	Mat RGB_registered = registerRGB2NIR(RGB_rect, NIR_rect);
+	Mat RGB_registered;
+	if(makeCSStereo)
+	{
+		RGB_registered = registerRGB2NIR(RGB_rect, NIR_rect);
+	}
+	else
+	{
+		//TODO: use median shift, computed from various iterations, if HOG descr. are not computed
+		RGB_registered = RGB_rect;
+		finalCropRect_byRGB = Rect(0, 0, RGB_rect.cols, RGB_rect.rows);
+	}
 
 	//crop images according to registered RGB and remapped kinect depth
 	Rect finalCropRect = makeMinimalCrop(finalCropRect_byKinectDepth, finalCropRect_byRGB);
@@ -214,6 +265,15 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 void ImagePreprocessor::setParameters(std::vector<float> params)
 {
 	CSstereoMatcher->setParams(params);
+}
+
+void ImagePreprocessor::setOptions(bool normDepth, bool makeSkinImg, bool makeCSStereo, bool rgbRegist_dist, bool rgbRegist_tpspline)
+{
+	this->normalizeDepth = normDepth;
+	this->makeSkinBinaryImage = makeSkinImg;
+	this->makeCSStereo = makeCSStereo;
+	this->RGBregist_distortPerspective = rgbRegist_dist;
+	this->RGBregist_thinPlateSpline = rgbRegist_tpspline;
 }
 
 void ImagePreprocessor::OutputImageSize(int w, int h)
@@ -459,6 +519,39 @@ Mat ImagePreprocessor::resizeAndCropRGBImg(Mat rgbImg)
 	return cropped;
 }
 
+QList<Mat> ImagePreprocessor::undistortNIRimagesChannelWise(QList<Mat> imgsNIR, bool convert2grayscale)
+{
+	QList<Mat> imgsNIR_undist;
+	foreach(Mat nir, imgsNIR)
+	{
+		Mat nir_undist = undistortNIRimgChannelWise(nir);
+		if(convert2grayscale)
+		{
+			Mat nir_undist_gray;
+			cvtColor(nir_undist, nir_undist_gray, CV_BGR2GRAY);
+			imgsNIR_undist.push_back(nir_undist_gray);
+		}
+		else
+		{
+			imgsNIR_undist.push_back(nir_undist);
+		}
+	}
+	return imgsNIR_undist;
+}
+
+Mat ImagePreprocessor::undistortNIRimgChannelWise(Mat imgNIR)
+{
+	Mat imgNIR_undist;
+	vector<Mat> nirChannels(3);
+	vector<Mat> nirChannels_undist(3);
+	split(imgNIR, nirChannels);
+	undistort(nirChannels[0], nirChannels_undist[0], cam_NIR_970, distCoeff_NIR_970);
+	undistort(nirChannels[1], nirChannels_undist[1], cam_NIR_1300, distCoeff_NIR_1300);
+	undistort(nirChannels[2], nirChannels_undist[2], cam_NIR_1550, distCoeff_NIR_1550);
+	merge(nirChannels_undist, imgNIR_undist);
+	return imgNIR_undist;
+}
+
 Mat ImagePreprocessor::registerImageByHorizontalShift(Mat img, vector<KeyPoint> k1, vector<KeyPoint> k2)
 {
 	//compute offset as half of median distance between matched points for horizontal shift
@@ -616,7 +709,7 @@ Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
 	//mape from 3d space to 2d image in coordinate system of NIR camera
 	double verticalShift = proj_IR2NIR.at<double>(1,3) / proj_IR2NIR.at<double>(0,0);
 	double horizontalShift = proj_IR2NIR.at<double>(0,3) / proj_IR2NIR.at<double>(0,0);
-	Mat depth2D = projectFrom3DSpaceToImage(depth3D, rotation_IR2NIR, transl_IR2NIR, cam_NIR, distCoeff_NIR,
+	Mat depth2D = projectFrom3DSpaceToImage(depth3D, rotation_IR2NIR, transl_IR2NIR, cam_NIR_all, distCoeff_NIR_all,
 											rectifyMapX_NIR, rectifyMapY_NIR,
 											Size(NIR_img.cols, NIR_img.rows), horizontalShift, verticalShift,
 											depth_kinect_undist);
@@ -629,6 +722,17 @@ Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
 	Mat depth2D_fixed = fixHolesInDepthMap(depth2D, 3); //fix bottom-up, i.e. shadows on lower side of objects
 
 //	Helper::debugImage(depth2D_fixed);
+
+	//normalize image if flag is set
+	if(normalizeDepth)
+	{
+		Mat depth2D_normed;
+		double min, max;
+		minMaxLoc(depth2D_fixed, &min, &max);
+		int range = max - min;
+		depth2D_fixed.convertTo(depth2D_normed, CV_8UC1, 255.0 / range, -min);
+		return depth2D_normed;
+	}
 
 	return depth2D_fixed;
 
@@ -841,34 +945,40 @@ Mat ImagePreprocessor::registerRGB2NIR(Mat& RGB_img, Mat& NIR_img)
 			pR.push_back(matchedDescrR[i].pt);
 		}
 
-//		//register RGB to NIR using homography matrix computed from best HOG descriptor matches (uniformly spaced)
-//		Mat homography = findHomography(pR, pL, CV_RANSAC);
-//		warpPerspective(RGB_img, RGB_registered, homography, RGB_img.size());
+		if(RGBregist_thinPlateSpline)
+		{
+			//register RGB using thin plate spline algorithm
+			vector<Point> pLs, pRs;
+			for (int i = 0; i < matchedDescrL.size(); ++i)
+			{
+				Point2f pL = matchedDescrL[i].pt;
+				Point2f pR = matchedDescrR[i].pt;
+				pLs.push_back(Point(pL.x, pL.y));
+				pRs.push_back(Point(pR.x, pL.y));
+			}
+			CThinPlateSpline tps(pRs, pLs);
+			tps.warpImage(RGB_img, RGB_registered);
+		}
+		else if(RGBregist_distortPerspective)
+		{
+			//register RGB to NIR using homography matrix computed from best HOG descriptor matches (uniformly spaced)
+			Mat homography = findHomography(pR, pL, CV_RANSAC);
+			warpPerspective(RGB_img, RGB_registered, homography, RGB_img.size());
 
-//		//also use homography matrix to get the 4 corner points of the warped image
-//		Point p1 = warpOnePoint(homography, Point(0,0));
-//		Point p2 = warpOnePoint(homography, Point(RGB_img.cols-1, 0));
-//		Point p3 = warpOnePoint(homography, Point(0,RGB_img.rows-1));
-//		Point p4 = warpOnePoint(homography, Point(RGB_img.cols-1, RGB_img.rows-1));
+			//also use homography matrix to get the 4 corner points of the warped image
+			Point p1 = warpOnePoint(homography, Point(0,0));
+			Point p2 = warpOnePoint(homography, Point(RGB_img.cols-1, 0));
+			Point p3 = warpOnePoint(homography, Point(0,RGB_img.rows-1));
+			Point p4 = warpOnePoint(homography, Point(RGB_img.cols-1, RGB_img.rows-1));
 
-//		//use these corner points to define the minimal crop rectangle
-//		finalCropRect_byRGB = makeMinimalCrop(p1, p2, p3, p4, RGB_img);
-
-		//register RGB to NIR using simple horizonzal shift
-		RGB_registered = registerImageByHorizontalShift(RGB_img, matchedDescrL, matchedDescrR);
-
-
-		//register RGB using thin plate spline algorithm
-//		vector<Point> pLs, pRs;
-//		for (int i = 0; i < matchedDescrL.size(); ++i)
-//		{
-//			Point2f pL = matchedDescrL[i].pt;
-//			Point2f pR = matchedDescrR[i].pt;
-//			pLs.push_back(Point(pL.x, pL.y));
-//			pRs.push_back(Point(pR.x, pL.y));
-//		}
-//		CThinPlateSpline tps(pRs, pLs);
-//		tps.warpImage(RGB_img, RGB_registered);
+			//use these corner points to define the minimal crop rectangle
+			finalCropRect_byRGB = makeMinimalCrop(p1, p2, p3, p4, RGB_img);
+		}
+		else //default
+		{
+			//register RGB to NIR using simple horizonzal shift
+			RGB_registered = registerImageByHorizontalShift(RGB_img, matchedDescrL, matchedDescrR);
+		}
 
 		//DEBUG show matches//
 		Mat matches;
@@ -972,18 +1082,22 @@ void ImagePreprocessor::getImagePoints(QList<Mat> calibImgs, Size chessboardSize
 }
 
 
-QList<Mat> ImagePreprocessor::readImgs2List(QStringList imgNames)
+QList<Mat> ImagePreprocessor::readImgs2List(QStringList imgNames, bool color)
 {
 	QProgressDialog progress("Loading images", "Cancel Load", 0, imgNames.size(), parent);
 	progress.setMinimumWidth(300);
 	progress.setMinimumDuration(100);
 	progress.setValue(0);
 
+	int colorMode;
+	if(color){ colorMode = IMREAD_COLOR; }
+	else{ colorMode = IMREAD_GRAYSCALE; }
+
 	int cnt = 0;
 	QList<Mat> imgs;
 	foreach (QString s, imgNames)
 	{
-		imgs.append(imread(s.toStdString(), IMREAD_GRAYSCALE));
+		imgs.append(imread(s.toStdString(), colorMode));
 
 		QCoreApplication::processEvents(); //make qt app responsive
 		progress.setValue(cnt++);
@@ -1020,12 +1134,18 @@ void ImagePreprocessor::saveAll(QString saveURL)
 	FileStorage fs(saveURL.toStdString(), FileStorage::WRITE);
 	fs << "cam_RGB" << cam_RGB;
 	fs << "cam_RGB_resized" << cam_RGB_resized;
-	fs << "cam_NIR" << cam_NIR;
+	fs << "cam_NIR" << cam_NIR_all;
+	fs << "cam_NIR_970" << cam_NIR_970;
+	fs << "cam_NIR_1300" << cam_NIR_1300;
+	fs << "cam_NIR_1550" << cam_NIR_1550;
 	fs << "cam_IR" << cam_IR;
 
 	fs << "distCoeff_RGB" << distCoeff_RGB;
 	fs << "distCoeff_RGB_resized" << distCoeff_RGB_resized;
-	fs << "distCoeff_NIR" << distCoeff_NIR;
+	fs << "distCoeff_NIR" << distCoeff_NIR_all;
+	fs << "distCoeff_NIR_970" << distCoeff_NIR_970;
+	fs << "distCoeff_NIR_1300" << distCoeff_NIR_1300;
+	fs << "distCoeff_NIR_1550" << distCoeff_NIR_1550;
 	fs << "distCoeff_IR" << distCoeff_IR;
 
 	fs << "resizeFac_RGB" << resizeFac_RGB;
@@ -1067,12 +1187,18 @@ void ImagePreprocessor::loadAll(QString loadURL)
 	FileStorage fs(loadURL.toStdString(), FileStorage::READ);
 	fs["cam_RGB"] >> cam_RGB;
 	fs["cam_RGB_resized"] >> cam_RGB_resized;
-	fs["cam_NIR"] >> cam_NIR;
+	fs["cam_NIR"] >> cam_NIR_all;
+	fs["cam_NIR_970"] >> cam_NIR_970;
+	fs["cam_NIR_1300"] >> cam_NIR_1300;
+	fs["cam_NIR_1550"] >> cam_NIR_1550;
 	fs["cam_IR"] >> cam_IR;
 
 	fs["distCoeff_RGB"] >> distCoeff_RGB;
 	fs["distCoeff_RGB_resized"] >> distCoeff_RGB_resized;
-	fs["distCoeff_NIR"] >> distCoeff_NIR;
+	fs["distCoeff_NIR"] >> distCoeff_NIR_all;
+	fs["distCoeff_NIR_970"] >> distCoeff_NIR_970;
+	fs["distCoeff_NIR_1300"] >> distCoeff_NIR_1300;
+	fs["distCoeff_NIR_1550"] >> distCoeff_NIR_1550;
 	fs["distCoeff_IR"] >> distCoeff_IR;
 
 	fs["resizeFac_RGB"] >> resizeFac_RGB;

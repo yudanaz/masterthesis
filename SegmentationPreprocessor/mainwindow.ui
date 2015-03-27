@@ -74,6 +74,16 @@
       </widget>
      </item>
      <item>
+      <widget class="QPushButton" name="pushButton_batchProc">
+       <property name="styleSheet">
+        <string notr="true">background-color: rgb(255, 185, 84)</string>
+       </property>
+       <property name="text">
+        <string>Batch-Process</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <spacer name="verticalSpacer_2">
        <property name="orientation">
         <enum>Qt::Vertical</enum>
@@ -142,7 +152,24 @@
     <property name="title">
      <string>Config</string>
     </property>
+    <widget class="QMenu" name="menuPreproc_Options">
+     <property name="title">
+      <string>Preproc. Options</string>
+     </property>
+     <widget class="QMenu" name="menuRGB_registration">
+      <property name="title">
+       <string>RGB registration</string>
+      </property>
+      <addaction name="actionDistort"/>
+      <addaction name="actionThin_plate_spline"/>
+     </widget>
+     <addaction name="actionNormalize_Depth"/>
+     <addaction name="actionMake_Skine_Binary_Image"/>
+     <addaction name="actionMake_Cross_Spectral_Stereo"/>
+     <addaction name="menuRGB_registration"/>
+    </widget>
     <addaction name="actionStereoM_Params"/>
+    <addaction name="menuPreproc_Options"/>
    </widget>
    <addaction name="menuParameters"/>
   </widget>
@@ -150,6 +177,52 @@
   <action name="actionStereoM_Params">
    <property name="text">
     <string>StereoM. Params</string>
+   </property>
+  </action>
+  <action name="actionNormalize_Depth">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>normalize Depth</string>
+   </property>
+  </action>
+  <action name="actionMake_Skine_Binary_Image">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>make Skin Binary Image</string>
+   </property>
+  </action>
+  <action name="actionMake_Cross_Spectral_Stereo">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>make Cross-Spectral Stereo</string>
+   </property>
+  </action>
+  <action name="actionDistort">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>distort perspective</string>
+   </property>
+  </action>
+  <action name="actionThin_plate_spline">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>thin plate spline</string>
    </property>
   </action>
  </widget>

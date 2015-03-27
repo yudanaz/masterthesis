@@ -35,9 +35,18 @@ private slots:
 
 	void on_pushButton_openFomeFolder_released();
 
+	void on_pushButton_batchProc_released();
+
 private:
 
-	void preprocessImages();
+	void preprocessImages(Mat &rgb_out, Mat &depth_out, Mat &depthStereo_out, Mat &nir_out);
+	void preprocessAndShow();
+	bool loadImagesGroup(QString img_NIR);
+	void savePreprocImages(QString outDir, Mat &rgb, Mat &depth, Mat &depthStereo, Mat &nir);
+
+	QString nir_url;
+	QString rgb_url;
+	QString depth_url;
 
 	Mat rgb;
 	Mat depth;

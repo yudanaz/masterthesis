@@ -1189,7 +1189,7 @@ void MainWindow::on_btn_makeTrainVal_released()
 	while(fileNames.size() != 0)
 	{
 		int index = rand() % fileNames.size();
-		QString fileName = fileNames[index].remove(".jpg");
+		QString fileName = fileNames[index].remove(".jpg").remove(".png");
 		if(!(fileName.contains("_depth") || fileName.contains("_nir") || fileName.contains("_labels")) )
 		{
 			if( (rand() % 100) < trainPercentage) //add to training text file
@@ -1296,45 +1296,45 @@ void MainWindow::on_pushButton_test_released()
 	//////////////////////////////////////////////////////////////
 	// TRANSFORM STANFORD BACKGROUND DATASET LABELS INTO PNG
 	//////////////////////////////////////////////////////////////
-	QString fileName = QFileDialog::getOpenFileName(this, "Select File", lastDir, "horizons.txt");
-	if(fileName == ""){ return; }
-	lastDir = QFileInfo(fileName).path();
+//	QString fileName = QFileDialog::getOpenFileName(this, "Select File", lastDir, "horizons.txt");
+//	if(fileName == ""){ return; }
+//	lastDir = QFileInfo(fileName).path();
 
-	QFile f(fileName);
-	f.open(QFile::ReadOnly);
-	QTextStream in(&f);
+//	QFile f(fileName);
+//	f.open(QFile::ReadOnly);
+//	QTextStream in(&f);
 
-	QDir dir;
-	dir.mkdir(lastDir + "/labelsImgs");
+//	QDir dir;
+//	dir.mkdir(lastDir + "/labelsImgs");
 
-	while(!in.atEnd())
-	{
-		QStringList sl = in.readLine().split(" ");
-		QString nm = sl.at(0);
-		int w = sl.at(1).toInt();
-		int h = sl.at(2).toInt();
+//	while(!in.atEnd())
+//	{
+//		QStringList sl = in.readLine().split(" ");
+//		QString nm = sl.at(0);
+//		int w = sl.at(1).toInt();
+//		int h = sl.at(2).toInt();
 
-		Mat img(h, w, CV_8UC1);
+//		Mat img(h, w, CV_8UC1);
 
-		QFile lblf(lastDir + "/labels/" + nm + ".regions.txt");
-		lblf.open(QFile::ReadOnly);
-		QTextStream lblin(&lblf);
+//		QFile lblf(lastDir + "/labels/" + nm + ".regions.txt");
+//		lblf.open(QFile::ReadOnly);
+//		QTextStream lblin(&lblf);
 
-		for (int y = 0; y < h; ++y)
-		{
-			QStringList line = lblin.readLine().split(" ");
-			for (int x = 0; x < w; ++x)
-			{
-				uchar val = line.at(x).toInt();
-				if(val < 0){ img.at<uchar>(y,x) = 255; }//in original, <0 is unknown, in our case 255 is unknown
-				else{ img.at<uchar>(y,x) = val; }
-			}
-		}
+//		for (int y = 0; y < h; ++y)
+//		{
+//			QStringList line = lblin.readLine().split(" ");
+//			for (int x = 0; x < w; ++x)
+//			{
+//				uchar val = line.at(x).toInt();
+//				if(val < 0){ img.at<uchar>(y,x) = 255; }//in original, <0 is unknown, in our case 255 is unknown
+//				else{ img.at<uchar>(y,x) = val; }
+//			}
+//		}
 
-		imwrite((lastDir + "/labelsImgs/" + nm + "_labels.png").toStdString(), img);
-	}
+//		imwrite((lastDir + "/labelsImgs/" + nm + "_labels.png").toStdString(), img);
+//	}
 
-	f.close();
+//	f.close();
 	//////////////////////////////////////////////////////////////
 	// endof TRANSFORM STANFORD BACKGROUND DATASET LABELS INTO PNG
 	//////////////////////////////////////////////////////////////
@@ -1342,6 +1342,61 @@ void MainWindow::on_pushButton_test_released()
 //	QString fileName = QFileDialog::getOpenFileName(this, "Select File", lastDir, IMGTYPES);
 //	if(fileName == ""){ return; }
 //	lastDir = QFileInfo(fileName).path();
+
+	//////////////////////////////////////////////////////////////
+	// Separate multi-channel image
+	//////////////////////////////////////////////////////////////
+//	QList<QString>fileNames = QFileDialog::getOpenFileNames(this, "Select File", lastDir, IMGTYPES);
+//	if(fileNames.size() == 0){ return; }
+//	lastDir = QFileInfo(fileNames.first()).path();
+
+//	foreach(QString nm, fileNames)
+//	{
+//		Mat img = imread(nm.toStdString(), IMREAD_ANYCOLOR);
+//		vector<Mat> channels;
+//		split(img, channels);
+//		QString s = QString(nm).remove("MultiCh.png");
+//		imwrite((s + "970.png").toStdString(), channels[0]);
+//		imwrite((s + "1300.png").toStdString(), channels[1]);
+//		imwrite((s + "1550.png").toStdString(), channels[2]);
+//	}
+	//////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////
+	//print out labels for each stanford
+	//////////////////////////////////////////////////////////////
+	QList<QString>fileNames = QFileDialog::getOpenFileNames(this, "Select File", lastDir, "*_labels.png");
+	if(fileNames.size() == 0){ return; }
+	lastDir = QFileInfo(fileNames.first()).path();
+
+	foreach (QString nm, fileNames)
+	{
+		bool labels[8] = {false, false, false, false, false, false, false, false};
+		Mat img = imread(nm.toStdString(), IMREAD_GRAYSCALE);
+		MatIterator_<uchar> it, end;
+		for(it = img.begin<uchar>(), end = img.end<uchar>(); it != end; ++it)
+		{
+			labels[*it] = true;
+		}
+
+		QString s = nm.split("/").last().remove("_labels.png");
+
+		//print labels for every image
+//		for (int i = 0; i < 8; ++i)
+//		{
+//			if(labels[i]){ s += " " + QString::number(i) + ",";  }
+//		}
+//		qDebug() << s;
+
+		//only print image name if image has labels 0,1,2,5,7
+		if(labels[0] && labels[1] && labels[2] && !labels[3] &&
+			!labels[4] && labels[5] && !labels[6] && labels[7])
+		{
+			qDebug() << ("cp " + s +"*.* images2/");
+		}
+	}
+	//////////////////////////////////////////////////////////////
+
 //	ImagePreprocessor preproc;
 //	Mat a = imread(fileName.toStdString().c_str(), IMREAD_ANYDEPTH | IMREAD_ANYCOLOR);
 //	a.convertTo(a, CV_8UC1, 255.0/2047.0);
@@ -1552,6 +1607,7 @@ void MainWindow::on_btn_thinOut_released()
 	QString fileName = QFileDialog::getOpenFileName(this, "Select text file to thin out", lastDir);
 	if(fileName ==""){ return; }
 	double percentage = QInputDialog::getDouble(this, "Percentage", "How much?", 0.05, 0.00001, 1.0, 5);
+	bool jumpFirstLine = QMessageBox::Yes == QMessageBox::question(this, "Label", "Jump first line?", QMessageBox::Yes|QMessageBox::No );
 	bool doAvg = QMessageBox::Yes == QMessageBox::question(this, "AVG", "Average over interval?", QMessageBox::Yes|QMessageBox::No );
 	int interval = 1.0 / percentage + .5;
 	int cnt = 0;
@@ -1562,16 +1618,38 @@ void MainWindow::on_btn_thinOut_released()
 	f2.open(QFile::WriteOnly);
 	QTextStream ts(&f);
 	QTextStream ts2(&f2);
+
+	if(jumpFirstLine){ ts2 << ts.readLine() << "\n"; }
+
+	QList<float> avgs;
+	bool avgs_initialized  = false;
+
 	while(!ts.atEnd())
 	{
-		float avg = 0;
 		if(doAvg)
 		{
-			avg += ts.readLine().toDouble();
-			if(cnt == interval - 1)
+			QStringList slst = ts.readLine().split("\t");
+			if(!avgs_initialized)
 			{
-				avg /= (float)interval;
-				ts2 << avg << "\n";
+				for(int i = 0; i < slst.size(); ++i){ avgs.append(0); }
+				avgs_initialized = true;
+			}
+			for(int i = 0; i < slst.size(); ++i)
+			{
+				avgs[i] += slst[i].toDouble();
+			}
+
+			if(cnt == interval - 1)//make average and empty reset average list
+			{
+				foreach(float avg, avgs)
+				{
+					avg /= (float)interval;
+					ts2 << avg << "\t";
+				}
+				ts2 << "\n";
+
+				avgs.clear();
+				avgs_initialized = false;
 			}
 		}
 		else
