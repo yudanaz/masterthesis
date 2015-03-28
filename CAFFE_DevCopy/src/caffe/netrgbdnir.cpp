@@ -77,9 +77,11 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
     std::vector<Mat> mats_rgb0;
     std::vector<Mat> mats_rgb1;
     std::vector<Mat> mats_rgb2;
+
     std::vector<Mat> mats_nir0;
     std::vector<Mat> mats_nir1;
     std::vector<Mat> mats_nir2;
+
     std::vector<Mat> mats_depth0;
     std::vector<Mat> mats_depth1;
     std::vector<Mat> mats_depth2;
@@ -133,33 +135,6 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
                 mats_rgb1.push_back(getImgPatch(img_rgb1[0], x/2, y/2));
                 mats_rgb2.push_back(getImgPatch(img_rgb2[0], x/4, y/4));
             }
-
-            //DEBUG//
-//            stringstream prefix;
-//            prefix << "/home/maurice/Data/iccv09Data_stanfordBackgroundDataset/CNN_test2/debug_images/p_"
-//                   << iteration << "_" << batchCnt << "_label" << currentLabel << "_";
-//            string nm0 = prefix.str() + "rgb0.png";
-//            string nm1 = prefix.str() + "rgb1.png";
-//            string nm2 = prefix.str() + "rgb2.png";
-//            cv::imwrite(nm0, patch_rgb0);
-//            cv::imwrite(nm1, patch_rgb1);
-//            cv::imwrite(nm2, patch_rgb2);
-
-//            cv::Mat patch_rgb0_, patch_rgb1_, patch_rgb2_;
-////            cv::line(img_rgb0, cv::Point(x+borderSz,y+borderSz), cv::Point(x+borderSz,y+borderSz), cv::Scalar(0,0,255), 2);
-//            cv::resize(patch_rgb0, patch_rgb0_, cv::Size(), 4, 4, cv::INTER_CUBIC);
-//            cv::resize(patch_rgb1, patch_rgb1_, cv::Size(), 4, 4, cv::INTER_CUBIC);
-//            cv::resize(patch_rgb2, patch_rgb2_, cv::Size(), 4, 4, cv::INTER_CUBIC);
-////            imshow("orig", img_rgb0);
-////            cvWaitKey();
-//            imshow("sc0", patch_rgb0_);
-////            cvWaitKey();
-//            imshow("sc1", patch_rgb1_);
-////            cvWaitKey();
-//            imshow("sc2", patch_rgb2_);
-//            cvWaitKey();
-            //DEBUG//
-
         }
 
         if(hasNIR)
@@ -330,27 +305,34 @@ void NetRGBDNIR<Dtype>::readNextImage()
 //            std::vector<Mat> pyramid = makeLaplacianPyramid(temp1, 3);
             std::vector<Mat> pyramid = makeGaussianPyramid(temp1, 3);
 
-            //make zeor mean and unit variance for each channel
+            //compute zero mean and unit variance for each channel
             for(int i = 0; i < 3; ++i)
             {
-                normalizeEachChannelLocally(pyramid[i], 15);
+                Mat pyrLevel = pyramid[i];
+                normalizeEachChannelLocally(pyrLevel, 15);
             }
 
+            //make border padding around image for each pyramid level
             std::vector<Mat> pyramid2(3);
             cv::copyMakeBorder(pyramid[0], pyramid2[0], borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
             cv::copyMakeBorder(pyramid[1], pyramid2[1], borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 1 (half the size)
             cv::copyMakeBorder(pyramid[2], pyramid2[2], borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 2 (1/4 the size)
 
+            //split each pyramid level in Y,U,V channels
             split(pyramid2[0], img_rgb0);
             split(pyramid2[1], img_rgb1);
             split(pyramid2[2], img_rgb2);
 
-            imshow("rgb 0", img_rgb0[0]);
-            imshow("rgb 1", img_rgb0[1]);
-            imshow("rgb 2", img_rgb0[2]);
-            imshow("rgb 1", img_rgb1[0]);
-            imshow("rgb 2", img_rgb2[0]);
-            cvWaitKey();
+            //show for debug
+            imshow("rgb 0 Y", img_rgb0[0]); cvWaitKey();
+            imshow("rgb 0 U", img_rgb0[1]); cvWaitKey();
+            imshow("rgb 0 V", img_rgb0[2]); cvWaitKey();
+            imshow("rgb 1 Y", img_rgb1[0]); cvWaitKey();
+            imshow("rgb 1 U", img_rgb1[1]); cvWaitKey();
+            imshow("rgb 1 V", img_rgb1[2]); cvWaitKey();
+            imshow("rgb 2 Y", img_rgb2[0]); cvWaitKey();
+            imshow("rgb 2 U", img_rgb2[1]); cvWaitKey();
+            imshow("rgb 2 V", img_rgb2[2]); cvWaitKey();
         }
     }
 
@@ -416,30 +398,30 @@ void NetRGBDNIR<Dtype>::normalizeLocally(Mat &img, int localNbrhd)
     int x_limit = w - x_rest;
     int y_limit = h - y_rest;
 
-//    for (int y = 0; y < h; y += localNbrhd)
-//    {
-//        for (int x = 0; x < w; x += localNbrhd)
-//        {
-//            Rect roiRect(x, y, localNbrhd, localNbrhd);
-
-//            //padding with smaller roi
-//            if(x == x_limit){ roiRect.width = x_rest; }
-//            if(y == y_limit){ roiRect.height = y_rest; }
-
-//            Mat roi = img32F(roiRect);
-//            normalizeZeroMeanUnitVariance(roi);
-//        }
-//    }
-
-    for (int y = 0; y <= h - localNbrhd; y += localNbrhd)
+    for (int y = 0; y < h; y += localNbrhd)
     {
-        for (int x = 0; x <= w - localNbrhd; x += localNbrhd)
+        for (int x = 0; x < w; x += localNbrhd)
         {
             Rect roiRect(x, y, localNbrhd, localNbrhd);
+
+            //padding with smaller roi
+            if(x == x_limit){ roiRect.width = x_rest; }
+            if(y == y_limit){ roiRect.height = y_rest; }
+
             Mat roi = img32F(roiRect);
             normalizeZeroMeanUnitVariance(roi);
         }
     }
+
+//    for (int y = 0; y <= h - localNbrhd; y += localNbrhd)
+//    {
+//        for (int x = 0; x <= w - localNbrhd; x += localNbrhd)
+//        {
+//            Rect roiRect(x, y, localNbrhd, localNbrhd);
+//            Mat roi = img32F(roiRect);
+//            normalizeZeroMeanUnitVariance(roi);
+//        }
+//    }
 
     //convert back to 8 bit
     cv::normalize(img32F, img32F, 0.0, 1.0, NORM_MINMAX, -1);
@@ -474,7 +456,7 @@ void NetRGBDNIR<Dtype>::normalizeLocally2(Mat &img, int kernel)
     img32F = img32F - mean;
 
     //estimate standard deviation with gaussian blur by doing sqrt( gauss_blur(img²) )
-    GaussianBlur(img32F.mul(img32F), mean, Size(kernel*3, kernel*3), 0); //re-use mean matrix
+    GaussianBlur(img32F.mul(img32F), mean, Size(kernel*81, kernel*81), 0); //re-use mean matrix
     cv::pow(mean, 0.5, stdDev);
     img32F = img32F / stdDev;
 
