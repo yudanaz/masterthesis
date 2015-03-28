@@ -74,9 +74,12 @@ template<typename Dtype>
 void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 {
 //    LOG(INFO) << "Feeding new patches to memory data layers";
-    std::vector<Mat> mats_rgb0;
-    std::vector<Mat> mats_rgb1;
-    std::vector<Mat> mats_rgb2;
+    std::vector<Mat> mats_rgb0_Y;
+    std::vector<Mat> mats_rgb0_UV;
+    std::vector<Mat> mats_rgb1_Y;
+    std::vector<Mat> mats_rgb1_UV;
+    std::vector<Mat> mats_rgb2_Y;
+    std::vector<Mat> mats_rgb2_UV;
 
     std::vector<Mat> mats_nir0;
     std::vector<Mat> mats_nir1;
@@ -128,12 +131,37 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
         if(hasRGB)
         {
 //            LOG(INFO) << "has RGB \n";
-            mats_rgb0.push_back(getImgPatch(img_rgb0[0], x, y));
+            Mat rgb0y = img_rgb0[0];
+            Mat rgb0uv;
+            std::vector<Mat> rgb0uv_vec;
+            rgb0uv_vec.push_back(img_rgb0[1]);
+            rgb0uv_vec.push_back(img_rgb0[2]);
+            merge(rgb0uv_vec, rgb0uv);
+
+            mats_rgb0_Y.push_back(getImgPatch(rgb0y, x, y));
+            mats_rgb0_UV.push_back(getImgPatch(rgb0uv, x, y));
             if(multiscale)
             {
 //                LOG(INFO) << "is multiscale\n";
-                mats_rgb1.push_back(getImgPatch(img_rgb1[0], x/2, y/2));
-                mats_rgb2.push_back(getImgPatch(img_rgb2[0], x/4, y/4));
+                //level 1
+                Mat rgb1y = img_rgb1[0];
+                Mat rgb1uv;
+                std::vector<Mat> rgb1uv_vec;
+                rgb1uv_vec.push_back(img_rgb1[1]);
+                rgb1uv_vec.push_back(img_rgb1[2]);
+                merge(rgb1uv_vec, rgb1uv);
+                mats_rgb1_Y.push_back(getImgPatch(rgb1y, x/2, y/2));
+                mats_rgb1_UV.push_back(getImgPatch(rgb1uv, x/2, y/2));
+
+                //level 2
+                Mat rgb2y = img_rgb2[0];
+                Mat rgb2uv;
+                std::vector<Mat> rgb2uv_vec;
+                rgb2uv_vec.push_back(img_rgb2[1]);
+                rgb2uv_vec.push_back(img_rgb2[2]);
+                merge(rgb2uv_vec, rgb2uv);
+                mats_rgb2_Y.push_back(getImgPatch(rgb2y, x/4, y/4));
+                mats_rgb2_UV.push_back(getImgPatch(rgb2uv, x/4, y/4));
             }
         }
 
@@ -174,13 +202,22 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
         if( strcmp( layer->type(), "MemoryData") == 0 )
         {
             std::string nm = layer->layer_param().name();
-            if(nm == "rgb0"){ if(hasRGB)
-                { ((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_rgb0, labels); } }
-            else if(nm == "rgb1"){ if(hasRGB && multiscale)
-                { ((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_rgb1, labels); } }
-            else if(nm == "rgb2"){ if(hasRGB && multiscale)
-                { ((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_rgb2, labels); } }
+            //RGB//////////////////////////////////////////////////////////////
+            if(nm == "rgb0_Y"){ if(hasRGB)
+                { ((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_rgb0_Y, labels); } }
+            else if(nm == "rgb0_UV"){ if(hasRGB)
+                { ((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_rgb0_UV, labels); } }
+            else if(nm == "rgb1_Y"){ if(hasRGB && multiscale)
+                { ((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_rgb1_Y, labels); } }
+            else if(nm == "rgb1_UV"){ if(hasRGB && multiscale)
+                { ((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_rgb1_UV, labels); } }
+            else if(nm == "rgb2_Y"){ if(hasRGB && multiscale)
+                { ((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_rgb2_Y, labels); } }
+            else if(nm == "rgb2_UV"){ if(hasRGB && multiscale)
+                { ((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_rgb2_UV, labels); } }
 
+
+            //NIR//////////////////////////////////////////////////////////////
             else if(nm == "nir0"){ if(hasNIR)
                 { ((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_nir0, labels); } }
             else if(nm == "nir1"){ if(hasNIR && multiscale)
@@ -188,6 +225,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
             else if(nm == "nir2"){ if(hasNIR && multiscale)
                 { ((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_nir2, labels); } }
 
+            //DEPTH////////////////////////////////////////////////////////////
             else if(nm == "depth0"){ if(hasDepth)
                 {((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_depth0, labels); } }
             else if(nm == "depth1"){ if(hasDepth && multiscale)
@@ -289,10 +327,10 @@ void NetRGBDNIR<Dtype>::readNextImage()
     {
         //read image and convert ot YUV color space
         temp1 = cv::imread(rgbNm, cv::IMREAD_COLOR);
-        imshow("RGB", temp1); cvWaitKey();
+//        imshow("RGB", temp1); cvWaitKey();
 
         cvtColor(temp1, temp1, CV_BGR2YCrCb);
-        imshow("YUV", temp1); cvWaitKey();
+//        imshow("YUV", temp1); cvWaitKey();
 
 
         if(!multiscale)
@@ -324,15 +362,15 @@ void NetRGBDNIR<Dtype>::readNextImage()
             split(pyramid2[2], img_rgb2);
 
             //show for debug
-            imshow("rgb 0 Y", img_rgb0[0]); cvWaitKey();
-            imshow("rgb 0 U", img_rgb0[1]); cvWaitKey();
-            imshow("rgb 0 V", img_rgb0[2]); cvWaitKey();
-            imshow("rgb 1 Y", img_rgb1[0]); cvWaitKey();
-            imshow("rgb 1 U", img_rgb1[1]); cvWaitKey();
-            imshow("rgb 1 V", img_rgb1[2]); cvWaitKey();
-            imshow("rgb 2 Y", img_rgb2[0]); cvWaitKey();
-            imshow("rgb 2 U", img_rgb2[1]); cvWaitKey();
-            imshow("rgb 2 V", img_rgb2[2]); cvWaitKey();
+//            imshow("rgb 0 Y", img_rgb0[0]); cvWaitKey();
+//            imshow("rgb 0 U", img_rgb0[1]); cvWaitKey();
+//            imshow("rgb 0 V", img_rgb0[2]); cvWaitKey();
+//            imshow("rgb 1 Y", img_rgb1[0]); cvWaitKey();
+//            imshow("rgb 1 U", img_rgb1[1]); cvWaitKey();
+//            imshow("rgb 1 V", img_rgb1[2]); cvWaitKey();
+//            imshow("rgb 2 Y", img_rgb2[0]); cvWaitKey();
+//            imshow("rgb 2 U", img_rgb2[1]); cvWaitKey();
+//            imshow("rgb 2 V", img_rgb2[2]); cvWaitKey();
         }
     }
 
