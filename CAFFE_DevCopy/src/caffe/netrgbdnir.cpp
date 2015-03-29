@@ -35,14 +35,6 @@ void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchS
 //    LOG(INFO) << "max imgs in list: " << imgMax;
     inFile.close();
 
-    //init the vector for image channels
-    for(int i = 0; i < 3; ++i)
-    {
-        img_rgb0.push_back(Mat());
-        img_rgb1.push_back(Mat());
-        img_rgb2.push_back(Mat());
-    }
-
     //set the rest
     patchSz = patchsize;
     borderSz = patchsize / 2;
@@ -131,37 +123,49 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
         if(hasRGB)
         {
 //            LOG(INFO) << "has RGB \n";
-            Mat rgb0y = img_rgb0[0];
+            Mat patch_rgb0 = getImgPatch(img_rgb0, x, y);
+            std::vector<Mat> patch_rgb0_vect;
+            split(patch_rgb0, patch_rgb0_vect);
+            Mat rgb0y = patch_rgb0_vect[0];
             Mat rgb0uv;
             std::vector<Mat> rgb0uv_vec;
-            rgb0uv_vec.push_back(img_rgb0[1]);
-            rgb0uv_vec.push_back(img_rgb0[2]);
+            rgb0uv_vec.push_back(patch_rgb0_vect[1]);
+            rgb0uv_vec.push_back(patch_rgb0_vect[2]);
             merge(rgb0uv_vec, rgb0uv);
+            mats_rgb0_Y.push_back(rgb0y);
+            mats_rgb0_UV.push_back(rgb0uv);
+            imshow("rgb0y", rgb0y); cvWaitKey();
 
-            mats_rgb0_Y.push_back(getImgPatch(rgb0y, x, y));
-            mats_rgb0_UV.push_back(getImgPatch(rgb0uv, x, y));
             if(multiscale)
             {
 //                LOG(INFO) << "is multiscale\n";
                 //level 1
-                Mat rgb1y = img_rgb1[0];
+                Mat patch_rgb1 = getImgPatch(img_rgb1, x/2, y/2);
+                std::vector<Mat> patch_rgb1_vect;
+                split(patch_rgb1, patch_rgb1_vect);
+                Mat rgb1y = patch_rgb1_vect[0];
                 Mat rgb1uv;
                 std::vector<Mat> rgb1uv_vec;
-                rgb1uv_vec.push_back(img_rgb1[1]);
-                rgb1uv_vec.push_back(img_rgb1[2]);
+                rgb1uv_vec.push_back(patch_rgb1_vect[1]);
+                rgb1uv_vec.push_back(patch_rgb1_vect[2]);
                 merge(rgb1uv_vec, rgb1uv);
-                mats_rgb1_Y.push_back(getImgPatch(rgb1y, x/2, y/2));
-                mats_rgb1_UV.push_back(getImgPatch(rgb1uv, x/2, y/2));
+                mats_rgb1_Y.push_back(rgb1y);
+                mats_rgb1_UV.push_back(rgb1uv);
+                imshow("rgb1y", rgb1y); cvWaitKey();
 
                 //level 2
-                Mat rgb2y = img_rgb2[0];
+                Mat patch_rgb2 = getImgPatch(img_rgb2, x/4, y/4);
+                std::vector<Mat> patch_rgb2_vect;
+                split(patch_rgb2, patch_rgb2_vect);
+                Mat rgb2y = patch_rgb2_vect[0];
                 Mat rgb2uv;
                 std::vector<Mat> rgb2uv_vec;
-                rgb2uv_vec.push_back(img_rgb2[1]);
-                rgb2uv_vec.push_back(img_rgb2[2]);
+                rgb2uv_vec.push_back(patch_rgb2_vect[1]);
+                rgb2uv_vec.push_back(patch_rgb2_vect[2]);
                 merge(rgb2uv_vec, rgb2uv);
-                mats_rgb2_Y.push_back(getImgPatch(rgb2y, x/4, y/4));
-                mats_rgb2_UV.push_back(getImgPatch(rgb2uv, x/4, y/4));
+                mats_rgb2_Y.push_back(rgb2y);
+                mats_rgb2_UV.push_back(rgb2uv);
+                imshow("rgb2y", rgb2y); cvWaitKey();
             }
         }
 
@@ -274,17 +278,6 @@ void NetRGBDNIR<Dtype>::setUniformPatches()
 }
 
 template<typename Dtype>
-cv::Mat NetRGBDNIR<Dtype>::getImgPatch(cv::Mat img, int x, int y)
-{
-    cv::Mat patch;
-    cv::Rect srcROI(x, y, patchSz, patchSz);
-    img(srcROI).copyTo(patch);
-//    cv::imshow("", patch);
-//    cv::waitKey(700);
-    return patch;
-}
-
-template<typename Dtype>
 void NetRGBDNIR<Dtype>::readNextImage()
 {
     //increment image counter
@@ -350,16 +343,11 @@ void NetRGBDNIR<Dtype>::readNextImage()
                 normalizeEachChannelLocally(pyrLevel, 15);
             }
 
-            //make border padding around image for each pyramid level
-            std::vector<Mat> pyramid2(3);
-            cv::copyMakeBorder(pyramid[0], pyramid2[0], borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
-            cv::copyMakeBorder(pyramid[1], pyramid2[1], borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 1 (half the size)
-            cv::copyMakeBorder(pyramid[2], pyramid2[2], borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 2 (1/4 the size)
-
-            //split each pyramid level in Y,U,V channels
-            split(pyramid2[0], img_rgb0);
-            split(pyramid2[1], img_rgb1);
-            split(pyramid2[2], img_rgb2);
+            //make border padding around image for each pyramid level, border is whole patchsize to allow
+            //for artificial jitter (rotation & scale), then the patches are cutout after applying jitter
+            cv::copyMakeBorder(pyramid[0], img_rgb0, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
+            cv::copyMakeBorder(pyramid[1], img_rgb1, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 1 (half the size)
+            cv::copyMakeBorder(pyramid[2], img_rgb2, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 2 (1/4 the size)
 
             //show for debug
 //            imshow("rgb 0 Y", img_rgb0[0]); cvWaitKey();
@@ -535,6 +523,76 @@ vector<Mat> NetRGBDNIR<Dtype>::makeLaplacianPyramid(Mat img, int leveln)
     }
     levels.push_back(img);
     return levels;
+}
+
+
+template<typename Dtype>
+cv::Mat NetRGBDNIR<Dtype>::getImgPatch(cv::Mat img, int x, int y)
+{
+    //cut out patch twice the size
+    cv::Mat patch2x, patchJitter, patch;
+    int patchSz2x = patchSz*2;
+    cv::Rect roi(x, y, patchSz2x, patchSz2x);
+    img(roi).copyTo(patch2x);
+    imshow("patch", patch2x); cvWaitKey();
+
+    //apply jitter and crop to actual patch size
+    patchJitter = makeJitter(patch2x);
+    imshow("patch with jitter", patchJitter); cvWaitKey();
+    int offset = borderSz + (patchSz2x - patchJitter.cols) / 2; //cols and rows should be equal, it's a square after all
+    cv::Rect roi2(offset, offset, patchSz, patchSz);
+    patchJitter(roi2).copyTo(patch);
+    imshow("patch with jitter resized", patch); cvWaitKey();
+    return patch;
+}
+
+template<typename Dtype>
+Mat NetRGBDNIR<Dtype>::makeJitter(Mat img)
+{
+    int sz = std::max(img.cols, img.rows);
+    Mat imgFlipped, imgRotated, imgScaled;
+
+    //make random numbers for flip, rescale and rotation
+    boost::uniform_int<> dist_flip(0, 1);
+    boost::uniform_int<> dist_rotate(-8, 8);
+    boost::uniform_int<> dist_scale(90, 110);
+    boost::variate_generator<boost::mt19937&, boost::uniform_int<> > die_flip(gen, dist_flip);
+    boost::variate_generator<boost::mt19937&, boost::uniform_int<> > die_rotate(gen, dist_rotate);
+    boost::variate_generator<boost::mt19937&, boost::uniform_int<> > die_scale(gen, dist_scale);
+
+    int flipping = die_flip();
+    double rotAngle = die_rotate();
+    double scale_fac = (float)die_scale() / 100.0;
+
+    //flip horizontally
+    if(flipping == 1){ cv::flip(img, imgFlipped, 1); }
+    else{ imgFlipped = img; }
+
+    //rotate
+    if(rotAngle != 0)
+    {
+        Point2f centerPt(sz/2, sz/2); //the image is assumed to have size patchSz * 2
+        Mat rotMat = getRotationMatrix2D(centerPt, rotAngle, 1.0);
+        warpAffine(imgFlipped, imgRotated, rotMat, Size(sz, sz));
+    }
+    else{ imgRotated = imgFlipped; }
+
+    //rescale
+    if(scale_fac != 1.0)
+    {
+        int newSize = sz * scale_fac + 0.5;
+        if(scale_fac > 1.0) //upscaling
+        {
+            cv::resize(imgRotated, imgScaled, Size(newSize, newSize), 0, 0, INTER_CUBIC);
+        }
+        else //downscaling
+        {
+            cv::resize(imgRotated, imgScaled, Size(newSize, newSize), 0, 0, INTER_AREA);;
+        }
+    }
+    else{ imgScaled = imgRotated; }
+
+    return imgScaled;
 }
 
 INSTANTIATE_CLASS(NetRGBDNIR);

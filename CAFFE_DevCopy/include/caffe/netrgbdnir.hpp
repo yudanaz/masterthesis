@@ -22,7 +22,6 @@ protected:
     void readNextImage();
     void setRandomPatches();
     void setUniformPatches();
-    cv::Mat getImgPatch(cv::Mat img, int x, int y);
 
     void normalizeZeroMeanUnitVariance(cv::Mat &img);
     void normalizeEachChannelLocally(cv::Mat &img, int localNbrhd);
@@ -30,6 +29,8 @@ protected:
     void normalizeLocally2(cv::Mat &img, int kernel);
     vector<cv::Mat> makeGaussianPyramid(cv::Mat img, int leveln=3);
     vector<cv::Mat> makeLaplacianPyramid(cv::Mat img, int leveln=3);
+    cv::Mat getImgPatch(cv::Mat img, int x, int y);
+    cv::Mat makeJitter(cv::Mat img);
 
 
     int patchSz;
@@ -56,10 +57,9 @@ protected:
 
     cv::Mat img_labels;
 
-    std::vector<cv::Mat> img_rgb0;
-    std::vector<cv::Mat> img_rgb1;
-    std::vector<cv::Mat> img_rgb2;
-
+    cv::Mat img_rgb0;
+    cv::Mat img_rgb1;
+    cv::Mat img_rgb2;
     cv::Mat img_nir0;
     cv::Mat img_nir1;
     cv::Mat img_nir2;
