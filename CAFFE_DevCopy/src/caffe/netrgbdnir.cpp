@@ -134,7 +134,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
             merge(rgb0uv_vec, rgb0uv);
             mats_rgb0_Y.push_back(rgb0y);
             mats_rgb0_UV.push_back(rgb0uv);
-            imshow("rgb0y", rgb0y); cvWaitKey();
+//            imshow("rgb0y", rgb0y); cvWaitKey();
 
             if(multiscale)
             {
@@ -151,7 +151,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
                 merge(rgb1uv_vec, rgb1uv);
                 mats_rgb1_Y.push_back(rgb1y);
                 mats_rgb1_UV.push_back(rgb1uv);
-                imshow("rgb1y", rgb1y); cvWaitKey();
+//                imshow("rgb1y", rgb1y); cvWaitKey();
 
                 //level 2
                 Mat patch_rgb2 = getImgPatch(img_rgb2, x/4, y/4);
@@ -165,7 +165,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
                 merge(rgb2uv_vec, rgb2uv);
                 mats_rgb2_Y.push_back(rgb2y);
                 mats_rgb2_UV.push_back(rgb2uv);
-                imshow("rgb2y", rgb2y); cvWaitKey();
+//                imshow("rgb2y", rgb2y); cvWaitKey();
             }
         }
 
@@ -534,15 +534,15 @@ cv::Mat NetRGBDNIR<Dtype>::getImgPatch(cv::Mat img, int x, int y)
     int patchSz2x = patchSz*2;
     cv::Rect roi(x, y, patchSz2x, patchSz2x);
     img(roi).copyTo(patch2x);
-    imshow("patch", patch2x); cvWaitKey();
+//    imshow("patch", patch2x); cvWaitKey();
 
     //apply jitter and crop to actual patch size
     patchJitter = makeJitter(patch2x);
-    imshow("patch with jitter", patchJitter); cvWaitKey();
+//    imshow("patch with jitter", patchJitter); cvWaitKey();
     int offset = borderSz + (patchSz2x - patchJitter.cols) / 2; //cols and rows should be equal, it's a square after all
     cv::Rect roi2(offset, offset, patchSz, patchSz);
     patchJitter(roi2).copyTo(patch);
-    imshow("patch with jitter resized", patch); cvWaitKey();
+//    imshow("patch with jitter resized", patch); cvWaitKey();
     return patch;
 }
 
