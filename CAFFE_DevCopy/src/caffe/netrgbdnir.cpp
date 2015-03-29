@@ -2,8 +2,6 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <boost/random/uniform_int.hpp>
-#include <boost/random/variate_generator.hpp>
 #include "../../include/caffe/data_layers.hpp"
 #include "../../include/caffe/util/io.hpp"
 
@@ -12,7 +10,7 @@ using namespace cv;
 namespace caffe {
 
 template<typename Dtype>
-void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchSize, int imgsPerBatch,
+void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchSize, int batchesPerImage,
                               bool RGB, bool NIR, bool depth, bool isMultiscale, std::string imageType)
 {
     //LOG(INFO) << "Doing Setup of NetRGBDNIR";
@@ -41,22 +39,20 @@ void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchS
     patchCnt = 0;
     patchMax = 0; //is set correctly in readNextImage() each time an image is read, in case image sizes differ
     batchSz = batchSize;
+    batchNr = 0;
     hasRGB = RGB;
     hasNIR = NIR;
     hasDepth = depth;
     multiscale = isMultiscale;
     imgType = imageType;
-
-    //define how many pixels should be selected randomly out of every image, before loading a new image
-    //leave this value small to avoid overfitting to the first images in training list
-    sparsePatchesCntMax = batchSize / imgsPerBatch;//batchSize * 4;
+    batchesPerImg = batchesPerImage;
 
     //read first image
     readNextImage();
 
     //define random patches that should be read from this image
 //    setRandomPatches();
-    setUniformPatches();
+//    setUniformPatches();
 
     //debug
     iteration = 0;
@@ -83,25 +79,33 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
     std::vector<int> labels;
 
     int batchCnt = 0;
-    for(batchCnt = 0; batchCnt < batchSz; ++batchCnt)
+    for(batchCnt = 0; batchCnt < batchSz; )
     {
         //LOG(INFO) << "Starting nr " << batchCnt << " / " << batchSz << " in current batch";
-
         //if all patches in current image have been read, load next image
-        if(patchCnt >= sparsePatchesCntMax)//patchMax)
-        {
-//            LOG(INFO) << "Next image";
-            readNextImage();
-//            setRandomPatches();
-            setUniformPatches();
-            patchCnt = 0;
-        }
+//        if(patchCnt >= batchesPerImg)//patchMax)
+//        {
+////            LOG(INFO) << "Next image";
+//            readNextImage();
+////            setRandomPatches();
+//            setUniformPatches();
+//            patchCnt = 0;
+//        }
 
+        //load next image if enough batches have been read from the current image
+        if(batchNr++ == batchesPerImg)
+        {
+            readNextImage();
+            batchNr = 0;
+        }
 
         //get the correct pixel indices
         int w = img_labels.cols;
-        int x = sparsePatches[patchCnt] % w;
-        int y = sparsePatches[patchCnt] / w;
+        int randomPixel = randomGens[imgCnt]();
+        int x = randomPixel % w;
+        int y = randomPixel / w;
+//        int x = sparsePatches[patchCnt] % w;
+//        int y = sparsePatches[patchCnt] / w;
 //        LOG(INFO) << "patch count: " << patchCnt << "  patch: " << sparsePatches[patchCnt] << " w: " << w << " x: " << x << " y: " << y;
 
         //get label for this patch
@@ -110,6 +114,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 //        LOG(INFO) << "label: " << currentLabel;
 
         //jump the "unknown" label, training with this label is useless
+        batchCnt++;
         if(currentLabel == 255) //255 = unknown
         {
             batchCnt--; //go back one step so that in the end we have the correct number of patches in the batch
@@ -243,39 +248,39 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
     iteration++;
 }
 
-template<typename Dtype>
-void NetRGBDNIR<Dtype>::setRandomPatches()
-{
-    boost::uniform_int<> distribution(0, patchMax - 1);
-    boost::variate_generator<boost::mt19937&, boost::uniform_int<> > die(gen, distribution);
+//template<typename Dtype>
+//void NetRGBDNIR<Dtype>::setRandomPatches()
+//{
+//    boost::uniform_int<> distribution(0, patchMax - 1);
+//    boost::variate_generator<boost::mt19937&, boost::uniform_int<> > die(gen, distribution);
 
-    sparsePatches.clear();
+//    sparsePatches.clear();
 
-    for(int i = 0; i < sparsePatchesCntMax; ++i)
-    {
-        int rp = die();
-//        LOG(INFO) << rp;
-        sparsePatches.push_back(rp);
-    }
-}
+//    for(int i = 0; i < batchesPerImg; ++i)
+//    {
+//        int rp = die();
+////        LOG(INFO) << rp;
+//        sparsePatches.push_back(rp);
+//    }
+//}
 
-template<typename Dtype>
-void NetRGBDNIR<Dtype>::setUniformPatches()
-{
-    //get uniformly distributed indices into image
-    int sp_sz = imgs_uniformSubpatchSize[imgCnt];
-    int sp_i = imgs_uniformSubpatchIndex[imgCnt];
+//template<typename Dtype>
+//void NetRGBDNIR<Dtype>::setUniformPatches()
+//{
+//    //get uniformly distributed indices into image
+//    int sp_sz = imgs_uniformSubpatchSize[imgCnt];
+//    int sp_i = imgs_uniformSubpatchIndex[imgCnt];
 
-    //save indices
-    sparsePatches.clear();
-    for(int i = 0; i < sparsePatchesCntMax; ++i)
-    {
-        sparsePatches.push_back(i * sp_sz + sp_i);
-    }
+//    //save indices
+//    sparsePatches.clear();
+//    for(int i = 0; i < sparsePatchesCntMax; ++i)
+//    {
+//        sparsePatches.push_back(i * sp_sz + sp_i);
+//    }
 
-    //update subpatch index
-    imgs_uniformSubpatchIndex[imgCnt] = (sp_i + 1) % sp_sz;
-}
+//    //update subpatch index
+//    imgs_uniformSubpatchIndex[imgCnt] = (sp_i + 1) % sp_sz;
+//}
 
 template<typename Dtype>
 void NetRGBDNIR<Dtype>::readNextImage()
@@ -296,20 +301,29 @@ void NetRGBDNIR<Dtype>::readNextImage()
     //LOG(INFO) << "Reading image " << imageURL;
     img_labels = cv::imread(labelsNm, cv::IMREAD_GRAYSCALE); //label img isn't downsampled nor padded
 
-    //set amount of patches for each image and set size of suppatches for uniform patch selection
-    patchMax = img_labels.cols * img_labels.rows;
-    int patchSize = patchMax / sparsePatchesCntMax;
-    imgs_uniformSubpatchSize[imgCnt] = patchSize;
+//    //set amount of patches for each image and set size of suppatches for uniform patch selection
+//    patchMax = img_labels.cols * img_labels.rows;
+//    int patchSize = patchMax / batchesPerImg;
+//    imgs_uniformSubpatchSize[imgCnt] = patchSize;
 
-    //init indices for sub patches randomly ONCE
-    if(!imgs_uniformSubpatchIndex_inits[imgCnt])
+//    //init indices for sub patches randomly ONCE
+//    if(!imgs_uniformSubpatchIndex_inits[imgCnt])
+//    {
+//        boost::uniform_int<> distribution(0, patchSize - 1);
+//        boost::variate_generator<boost::mt19937&, boost::uniform_int<> > die(gen, distribution);
+//        int randomIndex = die();
+//        imgs_uniformSubpatchIndex[imgCnt] = randomIndex;
+//        imgs_uniformSubpatchIndex_inits[imgCnt] = true;
+////        LOG(INFO) << "random index: " << randomIndex;
+//    }
+
+    //initialize the random pixel nr generators for each image
+    if(randomGens.size() < imgMax)
     {
-        boost::uniform_int<> distribution(0, patchSize - 1);
-        boost::variate_generator<boost::mt19937&, boost::uniform_int<> > die(gen, distribution);
-        int randomIndex = die();
-        imgs_uniformSubpatchIndex[imgCnt] = randomIndex;
-        imgs_uniformSubpatchIndex_inits[imgCnt] = true;
-//        LOG(INFO) << "random index: " << randomIndex;
+        int totalNrOfPixels = img_labels.cols * img_labels.rows;
+        boost::uniform_int<> distribution(0, totalNrOfPixels);
+        boost::variate_generator<boost::mt19937*, boost::uniform_int<> > die(gen, distribution);
+        randomGens.push_back(die);
     }
 
     cv::Mat temp1, temp2, temp3;

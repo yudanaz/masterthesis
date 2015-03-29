@@ -5,6 +5,8 @@
 #include <opencv2/opencv.hpp>
 #include "../../include/caffe/data_layers.hpp"
 #include <boost/random/mersenne_twister.hpp>
+#include <boost/random/uniform_int.hpp>
+#include <boost/random/variate_generator.hpp>
 
 namespace caffe {
 
@@ -15,13 +17,13 @@ public:
     explicit NetRGBDNIR(const NetParameter& param) : Net<Dtype>(param){}
     explicit NetRGBDNIR(const string& param_file, Phase phase) : Net<Dtype>(param_file, phase){}
 
-    void setup(std::string imgsListURL, int patchsize, int batchSize, int imgsPerBatch, bool RGB, bool NIR, bool depth, bool isMultiscale, std::string imgType);
+    void setup(std::string imgsListURL, int patchsize, int batchSize, int batchesPerImage, bool RGB, bool NIR, bool depth, bool isMultiscale, std::string imgType);
     void feedNextPatchesToInputLayers();
 
 protected:
     void readNextImage();
-    void setRandomPatches();
-    void setUniformPatches();
+//    void setRandomPatches();
+//    void setUniformPatches();
 
     void normalizeZeroMeanUnitVariance(cv::Mat &img);
     void normalizeEachChannelLocally(cv::Mat &img, int localNbrhd);
@@ -41,12 +43,16 @@ protected:
     int patchCnt;
     int patchMax;
     int batchSz;
+    int batchNr;
     std::vector<int> imgs_uniformSubpatchSize; //stores the size of the uniform subpatches for each image
     std::vector<int> imgs_uniformSubpatchIndex; //stores the index in the uniform subpatches for each image
     std::vector<bool> imgs_uniformSubpatchIndex_inits; //stores whether this subpatch index has been initialized with a random index
 
+    //vector that holds random pixel number generators for each image:
+    std::vector< boost::variate_generator<boost::mt19937&, boost::uniform_int<> > > randomGens;
+
     boost::mt19937 gen; //random number generator
-    int sparsePatchesCntMax;
+    int batchesPerImg;
     vector<int> sparsePatches;
 
     bool hasRGB;

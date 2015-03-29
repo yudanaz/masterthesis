@@ -111,13 +111,13 @@ void Solver<Dtype>::InitTrainNet() {
         std::string imageListURL = param_.rgbdnir_param().trainimgsurl();
         int patchSize = param_.rgbdnir_param().patchsize();
         int batchSize = param_.rgbdnir_param().trainbatchsize();
-        int imgsPerBatch = param_.rgbdnir_param().imagesperbatch();
+        int batchesPerImage = param_.rgbdnir_param().batchesperimage();
         bool hasRGB = param_.rgbdnir_param().hasrgb();
         bool hasNIR = param_.rgbdnir_param().hasnir();
         bool hasDepth = param_.rgbdnir_param().hasdepth();
         bool multiscale = param_.rgbdnir_param().has_multiscale();
         std::string imgType = param_.rgbdnir_param().imagetype();
-        boost::dynamic_pointer_cast<NetRGBDNIR<Dtype> >(net_)->setup(imageListURL, patchSize, batchSize, imgsPerBatch, hasRGB, hasNIR, hasDepth, multiscale, imgType);
+        boost::dynamic_pointer_cast<NetRGBDNIR<Dtype> >(net_)->setup(imageListURL, patchSize, batchSize, batchesPerImage, hasRGB, hasNIR, hasDepth, multiscale, imgType);
     }
     ////////////////////////////////////////////////////////////////////////////////
     /// endof RGBDNIR extension of original Solver class: //////////////////////////
@@ -210,13 +210,13 @@ void Solver<Dtype>::InitTestNets() {
         std::string imageListURL = param_.rgbdnir_param().testimgsurl();
         int patchSize = param_.rgbdnir_param().patchsize();
         int batchSize = param_.rgbdnir_param().testbatchsize();
-        int imgsPerBatch = param_.rgbdnir_param().imagesperbatch();
+        int batchesPerImage = param_.rgbdnir_param().batchesperimage();
         bool hasRGB = param_.rgbdnir_param().hasrgb();
         bool hasNIR = param_.rgbdnir_param().hasnir();
         bool hasDepth = param_.rgbdnir_param().hasdepth();
         bool multiscale = param_.rgbdnir_param().has_multiscale();
         std::string imgType = param_.rgbdnir_param().imagetype();
-        boost::dynamic_pointer_cast<NetRGBDNIR<Dtype> >(test_nets_[i])->setup(imageListURL, patchSize, batchSize, imgsPerBatch, hasRGB, hasNIR, hasDepth, multiscale, imgType);
+        boost::dynamic_pointer_cast<NetRGBDNIR<Dtype> >(test_nets_[i])->setup(imageListURL, patchSize, batchSize, batchesPerImage, hasRGB, hasNIR, hasDepth, multiscale, imgType);
     }
     ////////////////////////////////////////////////////////////////////////////////
     /// endof RGBDNIR extension of original Solver class: //////////////////////////
