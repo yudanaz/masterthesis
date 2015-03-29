@@ -1,0 +1,841 @@
+name: "CaffeStanfordBackgroundDataset"
+
+
+#TRAIN INPUTS#####################################################
+layers {
+  name: "rgb0_Y"
+  type: MEMORY_DATA
+  top: "rgb0_Y"
+  top: "labelRGB0_Y"
+  memory_data_param {
+    batch_size: 1
+    channels: 1
+    height: 46
+    width: 46
+  }
+  transform_param {
+    scale: 0.00390625
+  }
+  include: { phase: TRAIN }
+}
+layers {
+  name: "rgb0_UV"
+  type: MEMORY_DATA
+  top: "rgb0_UV"
+  top: "labelRGB0_UV"
+  memory_data_param {
+    batch_size: 1
+    channels: 2
+    height: 46
+    width: 46
+  }
+  transform_param {
+    scale: 0.00390625
+  }
+  include: { phase: TRAIN }
+}
+
+layers {
+  name: "rgb1_Y"
+  type: MEMORY_DATA
+  top: "rgb1_Y"
+  top: "labelRGB1_Y"
+  memory_data_param {
+    batch_size: 1
+    channels: 1
+    height: 46
+    width: 46
+  }
+  transform_param {
+    scale: 0.00390625
+  }
+  include: { phase: TRAIN }
+}
+layers {
+  name: "rgb1_UV"
+  type: MEMORY_DATA
+  top: "rgb1_UV"
+  top: "labelRGB1_UV"
+  memory_data_param {
+    batch_size: 1
+    channels: 2
+    height: 46
+    width: 46
+  }
+  transform_param {
+    scale: 0.00390625
+  }
+  include: { phase: TRAIN }
+}
+
+layers {
+  name: "rgb2_Y"
+  type: MEMORY_DATA
+  top: "rgb2_Y"
+  top: "labelRGB2_Y"
+  memory_data_param {
+    batch_size: 1
+    channels: 1
+    height: 46
+    width: 46
+  }
+  transform_param {
+    scale: 0.00390625
+  }
+  include: { phase: TRAIN }
+}
+layers {
+  name: "rgb2_UV"
+  type: MEMORY_DATA
+  top: "rgb2_UV"
+  top: "labelRGB2_UV"
+  memory_data_param {
+    batch_size: 1
+    channels: 2
+    height: 46
+    width: 46
+  }
+  transform_param {
+    scale: 0.00390625
+  }
+  include: { phase: TRAIN }
+}
+
+
+
+#TEST INPUTS#####################################################
+layers {
+  name: "rgb0_Y"
+  type: MEMORY_DATA
+  top: "rgb0_Y"
+  top: "labelRGB0_Y"
+  memory_data_param {
+    batch_size: 1
+    channels: 1
+    height: 46
+    width: 46
+  }
+  transform_param {
+    scale: 0.00390625
+  }
+  include: { phase: TEST }
+}
+layers {
+  name: "rgb0_UV"
+  type: MEMORY_DATA
+  top: "rgb0_UV"
+  top: "labelRGB0_UV"
+  memory_data_param {
+    batch_size: 1
+    channels: 2
+    height: 46
+    width: 46
+  }
+  transform_param {
+    scale: 0.00390625
+  }
+  include: { phase: TEST }
+}
+
+layers {
+  name: "rgb1_Y"
+  type: MEMORY_DATA
+  top: "rgb1_Y"
+  top: "labelRGB1_Y"
+  memory_data_param {
+    batch_size: 1
+    channels: 1
+    height: 46
+    width: 46
+  }
+  transform_param {
+    scale: 0.00390625
+  }
+  include: { phase: TEST }
+}
+layers {
+  name: "rgb1_UV"
+  type: MEMORY_DATA
+  top: "rgb1_UV"
+  top: "labelRGB1_UV"
+  memory_data_param {
+    batch_size: 1
+    channels: 2
+    height: 46
+    width: 46
+  }
+  transform_param {
+    scale: 0.00390625
+  }
+  include: { phase: TEST }
+}
+
+layers {
+  name: "rgb2_Y"
+  type: MEMORY_DATA
+  top: "rgb2_Y"
+  top: "labelRGB2_Y"
+  memory_data_param {
+    batch_size: 1
+    channels: 1
+    height: 46
+    width: 46
+  }
+  transform_param {
+    scale: 0.00390625
+  }
+  include: { phase: TEST }
+}
+layers {
+  name: "rgb2_UV"
+  type: MEMORY_DATA
+  top: "rgb2_UV"
+  top: "labelRGB2_UV"
+  memory_data_param {
+    batch_size: 1
+    channels: 2
+    height: 46
+    width: 46
+  }
+  transform_param {
+    scale: 0.00390625
+  }
+  include: { phase: TEST }
+}
+
+
+###############################################################################
+# CONVOLUTIONAL LAYERS 1: 
+###############################################################################
+###################
+# RGB LEVEL 0
+###################
+#########
+# Y
+#########
+layers {
+  name: "conv1stRGB0_Y"
+  type: CONVOLUTION
+  bottom: "rgb0_Y"
+  top: "conv1stRGB0_Y"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 1
+  weight_decay: 0
+  convolution_param {
+    num_output: 10
+    kernel_size: 7
+    stride: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+  param: "conv1stRGB_Y_w" #weight sharing!
+  #param: "conv1stRGB_Y_b"
+}
+layers {
+  name: "tanh1stRGB0_Y"
+  type: TANH
+  bottom: "conv1stRGB0_Y"
+  top: "tanh1stRGB0_Y"
+}
+layers {
+  name: "pool1stRGB0_Y"
+  type: POOLING
+  bottom: "tanh1stRGB0_Y"
+  top: "pool1stRGB0_Y"
+  pooling_param {
+    pool: MAX
+    kernel_size: 2
+    stride: 2
+  }
+}
+
+#########
+# UV
+#########
+layers {
+  name: "conv1stRGB0_UV"
+  type: CONVOLUTION
+  bottom: "rgb0_UV"
+  top: "conv1stRGB0_UV"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 1
+  weight_decay: 0
+  convolution_param {
+    num_output: 6
+    kernel_size: 7
+    stride: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+  param: "conv1stRGB_UV_w" #weight sharing!
+  #param: "conv1stRGB_UV_b"
+}
+layers {
+  name: "tanh1stRGB0_UV"
+  type: TANH
+  bottom: "conv1stRGB0_UV"
+  top: "tanh1stRGB0_UV"
+}
+layers {
+  name: "pool1stRGB0_UV"
+  type: POOLING
+  bottom: "tanh1stRGB0_UV"
+  top: "pool1stRGB0_UV"
+  pooling_param {
+    pool: MAX
+    kernel_size: 2
+    stride: 2
+  }
+}
+
+#########
+# CONCAT
+#########
+layers {
+  name: "pool1stRGB0_concat"
+  bottom: "pool1stRGB0_Y"
+  bottom: "pool1stRGB0_UV"
+  top: "pool1stRGB0_concat"
+  type: CONCAT
+  concat_param {
+    concat_dim: 1 
+  }
+}
+
+
+###################
+# RGB LEVEL 1
+###################
+#########
+# Y
+#########
+layers {
+  name: "conv1stRGB1_Y"
+  type: CONVOLUTION
+  bottom: "rgb1_Y"
+  top: "conv1stRGB1_Y"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 1
+  weight_decay: 0
+  convolution_param {
+    num_output: 10
+    kernel_size: 7
+    stride: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+  param: "conv1stRGB_Y_w"
+  #param: "conv1stRGB_Y_b"
+}
+layers {
+  name: "tanh1stRGB1_Y"
+  type: TANH
+  bottom: "conv1stRGB1_Y"
+  top: "tanh1stRGB1_Y"
+}
+layers {
+  name: "pool1stRGB1_Y"
+  type: POOLING
+  bottom: "tanh1stRGB1_Y"
+  top: "pool1stRGB1_Y"
+  pooling_param {
+    pool: MAX
+    kernel_size: 2
+    stride: 2
+  }
+}
+
+#########
+# UV
+#########
+layers {
+  name: "conv1stRGB1_UV"
+  type: CONVOLUTION
+  bottom: "rgb1_UV"
+  top: "conv1stRGB1_UV"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 1
+  weight_decay: 0
+  convolution_param {
+    num_output: 6
+    kernel_size: 7
+    stride: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+  param: "conv1stRGB_UV_w"
+  #param: "conv1stRGB_UV_b"
+}
+layers {
+  name: "tanh1stRGB1_UV"
+  type: TANH
+  bottom: "conv1stRGB1_UV"
+  top: "tanh1stRGB1_UV"
+}
+layers {
+  name: "pool1stRGB1_UV"
+  type: POOLING
+  bottom: "tanh1stRGB1_UV"
+  top: "pool1stRGB1_UV"
+  pooling_param {
+    pool: MAX
+    kernel_size: 2
+    stride: 2
+  }
+}
+
+#########
+# CONCAT
+#########
+layers {
+  name: "pool1stRGB1_concat"
+  bottom: "pool1stRGB1_Y"
+  bottom: "pool1stRGB1_UV"
+  top: "pool1stRGB1_concat"
+  type: CONCAT
+  concat_param {
+    concat_dim: 1 
+  }
+}
+
+
+###################
+# RGB LEVEL 2
+###################
+#########
+# Y
+#########
+layers {
+  name: "conv1stRGB2_Y"
+  type: CONVOLUTION
+  bottom: "rgb2_Y"
+  top: "conv1stRGB2_Y"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 1
+  weight_decay: 0
+  convolution_param {
+    num_output: 10
+    kernel_size: 7
+    stride: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+  param: "conv1stRGB_Y_w"
+  #param: "conv1stRGB_Y_b"
+}
+layers {
+  name: "tanh1stRGB2_Y"
+  type: TANH
+  bottom: "conv1stRGB2_Y"
+  top: "tanh1stRGB2_Y"
+}
+layers {
+  name: "pool1stRGB2_Y"
+  type: POOLING
+  bottom: "tanh1stRGB2_Y"
+  top: "pool1stRGB2_Y"
+  pooling_param {
+    pool: MAX
+    kernel_size: 2
+    stride: 2
+  }
+}
+
+#########
+# UV
+#########
+layers {
+  name: "conv1stRGB2_UV"
+  type: CONVOLUTION
+  bottom: "rgb2_UV"
+  top: "conv1stRGB2_UV"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 1
+  weight_decay: 0
+  convolution_param {
+    num_output: 6
+    kernel_size: 7
+    stride: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+  param: "conv1stRGB_UV_w"
+  #param: "conv1stRGB_UV_b"
+}
+layers {
+  name: "tanh1stRGB2_UV"
+  type: TANH
+  bottom: "conv1stRGB2_UV"
+  top: "tanh1stRGB2_UV"
+}
+layers {
+  name: "pool1stRGB2_UV"
+  type: POOLING
+  bottom: "tanh1stRGB2_UV"
+  top: "pool1stRGB2_UV"
+  pooling_param {
+    pool: MAX
+    kernel_size: 2
+    stride: 2
+  }
+}
+
+#########
+# CONCAT
+#########
+layers {
+  name: "pool1stRGB2_concat"
+  bottom: "pool1stRGB2_Y"
+  bottom: "pool1stRGB2_UV"
+  top: "pool1stRGB2_concat"
+  type: CONCAT
+  concat_param {
+    concat_dim: 1 
+  }
+}
+
+
+###############################################################################
+# CONVOLUTIONAL LAYERS 2: 
+###############################################################################
+layers {
+  name: "conv2ndScale0"
+  type: CONVOLUTION
+  bottom: "pool1stRGB0_concat"
+  top: "conv2ndScale0"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 1
+  weight_decay: 0
+  convolution_param {
+    num_output: 64
+    kernel_size: 7
+    group: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 1
+    }
+  }
+  param: "conv2_w"
+  #param: "conv2_b"
+}
+layers {
+  name: "tanh2ndScale0"
+  type: TANH
+  bottom: "conv2ndScale0"
+  top: "tanh2ndScale0"
+}
+layers {
+  name: "pool2ndScale0"
+  type: POOLING
+  bottom: "tanh2ndScale0"
+  top: "pool2ndScale0"
+  pooling_param {
+    pool: MAX
+    kernel_size: 2
+    stride: 2
+  }
+}
+layers {
+  name: "conv2ndScale1"
+  type: CONVOLUTION
+  bottom: "pool1stRGB1_concat"
+  top: "conv2ndScale1"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 1
+  weight_decay: 0
+  convolution_param {
+    num_output: 64
+    kernel_size: 7
+    group: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 1
+    }
+  }
+  param: "conv2_w"
+  #param: "conv2_b"
+}
+layers {
+  name: "tanh2ndScale1"
+  type: TANH
+  bottom: "conv2ndScale1"
+  top: "tanh2ndScale1"
+}
+layers {
+  name: "pool2ndScale1"
+  type: POOLING
+  bottom: "tanh2ndScale1"
+  top: "pool2ndScale1"
+  pooling_param {
+    pool: MAX
+    kernel_size: 2
+    stride: 2
+  }
+}
+layers {
+  name: "conv2ndScale2"
+  type: CONVOLUTION
+  bottom: "pool1stRGB2_concat"
+  top: "conv2ndScale2"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 1
+  weight_decay: 0
+  convolution_param {
+    num_output: 64
+    kernel_size: 7
+    group: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 1
+    }
+  }
+  param: "conv2_w"
+  #param: "conv2_b"
+}
+layers {
+  name: "tanh2ndScale2"
+  type: TANH
+  bottom: "conv2ndScale2"
+  top: "tanh2ndScale2"
+}
+layers {
+  name: "pool2ndScale2"
+  type: POOLING
+  bottom: "tanh2ndScale2"
+  top: "pool2ndScale2"
+  pooling_param {
+    pool: MAX
+    kernel_size: 2
+    stride: 2
+  }
+}
+
+###############################################################################
+# CONVOLUTIONAL LAYERS 3: 
+###############################################################################
+layers {
+  name: "conv3rdScale0"
+  type: CONVOLUTION
+  bottom: "pool2ndScale0"
+  top: "conv3rdScale0"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 1
+  weight_decay: 0
+  convolution_param {
+    num_output: 256
+    kernel_size: 7
+    group: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+  param: "conv3_w"
+  #param: "conv3_b"
+}
+layers {
+  name: "conv3rdScale1"
+  type: CONVOLUTION
+  bottom: "pool2ndScale1"
+  top: "conv3rdScale1"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 1
+  weight_decay: 0
+  convolution_param {
+    num_output: 256
+    kernel_size: 7
+    group: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+  param: "conv3_w"
+  #param: "conv3_b"
+}
+layers {
+  name: "conv3rdScale2"
+  type: CONVOLUTION
+  bottom: "pool2ndScale2"
+  top: "conv3rdScale2"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 1
+  weight_decay: 0
+  convolution_param {
+    num_output: 256
+    kernel_size: 7
+    group: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+  param: "conv3_w"
+  #param: "conv3_b"
+}
+
+
+# CONCAT FEATURE MAPS OF ALL SCALES -> 3 * 256 = 768 DIMENSIONS
+layers {
+  name: "concatAllScales"
+  bottom: "conv3rdScale0"
+  bottom: "conv3rdScale1"
+  bottom: "conv3rdScale2"
+  top: "concatAllScales"
+  type: CONCAT
+  concat_param {
+    concat_dim: 1 
+  }
+}
+
+
+# LINEAR CLASSIFICATION BY 2-LAYER MLP
+layers {
+  name: "ip1"
+  type: INNER_PRODUCT
+  bottom: "concatAllScales"
+  top: "ip1"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 1
+  weight_decay: 0
+  inner_product_param {
+    num_output: 1024
+    weight_filler {
+      type: "gaussian"
+      std: 0.005
+    }
+    bias_filler {
+      type: "constant"
+      value: 1
+    }
+  }
+}
+layers {
+  name: "relu"
+  type: RELU
+  bottom: "ip1"
+  top: "ip1"
+}
+layers {
+  name: "ip2"
+  type: INNER_PRODUCT
+  bottom: "ip1"
+  top: "ip2"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 1
+  weight_decay: 0
+  inner_product_param {
+    num_output: 8
+    weight_filler {
+      type: "gaussian"
+      std: 0.005
+    }
+    bias_filler {
+      type: "constant"
+      value: 1
+    }
+  }
+}
+
+
+# ACCURACY AND LOSS OUTPUT
+layers {
+  name: "accuracy"
+  type: ACCURACY
+  bottom: "ip2"
+  bottom: "labelRGB0_Y"
+  top: "accuracy"
+  include: { phase: TEST }
+}
+layers {
+  name: "loss"
+  type: SOFTMAX_LOSS
+  bottom: "ip2"
+  bottom: "labelRGB0_Y" 
+  top: "loss"
+}
+
+
+# SILENCE UNUSED LABEL BLOBS
+layers{
+  type: SILENCE
+  bottom: "labelRGB0_UV"
+  bottom: "labelRGB1_Y"
+  bottom: "labelRGB1_UV"
+  bottom: "labelRGB2_Y"
+  bottom: "labelRGB2_UV"
+}
