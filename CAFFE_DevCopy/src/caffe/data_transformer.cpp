@@ -285,6 +285,9 @@ void DataTransformer<Dtype>::Transform(const cv::Mat& cv_img,
           if (has_mean_values) {
             transformed_data[top_index] =
               (pixel - mean_values_[c]) * scale;
+            //debug//
+//            LOG(INFO) << "mean: " << mean_values_[c] << "   scale: " << scale << "  old pixel value: " << pixel << "   new pixel value: " << ((pixel - mean_values_[c]) * scale);
+            //debug//
           } else {
             transformed_data[top_index] = pixel * scale;
           }
