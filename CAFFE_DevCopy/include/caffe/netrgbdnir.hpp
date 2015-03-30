@@ -49,7 +49,9 @@ protected:
     std::vector<bool> imgs_uniformSubpatchIndex_inits; //stores whether this subpatch index has been initialized with a random index
 
     //vector that holds random pixel number generators for each image:
-    std::vector< boost::variate_generator<boost::mt19937&, boost::uniform_int<> > > randomGens;
+    int getNextRandomPixel();
+    std::vector< std::vector<int> > randomPixels;
+    std::vector<int> randomPixelIndices;
 
     boost::mt19937 gen; //random number generator
     int batchesPerImg;

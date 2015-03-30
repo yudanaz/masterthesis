@@ -24,9 +24,13 @@ void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchS
     while(std::getline(inFile, line))
     {
         imgs.push_back(line);
-        imgs_uniformSubpatchSize.push_back(0); //just init here, set correct value in readNextImage()
-        imgs_uniformSubpatchIndex.push_back(0); //init here, incremented in setUniformPatches()
-        imgs_uniformSubpatchIndex_inits.push_back(false); //set all to "not initialized with random start index"
+
+        vector<int> randomImgPixels;
+        randomPixels.push_back(randomImgPixels);
+        randomPixelIndices.push_back(0);
+//        imgs_uniformSubpatchSize.push_back(0); //just init here, set correct value in readNextImage()
+//        imgs_uniformSubpatchIndex.push_back(0); //init here, incremented in setUniformPatches()
+//        imgs_uniformSubpatchIndex_inits.push_back(false); //set all to "not initialized with random start index"
 
         imgMax++;
     }
@@ -93,15 +97,16 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 //        }
 
         //load next image if enough batches have been read from the current image
-        if(batchNr++ == batchesPerImg)
+        if(batchNr == batchesPerImg)
         {
             readNextImage();
             batchNr = 0;
         }
+        else{ batchNr++; }
 
         //get the correct pixel indices
         int w = img_labels.cols;
-        int randomPixel = randomGens[imgCnt]();
+        int randomPixel = getNextRandomPixel();
         int x = randomPixel % w;
         int y = randomPixel / w;
 //        int x = sparsePatches[patchCnt] % w;
@@ -317,13 +322,16 @@ void NetRGBDNIR<Dtype>::readNextImage()
 ////        LOG(INFO) << "random index: " << randomIndex;
 //    }
 
-    //initialize the random pixel nr generators for each image
-    if(randomGens.size() < imgMax)
+    //make a shuffled list of pixel indices for each image
+    if(randomPixels.at(imgCnt).size() == 0) //vector for current image not initialized yet
     {
+        //fill vector holding all image pixels for current image, then shufflen it
         int totalNrOfPixels = img_labels.cols * img_labels.rows;
-        boost::uniform_int<> distribution(0, totalNrOfPixels);
-        boost::variate_generator<boost::mt19937*, boost::uniform_int<> > die(gen, distribution);
-        randomGens.push_back(die);
+        for (int i = 0; i < totalNrOfPixels; ++i)
+        {
+            randomPixels.at(imgCnt).push_back(i);
+        }
+        std::random_shuffle(randomPixels.at(imgCnt).begin(), randomPixels.at(imgCnt).end());
     }
 
     cv::Mat temp1, temp2, temp3;
@@ -364,15 +372,9 @@ void NetRGBDNIR<Dtype>::readNextImage()
             cv::copyMakeBorder(pyramid[2], img_rgb2, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 2 (1/4 the size)
 
             //show for debug
-//            imshow("rgb 0 Y", img_rgb0[0]); cvWaitKey();
-//            imshow("rgb 0 U", img_rgb0[1]); cvWaitKey();
-//            imshow("rgb 0 V", img_rgb0[2]); cvWaitKey();
-//            imshow("rgb 1 Y", img_rgb1[0]); cvWaitKey();
-//            imshow("rgb 1 U", img_rgb1[1]); cvWaitKey();
-//            imshow("rgb 1 V", img_rgb1[2]); cvWaitKey();
-//            imshow("rgb 2 Y", img_rgb2[0]); cvWaitKey();
-//            imshow("rgb 2 U", img_rgb2[1]); cvWaitKey();
-//            imshow("rgb 2 V", img_rgb2[2]); cvWaitKey();
+//            imshow("rgb 0", img_rgb0); cvWaitKey();
+//            imshow("rgb 1", img_rgb1); cvWaitKey();
+//            imshow("rgb 2", img_rgb2); cvWaitKey();
         }
     }
 
@@ -608,6 +610,16 @@ Mat NetRGBDNIR<Dtype>::makeJitter(Mat img)
 
     return imgScaled;
 }
+
+template<typename Dtype>
+int NetRGBDNIR<Dtype>::getNextRandomPixel()
+{
+    int rpx = randomPixels.at(imgCnt).at( randomPixelIndices.at(imgCnt) );
+    randomPixelIndices.at(imgCnt) = (randomPixelIndices.at(imgCnt) + 1) % randomPixels.at(imgCnt).size();
+//    LOG(INFO) << imgCnt << " : " <<  randomPixelIndices.at(imgCnt);
+    return rpx;
+}
+
 
 INSTANTIATE_CLASS(NetRGBDNIR);
 
