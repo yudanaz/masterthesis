@@ -29,9 +29,10 @@ protected:
     void normalizeEachChannelLocally(cv::Mat &img, int localNbrhd);
     void normalizeLocally(cv::Mat &img, int localNbrhd);
     void normalizeLocally2(cv::Mat &img, int kernel);
+    vector<cv::Mat> makePyramid(cv::Mat img, int leveln=3);
     vector<cv::Mat> makeGaussianPyramid(cv::Mat img, int leveln=3);
     vector<cv::Mat> makeLaplacianPyramid(cv::Mat img, int leveln=3);
-    cv::Mat getImgPatch(cv::Mat img, int x, int y);
+    cv::Mat getImgPatch(cv::Mat img, int x, int y, string s="");
     cv::Mat makeJitter(cv::Mat img);
 
 
