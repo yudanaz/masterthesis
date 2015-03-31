@@ -325,8 +325,9 @@ void NetRGBDNIR<Dtype>::readNextImage()
     //make a shuffled list of pixel indices for each image
     if(randomPixels.at(imgCnt).size() == 0) //vector for current image not initialized yet
     {
-        //fill vector holding all image pixels for current image, then shufflen it
+        //fill vector holding all image pixels for current image, then shuffle it
         int totalNrOfPixels = img_labels.cols * img_labels.rows;
+        srand(time(0)); //set seed for random generator using current time
         for (int i = 0; i < totalNrOfPixels; ++i)
         {
             randomPixels.at(imgCnt).push_back(i);
