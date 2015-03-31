@@ -134,7 +134,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
         if(hasRGB)
         {
 //            LOG(INFO) << "has RGB \n";
-            Mat patch_rgb0 = getImgPatch(img_rgb0, x, y, "_l0_");
+            Mat patch_rgb0 = getImgPatch(img_rgb0, x, y);
             std::vector<Mat> patch_rgb0_vect;
             split(patch_rgb0, patch_rgb0_vect);
             Mat rgb0y = patch_rgb0_vect[0];
@@ -152,7 +152,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
             {
 //                LOG(INFO) << "is multiscale\n";
                 //level 1
-                Mat patch_rgb1 = getImgPatch(img_rgb1, x/2, y/2, "_l1_");
+                Mat patch_rgb1 = getImgPatch(img_rgb1, x/2, y/2);
                 std::vector<Mat> patch_rgb1_vect;
                 split(patch_rgb1, patch_rgb1_vect);
                 Mat rgb1y = patch_rgb1_vect[0];
@@ -167,7 +167,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 //                imwrite("/home/maurice/rgb1y.png", rgb1y);
 
                 //level 2
-                Mat patch_rgb2 = getImgPatch(img_rgb2, x/4, y/4, "_l2_");
+                Mat patch_rgb2 = getImgPatch(img_rgb2, x/4, y/4);
                 std::vector<Mat> patch_rgb2_vect;
                 split(patch_rgb2, patch_rgb2_vect);
                 Mat rgb2y = patch_rgb2_vect[0];
@@ -361,8 +361,8 @@ void NetRGBDNIR<Dtype>::readNextImage()
         else //make Laplacian pyramid
         {
 //            std::vector<Mat> pyramid = makeLaplacianPyramid(temp1, 3);
-//            std::vector<Mat> pyramid = makeGaussianPyramid(temp1, 3);
-            std::vector<Mat> pyramid = makePyramid(temp1, 3);
+            std::vector<Mat> pyramid = makeGaussianPyramid(temp1, 3);
+//         TODO: debug this shit!   std::vector<Mat> pyramid = makePyramid(temp1, 3);
 
             //compute zero mean and unit variance for each channel
             for(int i = 0; i < 3; ++i)
@@ -518,13 +518,14 @@ vector<Mat> NetRGBDNIR<Dtype>::makePyramid(Mat img, int leveln)
 {
     vector<Mat> levels;
     Mat procImg;
+    int w = img.cols % 2 == 0 ? img.cols : img.cols-1;
+    int h = img.rows % 2 == 0 ? img.rows : img.rows-1;
 
     levels.push_back(img);
     for(int i = 1; i < leveln; ++i)
     {
-        resize(img, procImg, Size(), .5, .5, INTER_AREA);
+        resize(img, procImg, Size(w/pow(2,i), h/pow(2,i)), 0, 0, INTER_AREA);
         levels.push_back(procImg.clone());
-        img = procImg.clone();
     }
     return levels;
 }
@@ -565,7 +566,7 @@ vector<Mat> NetRGBDNIR<Dtype>::makeLaplacianPyramid(Mat img, int leveln)
 
 
 template<typename Dtype>
-cv::Mat NetRGBDNIR<Dtype>::getImgPatch(cv::Mat img, int x, int y, string s)
+cv::Mat NetRGBDNIR<Dtype>::getImgPatch(cv::Mat img, int x, int y)
 {
     //cut out patch twice the size
     cv::Mat patch2x, patchJitter, patch;

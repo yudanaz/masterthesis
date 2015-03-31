@@ -32,7 +32,7 @@ protected:
     vector<cv::Mat> makePyramid(cv::Mat img, int leveln=3);
     vector<cv::Mat> makeGaussianPyramid(cv::Mat img, int leveln=3);
     vector<cv::Mat> makeLaplacianPyramid(cv::Mat img, int leveln=3);
-    cv::Mat getImgPatch(cv::Mat img, int x, int y, string s="");
+    cv::Mat getImgPatch(cv::Mat img, int x, int y);
     cv::Mat makeJitter(cv::Mat img);
 
 
