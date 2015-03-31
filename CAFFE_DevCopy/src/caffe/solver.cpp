@@ -226,7 +226,7 @@ void Solver<Dtype>::InitTestNets() {
 }
 
 template <typename Dtype>
-void Solver<Dtype>::Step(int iters, std::ofstream &lossLogFile, std::ofstream &testAccuracyLogFile)
+bool Solver<Dtype>::Step(int iters, std::ofstream &lossLogFile, std::ofstream &testAccuracyLogFile)
 {
   vector<Blob<Dtype>*> bottom_vec;
   const int start_iter = iter_;
@@ -256,6 +256,14 @@ void Solver<Dtype>::Step(int iters, std::ofstream &lossLogFile, std::ofstream &t
 
     lossLogFile << loss << "\n";
     lossLogFile.flush();
+
+//    if(loss > 5.0)
+//    {
+//        LOG(INFO) << "loss: " << loss;
+//        LOG(INFO) << "ERROR, loss too high\n===\n===\n===\n===\n===\n===";
+//        return false;
+//    }
+
     ////////////////////////////////////////////////////////////////////////////////
     /// endof RGBDNIR extension of original Solver class: //////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
@@ -299,6 +307,8 @@ void Solver<Dtype>::Step(int iters, std::ofstream &lossLogFile, std::ofstream &t
       Snapshot();
     }
   }
+
+  return true;
 }
 
 template <typename Dtype>
@@ -315,11 +325,11 @@ void Solver<Dtype>::Solve(const char* resume_file)
         time_t sec;
         time(&sec);
 
-        std::string s = param_.logfileurl() + std::string("/") + boost::lexical_cast<std::string>(sec) + std::string("_lossLog.txt");
+        std::string s = param_.logfileurl() + boost::lexical_cast<std::string>(sec) + std::string("_lossLog.txt");
         lossLogFile.open((char*)s.c_str());
         lossLogFile << "loss\n";
 
-        std::string s2 = param_.logfileurl() + std::string("/") + boost::lexical_cast<std::string>(sec) + std::string("_testAccuracyLossLog.txt");
+        std::string s2 = param_.logfileurl() + boost::lexical_cast<std::string>(sec) + std::string("_testAccuracyLossLog.txt");
         testAccurLossLogFile.open((char*)s2.c_str());
         testAccurLossLogFile << "accuracy\tloss\n";
     }
@@ -338,7 +348,8 @@ void Solver<Dtype>::Solve(const char* resume_file)
 
   // For a network that is trained by the solver, no bottom or top vecs
   // should be given, and we will just provide dummy vecs.
-  Step(param_.max_iter() - iter_, lossLogFile, testAccurLossLogFile);
+  bool success = Step(param_.max_iter() - iter_, lossLogFile, testAccurLossLogFile);
+  if(!success){ return; }
   // If we haven't already, save a snapshot after optimization, unless
   // overridden by setting snapshot_after_train := false
   if (param_.snapshot_after_train()

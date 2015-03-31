@@ -1,0 +1,2 @@
+lr-policy "inv": 
+lr = base_lr * (1 + gamma * iter)^(-power)

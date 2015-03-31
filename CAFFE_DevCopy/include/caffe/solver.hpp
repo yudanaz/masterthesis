@@ -32,7 +32,7 @@ class Solver {
 
   ////////////////////////////////////////////////////////////////////////////////
   /// RGBDNIR extension of original Solver class: ////////////////////////////////
-  void Step(int iters, std::ofstream &lossLogFile, std::ofstream &testAccuracyLogFile);
+  bool Step(int iters, std::ofstream &lossLogFile, std::ofstream &testAccuracyLogFile);
   /// endof  RGBDNIR extension of original Solver class: /////////////////////////
   ////////////////////////////////////////////////////////////////////////////////
 

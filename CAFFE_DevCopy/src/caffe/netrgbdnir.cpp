@@ -106,27 +106,28 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 
         //get the correct pixel indices
         int w = img_labels.cols;
-        int randomPixel = getNextRandomPixel();
-        int x = randomPixel % w;
-        int y = randomPixel / w;
-//        int x = sparsePatches[patchCnt] % w;
-//        int y = sparsePatches[patchCnt] / w;
-//        LOG(INFO) << "patch count: " << patchCnt << "  patch: " << sparsePatches[patchCnt] << " w: " << w << " x: " << x << " y: " << y;
 
-        //get label for this patch
-        int currentLabel = img_labels.at<uchar>(y,x);
+        //get the next random pixel. if the label is "unknown", go to next pixel
+        int currentLabel, x, y;
+        do
+        {
+            int randomPixel = getNextRandomPixel();
+            x = randomPixel % w;
+            y = randomPixel / w;
+    //        int x = sparsePatches[patchCnt] % w;
+    //        int y = sparsePatches[patchCnt] / w;
+    //        LOG(INFO) << "patch count: " << patchCnt << "  patch: " << sparsePatches[patchCnt] << " w: " << w << " x: " << x << " y: " << y;
+
+            //get label for this patch
+            currentLabel = img_labels.at<uchar>(y,x);
+//            LOG(INFO) << "label: " << currentLabel;
+        }
+        while(currentLabel == 255);
+
         labels.push_back(currentLabel);
-//        LOG(INFO) << "label: " << currentLabel;
 
         //jump the "unknown" label, training with this label is useless
         batchCnt++;
-        if(currentLabel == 255) //255 = unknown
-        {
-            batchCnt--; //go back one step so that in the end we have the correct number of patches in the batch
-            patchCnt++; //but go to the next patch (this is normally done at the end of this for loop, which is now skipped)
-//            LOG(INFO)<< "zero label";
-            continue;
-        }
 
         //LOG(INFO) << "Get Patch for Scale 0";
         //read the current patch from the image (orig. scale 0)
@@ -145,6 +146,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
             mats_rgb0_Y.push_back(rgb0y);
             mats_rgb0_UV.push_back(rgb0uv);
 //            imshow("rgb0y", rgb0y); cvWaitKey();
+//            imwrite("/home/maurice/rgb0y.png", rgb0y);
 
             if(multiscale)
             {
@@ -162,6 +164,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
                 mats_rgb1_Y.push_back(rgb1y);
                 mats_rgb1_UV.push_back(rgb1uv);
 //                imshow("rgb1y", rgb1y); cvWaitKey();
+//                imwrite("/home/maurice/rgb1y.png", rgb1y);
 
                 //level 2
                 Mat patch_rgb2 = getImgPatch(img_rgb2, x/4, y/4);
@@ -176,6 +179,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
                 mats_rgb2_Y.push_back(rgb2y);
                 mats_rgb2_UV.push_back(rgb2uv);
 //                imshow("rgb2y", rgb2y); cvWaitKey();
+//                imwrite("/home/maurice/rgb2y.png", rgb2y);
             }
         }
 
@@ -325,8 +329,9 @@ void NetRGBDNIR<Dtype>::readNextImage()
     //make a shuffled list of pixel indices for each image
     if(randomPixels.at(imgCnt).size() == 0) //vector for current image not initialized yet
     {
-        //fill vector holding all image pixels for current image, then shufflen it
+        //fill vector holding all image pixels for current image, then shuffle it
         int totalNrOfPixels = img_labels.cols * img_labels.rows;
+        srand(time(0)); //set seed for random generator using current time
         for (int i = 0; i < totalNrOfPixels; ++i)
         {
             randomPixels.at(imgCnt).push_back(i);
@@ -357,6 +362,7 @@ void NetRGBDNIR<Dtype>::readNextImage()
         {
 //            std::vector<Mat> pyramid = makeLaplacianPyramid(temp1, 3);
             std::vector<Mat> pyramid = makeGaussianPyramid(temp1, 3);
+//         TODO: debug this shit!   std::vector<Mat> pyramid = makePyramid(temp1, 3);
 
             //compute zero mean and unit variance for each channel
             for(int i = 0; i < 3; ++i)
@@ -508,13 +514,30 @@ void NetRGBDNIR<Dtype>::normalizeLocally2(Mat &img, int kernel)
 }
 
 template<typename Dtype>
+vector<Mat> NetRGBDNIR<Dtype>::makePyramid(Mat img, int leveln)
+{
+    vector<Mat> levels;
+    Mat procImg;
+    int w = img.cols % 2 == 0 ? img.cols : img.cols-1;
+    int h = img.rows % 2 == 0 ? img.rows : img.rows-1;
+
+    levels.push_back(img);
+    for(int i = 1; i < leveln; ++i)
+    {
+        resize(img, procImg, Size(w/pow(2,i), h/pow(2,i)), 0, 0, INTER_AREA);
+        levels.push_back(procImg.clone());
+    }
+    return levels;
+}
+
+template<typename Dtype>
 vector<Mat> NetRGBDNIR<Dtype>::makeGaussianPyramid(Mat img, int leveln)
 {
     vector<Mat> levels;
     Mat procImg;
 
     levels.push_back(img);
-    for(int i = 0; i < leveln; ++i)
+    for(int i = 1; i < leveln; ++i)
     {
         pyrDown(img, procImg);
         levels.push_back(procImg.clone());
@@ -551,14 +574,19 @@ cv::Mat NetRGBDNIR<Dtype>::getImgPatch(cv::Mat img, int x, int y)
     cv::Rect roi(x, y, patchSz2x, patchSz2x);
     img(roi).copyTo(patch2x);
 //    imshow("patch", patch2x); cvWaitKey();
+//    imwrite("/home/maurice/"+s+"orig.png", img);
+//    imwrite("/home/maurice/"+s+"patch.png", patch2x);
 
     //apply jitter and crop to actual patch size
     patchJitter = makeJitter(patch2x);
 //    imshow("patch with jitter", patchJitter); cvWaitKey();
-    int offset = borderSz + (patchSz2x - patchJitter.cols) / 2; //cols and rows should be equal, it's a square after all
+//    imwrite("/home/maurice/"+s+"patch_jitter.png", patchJitter);
+
+    int offset = borderSz - (patchSz2x - patchJitter.cols) / 2; //cols and rows should be equal, it's a square after all
     cv::Rect roi2(offset, offset, patchSz, patchSz);
     patchJitter(roi2).copyTo(patch);
 //    imshow("patch with jitter resized", patch); cvWaitKey();
+//    imwrite("/home/maurice/"+s+"patch_jitter_resized.png", patch);
     return patch;
 }
 
