@@ -48,6 +48,7 @@ void MainWindow::preprocessImages(Mat &rgb_out, Mat &depth_out, Mat &depthStereo
 	preproc.setOptions(normDepth, makeSkinBinary, makeCSStereo, rgbRegDist, rgbregTPSpline);
 
 	preproc.preproc(rgb, nir, depth, rgb_out, nir_out, depthStereo_out, depth_out);
+	cvWaitKey(30);
 }
 
 void MainWindow::preprocessAndShow()
@@ -102,6 +103,8 @@ void MainWindow::savePreprocImages(QString outDir, Mat &rgb, Mat &depth, Mat &de
 	{
 		imwrite(depthCSStereo_url_out.toStdString(), depthStereo);
 	}
+	//sleep to give the save threads time to end
+	cvWaitKey(30);
 }
 
 /*************************************************************************************************
@@ -191,6 +194,7 @@ void MainWindow::on_pushButton_batchProc_released()
 	}
 
 	QStringList imgs_nir = io.getFileNames("Select NIR image", "*NIR_MultiCh.png");
+	if(imgs_nir.empty()){ return; }
 
 	//get directory and check if output directory exists, if not, create
 	QString thisDir = QFileInfo(imgs_nir.first()).absoluteDir().absolutePath();
@@ -200,7 +204,7 @@ void MainWindow::on_pushButton_batchProc_released()
 	//make progress bar dialog
 	QProgressDialog progress("Batch-preprocessing images", "Cancel", 0, imgs_nir.size(), this);
 	progress.setMinimumWidth(300); progress.setMinimumDuration(50); progress.setValue(1);
-	int i = 1;
+	int i = 0;
 
 	//process all selected images
 	foreach(QString img_nir, imgs_nir)
@@ -215,8 +219,10 @@ void MainWindow::on_pushButton_batchProc_released()
 		preprocessImages(rgb_, depth_, depthStereo_, nir_);
 		savePreprocImages(outDir, rgb_, depth_, depthStereo_, nir_);
 
+
 		QCoreApplication::processEvents(); //make qt app responsive
 		progress.setValue(i++);
+		if(progress.wasCanceled()){ return; }
 	}
 	progress.setValue(imgs_nir.size());
 }

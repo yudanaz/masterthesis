@@ -29,6 +29,7 @@ void MainWindow_imgViewer::on_pushButton_open_released()
 		QString imgURL = dirIt.next();
 		if(imgURL.contains("NIR_MultiCh.png")){ imageURLs.append(imgURL); }
 	}
+	qSort(imageURLs);
 	showImage();
 }
 
@@ -49,7 +50,8 @@ void MainWindow_imgViewer::showImage()
 	//show which image is shown
 	QString showName = imageURLs[imgIndex];
 	showName.remove("NIR_MultiCh.png");
-	ui->label_imageName->setText(showName.split("/").last());
+	QString imgNr = QString::number(imgIndex) + " / " + QString::number(imageURLs.size());
+	ui->label_imageName->setText(imgNr + ": image "+ showName.split("/").last());
 
 	//convert depth to mm
 	Mat depth(depth16.size(), CV_8UC1);
@@ -66,12 +68,45 @@ void MainWindow_imgViewer::showImage()
 	Mat depthColor;
 	cvtColor(depth, depthColor, CV_GRAY2RGB);
 
+	//switch order of nir channels and equalize
+	vector<Mat> nirchs(3);
+	split(nir, nirchs);
+	vector<Mat> nirchs2(3);
+	nirchs2.at(0) = nirchs.at(2);
+	nirchs2.at(1) = nirchs.at(1);
+	nirchs2.at(2) = nirchs.at(0);
+	if(ui->checkBox_equalHist->isChecked())
+	{
+		equalizeHist(nirchs2.at(0), nirchs2.at(0));
+		equalizeHist(nirchs2.at(1), nirchs2.at(1));
+		equalizeHist(nirchs2.at(2), nirchs2.at(2));
+	}
+	if(ui->checkBox_showChannels->isChecked())
+	{
+		imshow("970", nirchs.at(2));
+		imshow("1300", nirchs.at(1));
+		imshow("1550", nirchs.at(0));
+	}
+	Mat nir2;
+	merge(nirchs2, nir2);
+
+	//also equalize RGB if desired by user
+	if(ui->checkBox_equalHist->isChecked())
+	{
+		vector<Mat> rgbchs(3);
+		split(rgb, rgbchs);
+		equalizeHist(rgbchs.at(0), rgbchs.at(0));
+		equalizeHist(rgbchs.at(1), rgbchs.at(1));
+		equalizeHist(rgbchs.at(2), rgbchs.at(2));
+		merge(rgbchs, rgb);
+	}
+
 	//resize
 	Mat rgb2, depth2;
 	cv::resize(rgb, rgb2, Size(300,300));
 	cv::resize(depthColor, depth2, Size(300,225));
 
-	QImage qimg_nir(nir.data, nir.cols, nir.rows, nir.step, QImage::Format_RGB888);
+	QImage qimg_nir(nir2.data, nir2.cols, nir2.rows, nir2.step, QImage::Format_RGB888);
 	QImage qimg_rgb(rgb2.data, rgb2.cols, rgb2.rows, rgb2.step, QImage::Format_RGB888);
 	QImage qimg_depth(depth2.data, depth2.cols, depth2.rows, depth2.step, QImage::Format_RGB888);
 
@@ -143,3 +178,14 @@ void MainWindow_imgViewer::on_pushButton_markAsBad_released()
 	}
 }
 
+
+void MainWindow_imgViewer::on_checkBox_equalHist_released()
+{
+	showImage();
+}
+
+void MainWindow_imgViewer::on_checkBox_showChannels_released()
+{
+	destroyAllWindows();
+	showImage();
+}

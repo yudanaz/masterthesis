@@ -22,7 +22,8 @@ ImagePreprocessor::ImagePreprocessor(QWidget *parent):
 	output_image_size_set_(false),
 	stereo_Type_(crossSpectrSt_HOG),
 	normalizeDepth(false), makeSkinBinaryImage(false),
-	RGBregist_distortPerspective(false), RGBregist_thinPlateSpline(false)
+	RGBregist_distortPerspective(false), RGBregist_thinPlateSpline(false),
+	xoffsetSUM(0), xoffsetCnt(0)
 {
 	this->parent = parent;
 	//try loading last camera parameter file
@@ -202,17 +203,7 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 	else{ disp = Mat(NIR_rect.size(), CV_8UC1); } //empty img
 
 	//register RGB to NIR image using HOG descriptors
-	Mat RGB_registered;
-	if(makeCSStereo)
-	{
-		RGB_registered = registerRGB2NIR(RGB_rect, NIR_rect);
-	}
-	else
-	{
-		//TODO: use median shift, computed from various iterations, if HOG descr. are not computed
-		RGB_registered = RGB_rect;
-		finalCropRect_byRGB = Rect(0, 0, RGB_rect.cols, RGB_rect.rows);
-	}
+	Mat RGB_registered = registerRGB2NIR(RGB_rect, NIR_rect);
 
 	//crop images according to registered RGB and remapped kinect depth
 	Rect finalCropRect = makeMinimalCrop(finalCropRect_byKinectDepth, finalCropRect_byRGB);
@@ -575,13 +566,25 @@ Mat ImagePreprocessor::registerImageByHorizontalShift(Mat img, vector<KeyPoint> 
 		xoffset = distances[k1.size()/2];
 	}
 
-	//shift image to the right
+	//compute average offset and print
+	xoffsetSUM += xoffset;
+	xoffsetCnt++;
+	QString logStr = "RGB-NIR x-offset: sum: " + QString::number(xoffsetSUM) + "   imgs: " + QString::number(xoffsetCnt) + "   avg.: " + QString::number(xoffsetSUM / (double)xoffsetCnt);
+	qDebug() << logStr;
+
+
+	//shift image to the right and return
+	return shiftImageToTheRight(img, xoffset);
+}
+
+Mat ImagePreprocessor::shiftImageToTheRight(Mat img, int xoffset)
+{
+
 	Mat imgShifted(img.rows, img.cols, img.type(), Scalar(0));
 	img( Rect(0, 0, img.cols-xoffset, img.rows)).copyTo(imgShifted( Rect(xoffset, 0, img.cols-xoffset, img.rows) ));
 
 	//define crop rectangle based on offset
 	finalCropRect_byRGB = Rect(xoffset, 0, img.cols-xoffset, img.rows);
-
 	return imgShifted;
 }
 
@@ -932,7 +935,7 @@ Mat ImagePreprocessor::registerRGB2NIR(Mat& RGB_img, Mat& NIR_img)
 {
 	Mat RGB_registered;
 
-	if(stereo_Type_ == crossSpectrSt_HOG)
+	if(makeCSStereo) //i.e. if HOG descriptors have been computed, we can use them for registration
 	{
 		vector<KeyPoint> matchedDescrL, matchedDescrR;
 		vector<DMatch> dmatches;
@@ -988,9 +991,10 @@ Mat ImagePreprocessor::registerRGB2NIR(Mat& RGB_img, Mat& NIR_img)
 		//DEBUG show matches//
 
 	}
-	else
+	else //i.e. if HOG descriptors haven't been computed, then shift by pre-computed value
 	{
-		RGB_registered = RGB_img; //~do nothing
+		//register with horizontal shift using previously computed offset value in x direction
+		RGB_registered = shiftImageToTheRight(RGB_img, 129);
 	}
 
 	return RGB_registered;

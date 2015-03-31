@@ -19,6 +19,7 @@ class BestDescriptorCandidate
 {
 public:
 	BestDescriptorCandidate(int x1_, int y1_, int x2_, int y2_, int dist_){ x1 = x1_; y1 = y1_; x2 = x2_; y2 = y2_; dist = dist_; }
+	void reset(int x1_, int y1_, int x2_, int y2_, int dist_){ x1 = x1_; y1 = y1_; x2 = x2_; y2 = y2_; dist = dist_; }
 	int x1; int y1; int x2; int y2;
 	float dist;
 };

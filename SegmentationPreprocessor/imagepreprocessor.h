@@ -82,6 +82,7 @@ private:
 
 	Mat registerRGB2NIR(Mat &RGB_img, Mat &NIR_img);
 	Mat registerImageByHorizontalShift(Mat img, vector<KeyPoint> k1, vector<KeyPoint> k2);
+	Mat shiftImageToTheRight(Mat img, int xoffset);
 	Point warpOnePoint(Mat transfMat, Point p);
 
 	Rect makeMinimalCrop(Rect r1, Rect r2);
@@ -176,6 +177,9 @@ private:
 	bool RGBregist_distortPerspective;
 	bool RGBregist_thinPlateSpline;
 
+	//optimal xoffset between NIR and RGB images approx. as average shift from HOG descriptors
+	int xoffsetSUM;
+	int xoffsetCnt;
 };
 
 #endif // IMAGEPREPROCESSOR_H

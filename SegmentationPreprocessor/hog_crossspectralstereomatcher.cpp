@@ -486,6 +486,14 @@ void HOG_crossSpectralStereoMatcher::computeDisparitySGBM(const Mat& img1, const
 	DispType* disp2ptr = (DispType*)(disp2cost + width);
 	PixType* tempBuf = (PixType*)(disp2ptr + width);
 
+	//RGBDNIR STUFF://
+	//reset best descriptor list
+	for(int i = 0; i< bestDescrRasterDiv*bestDescrRasterDiv; ++i)
+	{
+		bestDescrCanditates.at(i).reset(0,0,0,0,9999.0);
+	}
+	//RGBDNIR STUFF://
+
 	// add P2 to every C(x,y). it saves a few operations in the inner loops
 	for( k = 0; k < width1*D; k++ )
 		Cbuf[k] = (CostType)P2;

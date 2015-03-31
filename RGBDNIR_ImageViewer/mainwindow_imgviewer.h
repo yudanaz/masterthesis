@@ -35,6 +35,10 @@ private slots:
 
 	void on_pushButton_markAsBad_released();
 
+	void on_checkBox_equalHist_released();
+
+	void on_checkBox_showChannels_released();
+
 private:
 	void showImage();
 	QString makeFileURLInNewDir(QString url, QString dirFromHere);
