@@ -315,11 +315,11 @@ void Solver<Dtype>::Solve(const char* resume_file)
         time_t sec;
         time(&sec);
 
-        std::string s = param_.logfileurl() + std::string("/") + boost::lexical_cast<std::string>(sec) + std::string("_lossLog.txt");
+        std::string s = param_.logfileurl() + boost::lexical_cast<std::string>(sec) + std::string("_lossLog.txt");
         lossLogFile.open((char*)s.c_str());
         lossLogFile << "loss\n";
 
-        std::string s2 = param_.logfileurl() + std::string("/") + boost::lexical_cast<std::string>(sec) + std::string("_testAccuracyLossLog.txt");
+        std::string s2 = param_.logfileurl() + boost::lexical_cast<std::string>(sec) + std::string("_testAccuracyLossLog.txt");
         testAccurLossLogFile.open((char*)s2.c_str());
         testAccurLossLogFile << "accuracy\tloss\n";
     }
