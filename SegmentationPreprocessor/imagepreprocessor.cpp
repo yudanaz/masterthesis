@@ -238,10 +238,10 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 	}
 
 	//set the final outputs
-	NIR_out = NIR_small;
-	RGB_out = RGB_reg_small;
-	depth_remapped_out = depth_remapped_small;
-	depth_stereo_out = disp_small;
+	NIR_out = NIR_small.clone();
+	RGB_out = RGB_reg_small.clone();
+	depth_remapped_out = depth_remapped_small.clone();
+	depth_stereo_out = disp_small.clone();
 }
 
 
@@ -536,9 +536,10 @@ Mat ImagePreprocessor::undistortNIRimgChannelWise(Mat imgNIR)
 	vector<Mat> nirChannels(3);
 	vector<Mat> nirChannels_undist(3);
 	split(imgNIR, nirChannels);
-	undistort(nirChannels[0], nirChannels_undist[0], cam_NIR_970, distCoeff_NIR_970);
+	//undistort and also switch channels while we're at it...
+	undistort(nirChannels[0], nirChannels_undist[2], cam_NIR_970, distCoeff_NIR_970);
 	undistort(nirChannels[1], nirChannels_undist[1], cam_NIR_1300, distCoeff_NIR_1300);
-	undistort(nirChannels[2], nirChannels_undist[2], cam_NIR_1550, distCoeff_NIR_1550);
+	undistort(nirChannels[2], nirChannels_undist[0], cam_NIR_1550, distCoeff_NIR_1550);
 	merge(nirChannels_undist, imgNIR_undist);
 	return imgNIR_undist;
 }
@@ -926,7 +927,11 @@ Mat ImagePreprocessor::projectFrom3DSpaceToImage(std::vector<Point3f> points3D, 
 			if(p4.x == xx && p4.y == yy){ p4_rect.x = x; p4_rect.y = y; }
 		}
 	}
+
+	//define minimal crop rectangle for kinect depth
 	finalCropRect_byKinectDepth = makeMinimalCrop(p1_rect, p2_rect, p3_rect, p4_rect, img2D_rect);
+	//assure that the rectangle respects original aspect ratio
+	finalCropRect_byKinectDepth.height = finalCropRect_byKinectDepth.width * ((double)refImg.rows / (double)refImg.cols);
 
 	return img2D_rect;
 }

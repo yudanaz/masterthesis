@@ -219,7 +219,6 @@ void MainWindow::on_pushButton_batchProc_released()
 		preprocessImages(rgb_, depth_, depthStereo_, nir_);
 		savePreprocImages(outDir, rgb_, depth_, depthStereo_, nir_);
 
-
 		QCoreApplication::processEvents(); //make qt app responsive
 		progress.setValue(i++);
 		if(progress.wasCanceled()){ return; }
