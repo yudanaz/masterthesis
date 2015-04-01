@@ -168,7 +168,7 @@ void MainWindow_imgViewer::on_pushButton_markAsBad_released()
 
 		if(imageURLs.size() != 0)
 		{
-			if(--imgIndex < 0){ imgIndex = imageURLs.size() -1; }
+			imgIndex = imgIndex % imageURLs.size();
 			showImage();
 		}
 		else

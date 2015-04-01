@@ -1266,6 +1266,6 @@ Mat ImagePreprocessor::makeBrightGrayscale(Mat &img)
 		equalizeHist(img, img_);
 	}
 
-	return img_;
+	return img_.clone();
 }
 

@@ -96,7 +96,7 @@ bool MainWindow::loadImagesGroup(QString img_NIR)
 void MainWindow::savePreprocImages(QString outDir, Mat &rgb, Mat &depth, Mat &depthStereo, Mat &nir, Mat &nir_brightGray)
 {
 	QString nir_url_out = outDir + "/" + nir_url.split("/").last().remove(".png").append("_p.png");
-	QString nir_max_url_out = outDir + "/" + nir_url.split("/").last().remove(".png").append("_max_p.png");
+	QString nir_max_url_out = outDir + "/" + nir_url.split("/").last().remove("_MultiCh.png").append("_max_p.jpg");
 	QString rgb_url_out = outDir + "/" + rgb_url.split("/").last().remove(".png").append("_p.png");
 	QString depth_url_out = outDir + "/" + depth_url.split("/").last().remove(".png").append("_p.png");
 	QString depthCSStereo_url_out = outDir + "/" + depth_url.split("/").last().remove("Kinect_Depth.png").append("CSStereo.png");
