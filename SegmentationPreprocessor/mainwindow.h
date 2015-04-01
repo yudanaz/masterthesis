@@ -39,10 +39,10 @@ private slots:
 
 private:
 
-	void preprocessImages(Mat &rgb_out, Mat &depth_out, Mat &depthStereo_out, Mat &nir_out);
+	void preprocessImages(Mat &rgb_out, Mat &depth_out, Mat &depthStereo_out, Mat &nir_out, Mat &nir_maxed);
 	void preprocessAndShow();
 	bool loadImagesGroup(QString img_NIR);
-	void savePreprocImages(QString outDir, Mat &rgb, Mat &depth, Mat &depthStereo, Mat &nir);
+	void savePreprocImages(QString outDir, Mat &rgb, Mat &depth, Mat &depthStereo, Mat &nir, Mat &nir_maxed);
 
 	QString nir_url;
 	QString rgb_url;

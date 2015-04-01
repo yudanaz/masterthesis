@@ -27,7 +27,7 @@ MainWindow::~MainWindow()
 
 }
 
-void MainWindow::preprocessImages(Mat &rgb_out, Mat &depth_out, Mat &depthStereo_out, Mat &nir_out)
+void MainWindow::preprocessImages(Mat &rgb_out, Mat &depth_out, Mat &depthStereo_out, Mat &nir_out, Mat &nir_brightGray)
 {
 //	qDebug() << IO::getOpenCVTypeName(depth.type());
 //	depth.convertTo(depth, CV_8U, 255/2047);
@@ -48,24 +48,28 @@ void MainWindow::preprocessImages(Mat &rgb_out, Mat &depth_out, Mat &depthStereo
 	preproc.setOptions(normDepth, makeSkinBinary, makeCSStereo, rgbRegDist, rgbregTPSpline);
 
 	preproc.preproc(rgb, nir, depth, rgb_out, nir_out, depthStereo_out, depth_out);
+	nir_brightGray = preproc.makeBrightGrayscale(nir_out);
+
 	cvWaitKey(30);
 }
 
 void MainWindow::preprocessAndShow()
 {
-	Mat rgb_, depth_, depthStereo_, nir_;
-	preprocessImages(rgb_, depth_, depthStereo_, nir_);
+	Mat rgb_, depth_, depthStereo_, nir_, nir_brightGray;
+	preprocessImages(rgb_, depth_, depthStereo_, nir_, nir_brightGray);
 
 	//show the images
 	bool makeCSStereo = ui->actionMake_Cross_Spectral_Stereo->isChecked();
 
 	imshow("RGB", rgb_);
 	imshow("NIR", nir_);
+	imshow("NIR max brightness", nir_brightGray);
 	if(makeCSStereo){ imshow("cross-spectral Stereo", depthStereo_); }
 	imshow("Kinect Depth", depth_);
 
 	imwrite("RGB.png", rgb_);
 	imwrite("NIR.png", nir_);
+	imwrite("NIR_max_brightness.png", nir_brightGray);
 	if(makeCSStereo){ imwrite("Depth_CSStereo.png", depthStereo_); }
 	imwrite("Depth_Kinect.png", depth_);
 }
@@ -89,14 +93,16 @@ bool MainWindow::loadImagesGroup(QString img_NIR)
 }
 
 
-void MainWindow::savePreprocImages(QString outDir, Mat &rgb, Mat &depth, Mat &depthStereo, Mat &nir)
+void MainWindow::savePreprocImages(QString outDir, Mat &rgb, Mat &depth, Mat &depthStereo, Mat &nir, Mat &nir_brightGray)
 {
 	QString nir_url_out = outDir + "/" + nir_url.split("/").last().remove(".png").append("_p.png");
+	QString nir_max_url_out = outDir + "/" + nir_url.split("/").last().remove(".png").append("_max_p.png");
 	QString rgb_url_out = outDir + "/" + rgb_url.split("/").last().remove(".png").append("_p.png");
 	QString depth_url_out = outDir + "/" + depth_url.split("/").last().remove(".png").append("_p.png");
 	QString depthCSStereo_url_out = outDir + "/" + depth_url.split("/").last().remove("Kinect_Depth.png").append("CSStereo.png");
 
 	imwrite(nir_url_out.toStdString(), nir);
+	imwrite(nir_max_url_out.toStdString(), nir_brightGray);
 	imwrite(rgb_url_out.toStdString(), rgb);
 	imwrite(depth_url_out.toStdString(), depth);
 	if(ui->actionMake_Cross_Spectral_Stereo->isChecked())
@@ -215,9 +221,9 @@ void MainWindow::on_pushButton_batchProc_released()
 		QCoreApplication::processEvents(); //make qt app responsive
 
 		//preprocess and save images
-		Mat rgb_, depth_, depthStereo_, nir_;
-		preprocessImages(rgb_, depth_, depthStereo_, nir_);
-		savePreprocImages(outDir, rgb_, depth_, depthStereo_, nir_);
+		Mat rgb_, depth_, depthStereo_, nir_, nir_brightGray;
+		preprocessImages(rgb_, depth_, depthStereo_, nir_, nir_brightGray);
+		savePreprocImages(outDir, rgb_, depth_, depthStereo_, nir_, nir_brightGray);
 
 		QCoreApplication::processEvents(); //make qt app responsive
 		progress.setValue(i++);

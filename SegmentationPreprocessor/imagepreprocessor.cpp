@@ -1245,4 +1245,27 @@ void ImagePreprocessor::loadAll(QString loadURL)
 }
 
 
+Mat ImagePreprocessor::makeBrightGrayscale(Mat &img)
+{
+	Mat img_;
+
+	//check the brightes pixel value on all channels
+	if(img.channels() == 3)
+	{
+		vector<Mat> chs(3);
+		cvtColor(img, img_, CV_BGR2HSV);
+		split(img_, chs);
+
+//		equalizeHist(chs.at(0), chs.at(0));
+//		equalizeHist(chs.at(1), chs.at(1));
+		equalizeHist(chs.at(2), chs.at(2));
+		img_ = chs.at(2).clone();
+	}
+	else if(img.channels() == 1)
+	{
+		equalizeHist(img, img_);
+	}
+
+	return img_;
+}
 

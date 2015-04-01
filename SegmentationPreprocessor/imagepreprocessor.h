@@ -45,6 +45,8 @@ public:
 	void saveAll(QString saveURL);
 	void loadAll(QString loadURL);
 
+	Mat makeBrightGrayscale(Mat &img);
+
 	/**************************************************************************
 	 * GETTER & SETTER:
 	 *************************************************************************/
