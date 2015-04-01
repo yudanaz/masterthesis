@@ -6,13 +6,3 @@
 *.exe
 *.o
 *.so
-
-build-SegmentationPreprocessor-Desktop_Qt_5_2_1_GCC_64bit-Debug/
-build-SegmentationPreprocessor-Desktop_Qt_5_2_1_GCC_64bit-Release/*.*
-build-SegmentationHelper-Desktop_Qt_5_3_GCC_64bit-Debug/*.*
-build-SegmentationHelper-Desktop_Qt_5_3_GCC_64bit-Release/*.*
-build-RGB_NIR_Depth_capture-Desktop_Qt_5_3_GCC_64bit-Debug/*.*
-build-RGB_NIR_Depth_capture-Desktop_Qt_5_3_GCC_64bit-Release/*.*
-build-RGBDNIR_ImageViewer-Desktop_Qt_5_2_1_GCC_64bit-Release/*.*
-CAFFE_DevCopy/build/*.*
-CAFFE_DevCopy/.build_release/*.*
