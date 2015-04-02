@@ -361,8 +361,8 @@ void NetRGBDNIR<Dtype>::readNextImage()
         else //make Laplacian pyramid
         {
 //            std::vector<Mat> pyramid = makeLaplacianPyramid(temp1, 3);
-            std::vector<Mat> pyramid = makeGaussianPyramid(temp1, 3);
-//         TODO: debug this shit!   std::vector<Mat> pyramid = makePyramid(temp1, 3);
+//            std::vector<Mat> pyramid = makeGaussianPyramid(temp1, 3);
+            std::vector<Mat> pyramid = makePyramid(temp1, 3);
 
             //compute zero mean and unit variance for each channel
             for(int i = 0; i < 3; ++i)
@@ -518,14 +518,13 @@ vector<Mat> NetRGBDNIR<Dtype>::makePyramid(Mat img, int leveln)
 {
     vector<Mat> levels;
     Mat procImg;
-    int w = img.cols % 2 == 0 ? img.cols : img.cols-1;
-    int h = img.rows % 2 == 0 ? img.rows : img.rows-1;
 
     levels.push_back(img);
     for(int i = 1; i < leveln; ++i)
     {
-        resize(img, procImg, Size(w/pow(2,i), h/pow(2,i)), 0, 0, INTER_AREA);
+        resize(img, procImg, Size((img.cols+1)/2, (img.rows+1)/2), 0, 0, INTER_AREA);
         levels.push_back(procImg.clone());
+        img = procImg.clone();
     }
     return levels;
 }

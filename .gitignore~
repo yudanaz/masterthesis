@@ -8,5 +8,5 @@
 *.so
 
 
-*-Release/*.*
-*-Debug/*.*
+*-Release/*
+*-Debug/*
