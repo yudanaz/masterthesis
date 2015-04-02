@@ -90,6 +90,7 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 		Mat grayImg(rows, cols, CV_8UC1);
 		QString colorFileName = "";
 		QString grayFileName = "";
+		QString origFileName = "";
 		bool collectingPoints = false;
 		int x = 0;
 
@@ -107,14 +108,21 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 				//get width, height and output name and create images
 				if(tagName == "filename")
 				{
-					QString elemText = xml.readElementText().remove(".jpg");
+					QString elemTextOrig = xml.readElementText();
+					origFileName.append(path.absolutePath().append("/").append(elemTextOrig));
+					QString elemText = elemTextOrig.remove(".jpg");
 					colorFileName.append(path.absolutePath().append("/").append(elemText + "_labels_color.png"));
 					grayFileName.append(path.absolutePath().append("/").append(elemText + "_labels.png"));
-				}
-				else if(tagName == "nrows"){ rows = xml.readElementText().toInt(); }
-				else if(tagName == "ncols")
-				{
-					cols = xml.readElementText().toInt();
+
+					//also load orig image to get image size
+					Mat tempMat = imread(origFileName.toStdString());
+					cols = tempMat.cols;
+					rows = tempMat.rows;
+//				}
+//				else if(tagName == "nrows"){ rows = xml.readElementText().toInt(); }
+//				else if(tagName == "ncols")
+//				{
+//					cols = xml.readElementText().toInt();
 
 					//create new mat obj if rows, cols and type are different from original (that should happen only the first time)
 					colorImg.create(rows, cols, CV_8UC3); //color label image
@@ -150,9 +158,9 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 				{
 					QString s = xml.readElementText();
 					if(s == "") polygon.index = 0;
-					else if(s.contains('d'))
+					else
 					{
-						polygon.index = s.remove('d').toInt();
+						polygon.index = s.toInt();
 					}
 				}
 
@@ -1363,39 +1371,61 @@ void MainWindow::on_pushButton_test_released()
 	//////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////
-	//print out labels for each stanford
+	//make links for LabelMe images on ISF website
 	//////////////////////////////////////////////////////////////
-	QList<QString>fileNames = QFileDialog::getOpenFileNames(this, "Select File", lastDir, "*_labels.png");
+	QList<QString>fileNames = QFileDialog::getOpenFileNames(this, "Select Files", lastDir, IMGTYPES);
 	if(fileNames.size() == 0){ return; }
 	lastDir = QFileInfo(fileNames.first()).path();
 
-	foreach (QString nm, fileNames)
+	QString out = "";
+	int i = 1;
+	foreach(QString nm, fileNames)
 	{
-		bool labels[8] = {false, false, false, false, false, false, false, false};
-		Mat img = imread(nm.toStdString(), IMREAD_GRAYSCALE);
-		MatIterator_<uchar> it, end;
-		for(it = img.begin<uchar>(), end = img.end<uchar>(); it != end; ++it)
-		{
-			labels[*it] = true;
-		}
-
-		QString s = nm.split("/").last().remove("_labels.png");
-
-		//print labels for every image
-//		for (int i = 0; i < 8; ++i)
-//		{
-//			if(labels[i]){ s += " " + QString::number(i) + ",";  }
-//		}
-//		qDebug() << s;
-
-		//only print image name if image has labels 0,1,2,5,7
-		if(labels[0] && labels[1] && labels[2] && !labels[3] &&
-			!labels[4] && labels[5] && !labels[6] && labels[7])
-		{
-			qDebug() << ("cp " + s +"*.* images2/");
-		}
+		QString nr = QString::number(i++);
+		QString s = nm.split("/").last().remove(".jpg");
+		QString ss = "=HYPERLINK(\"https://isf.inf.h-brs.de/labelme/tool.html?mode=f&scribble=false&actions=a&folder="
+					 + s + "&image=" + s
+					 + ".jpg&objects=person,wall,floor,ceiling,door,window,chair,table,monitor,computer,cupboard,schelf,furniture(misc.),tool,equipment(misc.),object(misc.)&username=user_"
+					 + nr + "\",\"image_" + nr + "\")";
+		out += ss + "\n";
 	}
+	qDebug() << out;
 	//////////////////////////////////////////////////////////////
+
+//	//////////////////////////////////////////////////////////////
+//	//print out labels for each stanford
+//	//////////////////////////////////////////////////////////////
+//	QList<QString>fileNames = QFileDialog::getOpenFileNames(this, "Select File", lastDir, "*_labels.png");
+//	if(fileNames.size() == 0){ return; }
+//	lastDir = QFileInfo(fileNames.first()).path();
+
+//	foreach (QString nm, fileNames)
+//	{
+//		bool labels[8] = {false, false, false, false, false, false, false, false};
+//		Mat img = imread(nm.toStdString(), IMREAD_GRAYSCALE);
+//		MatIterator_<uchar> it, end;
+//		for(it = img.begin<uchar>(), end = img.end<uchar>(); it != end; ++it)
+//		{
+//			labels[*it] = true;
+//		}
+
+//		QString s = nm.split("/").last().remove("_labels.png");
+
+//		//print labels for every image
+////		for (int i = 0; i < 8; ++i)
+////		{
+////			if(labels[i]){ s += " " + QString::number(i) + ",";  }
+////		}
+////		qDebug() << s;
+
+//		//only print image name if image has labels 0,1,2,5,7
+//		if(labels[0] && labels[1] && labels[2] && !labels[3] &&
+//			!labels[4] && labels[5] && !labels[6] && labels[7])
+//		{
+//			qDebug() << ("cp " + s +"*.* images2/");
+//		}
+//	}
+//	//////////////////////////////////////////////////////////////
 
 //	ImagePreprocessor preproc;
 //	Mat a = imread(fileName.toStdString().c_str(), IMREAD_ANYDEPTH | IMREAD_ANYCOLOR);
