@@ -160,7 +160,7 @@ private:
 
 	Ui::MainWindow *ui;
 	vector< vector<int> > colorMap;
-	vector< QString > objectMap;
+	vector< QStringList > objectMap;
 	QString lastDir;
 	QString lastSeedsFilename;
 	QString lastSlicFilename;

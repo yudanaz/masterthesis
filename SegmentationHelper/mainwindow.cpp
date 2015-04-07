@@ -37,14 +37,14 @@ MainWindow::MainWindow(QWidget *parent) :
 	}
 	colorfin.close();
 
-	//red object map from app dir
+	//read object map from app dir
 	QFile objectfin(QDir::currentPath() + "/ObjectClasses.txt");
 	objectfin.open(QFile::ReadOnly | QFile::Text);
 	QTextStream objectIn(&objectfin);
 	count = 0;
 	while (!objectIn.atEnd() && count < 255)
 	{
-		objectMap[count] = objectIn.readLine();
+		objectMap[count] = objectIn.readLine().split(",");
 //		qDebug() << objectMap[count];
 		count++;
 	}
@@ -144,23 +144,61 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 
 					//set color according to label
 					int colorIndex = 999; //in case no matching label name is found
+					bool objectFound = false;
 					for (int i = 0; i < 256; ++i)
 					{
-						if(objectMap[i] == objType)
+						//check if object is known, if it is, label accordingly
+						if(objectMap[i].contains(objType))
 						{
 							colorIndex = i;
+							objectFound = true;
 							break;
 						}
 					}
+
+					if(!objectFound) //if object unknown as user to which group it should be added
+					{
+						QString msg = "Class \"" + objType + "\" is unknown. Select group to add it to:\n"
+									  +"0 - unknown\n"
+									  +"1 - person\n"
+									  +"2 - wall\n"
+									  +"3 - floor\n"
+									  +"4 - ceiling\n"
+									  +"5 - door\n"
+									  +"6 - window\n"
+									  +"7 - chair\n"
+									  +"8 - table\n"
+									  +"9 - monitor\n"
+									  +"10 - computer\n"
+									  +"11 - cupboard\n"
+									  +"12 - schelf\n"
+									  +"13 - furniture(misc.)\n"
+									  +"14 - tool\n"
+									  +"15 -equipment(misc.)\n"
+									  +"16 - object(misc.)";
+						bool ok;
+						int group = QInputDialog::getInt(this, "Select synonym group", msg, 16, 0, 16, 1, &ok);
+						if(ok)
+						{
+							objectMap[group].append(objType);
+							if(group != 0) //don't set color for class "unknown"
+							{
+								colorIndex = group;
+							}
+						}
+					}
+
 					polygon.color = colorIndex;
 				}
 				if(tagName == "attributes")
 				{
 					QString s = xml.readElementText();
-					if(s == "") polygon.index = 0;
-					else
+					/*if(s == "")*/ polygon.index = 0;
+					//else
 					{
-						polygon.index = s.toInt();
+						bool ok;
+						int polyIndex = s.toInt(&ok);
+						if(ok){ polygon.index = polyIndex; }
 					}
 				}
 
@@ -224,11 +262,30 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 		imwrite( colorFileName.toStdString().c_str(), colorImg, imageSettings);
 		imwrite( grayFileName.toStdString().c_str(), grayImg, imageSettings);
 
+		//show
+		imshow("color labels", colorImg);
+
 		//show progress in progress bar
 		progress.setValue(++progressCnt);
 		if(progress.wasCanceled()) { return; }
 	}
 	progress.setValue(fileNames.length());
+
+
+	//in the end, write object synonym list to file
+	//read object map from app dir
+	QFile objectfOut(QDir::currentPath() + "/ObjectClasses.txt");
+	objectfOut.open(QFile::WriteOnly | QFile::Text);
+	QTextStream objectOut(&objectfOut);
+	foreach(QStringList sl, objectMap)
+	{
+		foreach(QString s, sl)
+		{
+			if(s != ""){ objectOut << s << ","; }
+		}
+		objectOut << "\n";
+	}
+	objectfOut.close();
 }
 
 void MainWindow::makeSeedsSuperpixels(QString fileName)
@@ -1385,7 +1442,7 @@ void MainWindow::on_pushButton_test_released()
 		QString s = nm.split("/").last().remove(".jpg");
 		QString ss = "=HYPERLINK(\"https://isf.inf.h-brs.de/labelme/tool.html?mode=f&scribble=false&actions=a&folder="
 					 + s + "&image=" + s
-					 + ".jpg&objects=person,wall,floor,ceiling,door,window,chair,table,monitor,computer,cupboard,schelf,furniture(misc.),tool,equipment(misc.),object(misc.)&username=user_"
+					 + ".jpg&objects=person,wall,floor,ceiling,door,window,chair,table,monitor,computer,cupboard,schelf,furniture(misc.),tool,equipment(misc.),object(misc.),unknown&username=user_"
 					 + nr + "\",\"image_" + nr + "\")";
 		out += ss + "\n";
 	}
