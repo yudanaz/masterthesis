@@ -120,6 +120,12 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 					Mat tempMat = imread(origFileName.toStdString());
 					cols = tempMat.cols;
 					rows = tempMat.rows;
+
+                    if(cols == 0 || rows == 0)
+                    {
+                        QMessageBox::information(this, "Error", "Image belonging to label XML couldn't be found in directory!", QMessageBox::Ok);
+                        return;
+                    }
 //				}
 //				else if(tagName == "nrows"){ rows = xml.readElementText().toInt(); }
 //				else if(tagName == "ncols")
