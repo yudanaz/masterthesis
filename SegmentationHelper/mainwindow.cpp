@@ -98,6 +98,8 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 		QList<Polygon> polygons;
 
 
+		bool objectDeleted = false;
+
 		while (!xml.atEnd())
 		{
 			//look through tags
@@ -136,6 +138,7 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 				if (tagName == "object")
 				{
 					collectingPoints = true;
+//					objectDeleted = false;
 					polygon.points.clear(); //init
 				}
 				if(tagName == "name")
@@ -190,6 +193,18 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 
 					polygon.color = colorIndex;
 				}
+				if(tagName == "deleted")
+				{
+					if(xml.readElementText().toInt() == 1)
+					{
+						objectDeleted = true;
+						collectingPoints = false;
+					}
+					else
+					{
+						objectDeleted = false;
+					}
+				}
 				if(tagName == "attributes")
 				{
 					QString s = xml.readElementText();
@@ -221,7 +236,7 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 			else if (xml.isEndElement())
 			{
 				//when object tag is closed, add polygon to list
-				if(xml.name().toString() == "object")
+				if(xml.name().toString() == "object" && !objectDeleted)
 				{
 					collectingPoints = false;
 					polygons.append(polygon.clone());
