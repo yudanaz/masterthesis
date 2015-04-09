@@ -36,19 +36,6 @@ MainWindow::MainWindow(QWidget *parent) :
 		count++;
 	}
 	colorfin.close();
-
-	//read object map from app dir
-	QFile objectfin(QDir::currentPath() + "/ObjectClasses.txt");
-	objectfin.open(QFile::ReadOnly | QFile::Text);
-	QTextStream objectIn(&objectfin);
-	count = 0;
-	while (!objectIn.atEnd() && count < 255)
-	{
-		objectMap[count] = objectIn.readLine().split(",");
-//		qDebug() << objectMap[count];
-		count++;
-	}
-	objectfin.close();
 }
 
 MainWindow::~MainWindow()
@@ -58,6 +45,33 @@ MainWindow::~MainWindow()
 
 void MainWindow::makeLabelImages(QStringList fileNames)
 {
+	QString objClassFileNm = QInputDialog::getText(this, "object class file", "Please enter the Object Class file to be loaded", QLineEdit::Normal,
+												  "ObjectClasses.txt");
+
+	//reset object map
+	for (int i = 0; i < 256; ++i){ objectMap[i].clear(); }
+	//read object map from app dir
+	QFile objectfin(QDir::currentPath() + "/" + objClassFileNm);
+	bool success = objectfin.open(QFile::ReadOnly | QFile::Text);
+	if(!success)
+	{
+		QMessageBox::information(this, "Error", "Object class file couldn't be opened or doesn't exist", QMessageBox::Ok);
+		return;
+	}
+	QTextStream objectIn(&objectfin);
+	int count = 0;
+	while (!objectIn.atEnd() && count < 255)
+	{
+		objectMap[count] = objectIn.readLine().split(",");
+//		qDebug() << objectMap[count];
+		count++;
+	}
+	objectfin.close();
+
+	//get suffix for label images
+	QString fileNmSuffix = QInputDialog::getText(this, "File name suffix", "If you wish enter a name suffix", QLineEdit::Normal, "");
+
+	//read xml files
 	QDir path = QFileInfo(fileNames.first()).path();
 
 	QList<Mat> colorImgs;
@@ -113,19 +127,19 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 					QString elemTextOrig = xml.readElementText();
 					origFileName.append(path.absolutePath().append("/").append(elemTextOrig));
 					QString elemText = elemTextOrig.remove(".jpg");
-					colorFileName.append(path.absolutePath().append("/").append(elemText + "_labels_color.png"));
-					grayFileName.append(path.absolutePath().append("/").append(elemText + "_labels.png"));
+					colorFileName.append(path.absolutePath().append("/").append(elemText + "_labels" +fileNmSuffix+ "_color.png"));
+					grayFileName.append(path.absolutePath().append("/").append(elemText + "_labels" +fileNmSuffix+ ".png"));
 
 					//also load orig image to get image size
 					Mat tempMat = imread(origFileName.toStdString());
 					cols = tempMat.cols;
 					rows = tempMat.rows;
 
-                    if(cols == 0 || rows == 0)
-                    {
-                        QMessageBox::information(this, "Error", "Image belonging to label XML couldn't be found in directory!", QMessageBox::Ok);
-                        return;
-                    }
+					if(cols == 0 || rows == 0)
+					{
+						QMessageBox::information(this, "Error", "Image belonging to label XML couldn't be found in directory!", QMessageBox::Ok);
+						return;
+					}
 //				}
 //				else if(tagName == "nrows"){ rows = xml.readElementText().toInt(); }
 //				else if(tagName == "ncols")
@@ -136,9 +150,9 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 					colorImg.create(rows, cols, CV_8UC3); //color label image
 					grayImg.create(rows, cols, CV_8UC1); //greyscale label image
 
-					//paint background color (black)
+					//paint "unknown" background color (black for color image, white for grayscale image)
 					colorImg = Scalar(0, 0, 0);
-					grayImg = Scalar(0);
+					grayImg = Scalar(255);
 				}
 
 				if (tagName == "object")
@@ -184,9 +198,11 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 									  +"13 - furniture(misc.)\n"
 									  +"14 - tool\n"
 									  +"15 -equipment(misc.)\n"
-									  +"16 - object(misc.)";
+									  +"16 - object(misc.)\n"
+									  +"17 - blooming\n"
+									  +"18 - reflection";
 						bool ok;
-						int group = QInputDialog::getInt(this, "Select synonym group", msg, 16, 0, 16, 1, &ok);
+						int group = QInputDialog::getInt(this, "Select synonym group", msg, 16, 0, 18, 1, &ok);
 						if(ok)
 						{
 							objectMap[group].append(objType);
@@ -273,7 +289,12 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 			if(colorIndex != 999) //if matching label has been found
 			{
 				Scalar color(colorMap[colorIndex][0], colorMap[colorIndex][1], colorMap[colorIndex][2]);
-				Scalar gray(1 + colorIndex);
+
+				//only for gray: set unknown to 255 (white) and shift all classes down by one, so that "person" is zero
+//				qDebug() << colorIndex;
+				colorIndex = colorIndex == 0 ? 255 : colorIndex;
+				Scalar gray(colorIndex-1);
+
 				fillPoly( colorImg, ppt, npt, 1, color, 8 );
 				fillPoly( grayImg, ppt, npt, 1, gray, 8 );
 			}
@@ -284,7 +305,7 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 		imwrite( grayFileName.toStdString().c_str(), grayImg, imageSettings);
 
 		//show
-		imshow("color labels", colorImg);
+		imshow("color labels", colorImg); cvWaitKey(3);
 
 		//show progress in progress bar
 		progress.setValue(++progressCnt);
@@ -295,7 +316,7 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 
 	//in the end, write object synonym list to file
 	//read object map from app dir
-	QFile objectfOut(QDir::currentPath() + "/ObjectClasses.txt");
+	QFile objectfOut(QDir::currentPath() + "/" + objClassFileNm);
 	objectfOut.open(QFile::WriteOnly | QFile::Text);
 	QTextStream objectOut(&objectfOut);
 	foreach(QStringList sl, objectMap)
@@ -1772,4 +1793,38 @@ void MainWindow::on_btn_thinOut_released()
 	f.close();
 	f2.close();
 
+}
+
+void MainWindow::on_pushButton_released()
+{
+	QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select files to resize", lastDir, "*.png");
+	if(fileNames.size() == 0){ return; }
+	lastDir = QFileInfo(fileNames.first()).path();
+
+	//make out dir if necessary
+	QString thisDir = QFileInfo(fileNames.first()).absoluteDir().absolutePath();
+	QString outDir = thisDir+"/resized";
+	if( !QDir().exists(outDir) ){ QDir().mkdir(outDir); }
+
+	//get desired width
+	int width = QInputDialog::getInt(this, "Desired output width", "Enter new width", 320, 30, 500);
+
+	foreach(QString fnm, fileNames)
+	{
+		//resize
+		Mat img = imread(fnm.toStdString());
+		int interpolationMethod;
+		if(fnm.contains("Kinect_Depth") || fnm.contains("labels"))
+		{
+			interpolationMethod = INTER_NEAREST;
+		}
+		else{ interpolationMethod = INTER_AREA; }
+		Mat img_;
+		double fac = (double)width / (double)img.cols;
+		cv::resize(img, img_, Size(width, img.rows * fac), 0, 0, interpolationMethod);
+
+		//save
+		QString outNm = outDir + "/" + fnm.split("/").last().remove(".png").append("_r.png");
+		imwrite(outNm.toStdString(), img_);
+	}
 }
