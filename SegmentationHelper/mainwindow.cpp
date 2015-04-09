@@ -1296,7 +1296,7 @@ void MainWindow::on_btn_makeTrainVal_released()
 	while(fileNames.size() != 0)
 	{
 		int index = rand() % fileNames.size();
-		QString fileName = fileNames[index].remove(".jpg").remove(".png");
+		QString fileName = fileNames[index].remove("_rgb").remove(".jpg").remove(".png");
 		if(!(fileName.contains("_depth") || fileName.contains("_nir") || fileName.contains("_labels")) )
 		{
 			if( (rand() % 100) < trainPercentage) //add to training text file
@@ -1824,7 +1824,7 @@ void MainWindow::on_pushButton_released()
 		cv::resize(img, img_, Size(width, img.rows * fac), 0, 0, interpolationMethod);
 
 		//save
-		QString outNm = outDir + "/" + fnm.split("/").last().remove(".png").append("_r.png");
+		QString outNm = outDir + "/" + fnm.split("/").last();
 		imwrite(outNm.toStdString(), img_);
 	}
 }
