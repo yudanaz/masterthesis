@@ -1275,139 +1275,121 @@ void MainWindow::on_btn_makeTrainVal_released()
 	lastDir = QFileInfo(fileNames.first()).path();
 
 	bool ok;
-	int trainPercentage = QInputDialog::getInt(this, "Set percentage of training data", "Training data in percent:",
-											   80, 0, 100, 1, &ok);
-	if( !ok || !(trainPercentage > 0 && trainPercentage < 100) ){ return; }
+	int k = QInputDialog::getInt(this, "K", "how many folds for k-fold cross validation?", 10, 1, 100, 1, &ok);
+	if( !ok ){ return; }
 
-
-	QFile outfileTrain(lastDir + "/train.txt");
-	outfileTrain.open(QFile::WriteOnly);
-	QTextStream outTrain(&outfileTrain);
-	QFile outfileVal(lastDir + "/val.txt");
-	outfileVal.open(QFile::WriteOnly);
-	QTextStream outVal(&outfileVal);
-
-	int cnt = 0;
-	int max = fileNames.count();
-
-	QProgressDialog progress("Making training and validation label text files", "cancel", 0, max);
-	progress.setValue(0);
-	progress.setMinimumWidth(450);
-	progress.setMinimumDuration(100);
-	progress.setWindowModality(Qt::WindowModal);
-
-	//count pure filenames without NIR, Depth
+	//count and get pure filenames without NIR, Depth and labels
+	QStringList pureFileNames;
 	int filesTotal = 0;
 	foreach(QString fileName, fileNames)
 	{
 		if(!(fileName.contains("_depth") || fileName.contains("_nir") || fileName.contains("_labels")) )
-		{ filesTotal++; }
-	}
-
-	int trainCnt = 0;
-	int trainMax = (filesTotal * (float)trainPercentage / 100.0) + 0.5;
-	int testCnt = 0;
-	int testMax = filesTotal - trainMax;
-
-	while(fileNames.size() != 0)
-	{
-		int index = rand() % fileNames.size();
-		QString fileName = fileNames[index].remove("_rgb").remove(".jpg").remove(".png");
-		if(!(fileName.contains("_depth") || fileName.contains("_nir") || fileName.contains("_labels")) )
 		{
-			if( (rand() % 100) < trainPercentage) //add to training text file
-			{
-				if(trainCnt++ < trainMax){ outTrain << fileName << "\n"; }
-				else{ outVal << fileName << "\n"; }
-			}
-			else //add to validation text file
-			{
-				if(testCnt++ < testMax){ outVal << fileName << "\n"; }
-				else{ outTrain << fileName << "\n"; }
-			}
+			QString pureNM = fileName.remove("_rgb").remove(".jpg").remove(".png");
+			pureFileNames.append(pureNM);
+			filesTotal++;
+		}
+	}
+	int valSetSize = (double)filesTotal / k + 0.5;
+
+	//shuffle image names list
+	std::random_shuffle(pureFileNames.begin(), pureFileNames.end());
+
+	for (int i = 0; i < k; ++i)
+	{
+		QFile outfileTrain(lastDir + "/train" + QString::number(i+1) + ".txt");
+		outfileTrain.open(QFile::WriteOnly);
+		QTextStream outTrain(&outfileTrain);
+		QFile outfileVal(lastDir + "/val" + QString::number(i+1) + ".txt");
+		outfileVal.open(QFile::WriteOnly);
+		QTextStream outVal(&outfileVal);
+
+		//if it's the last one update valSetSize
+		if(i == k-1)
+		{
+			valSetSize = filesTotal - i*valSetSize;
 		}
 
-		fileNames.removeAt(index);
+		for (int j = 0; j < valSetSize; ++j)
+		{
+			//move first element of list to end and write it to validation output file
+			QString s = pureFileNames.first();
+			pureFileNames.removeFirst();
+			pureFileNames.append(s);
+			outVal << s << "\n";
+		}
+		for (int jj = 0; jj < filesTotal-valSetSize; ++jj)
+		{
+			outTrain << pureFileNames.at(jj) << "\n";
+		}
 
-		progress.setValue(cnt++);
-		if(progress.wasCanceled()){ return; }
+		outfileTrain.close();
+		outfileVal.close();
 	}
 
-//    QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select label text files", lastDir, "*.txt");
-//    if(fileNames.count() == 0){ return; }
-//    lastDir = QFileInfo(fileNames.first()).path();
-
-//    bool ok;
-//    int trainPercentage = QInputDialog::getInt(this, "Set percentage of training data", "Training data in percent:",
-//                                               80, 0, 100, 1, &ok);
-//    if( !ok || !(trainPercentage > 0 && trainPercentage < 100) ){ return; }
 
 
-//    QFile outfileTrain(lastDir + "/train.txt");
-//    outfileTrain.open(QFile::WriteOnly);
-//    QTextStream outTrain(&outfileTrain);
-//    QFile outfileVal(lastDir + "/val.txt");
-//    outfileVal.open(QFile::WriteOnly);
-//    QTextStream outVal(&outfileVal);
+//	bool ok;
+//	int trainPercentage = QInputDialog::getInt(this, "Set percentage of training data", "Training data in percent:",
+//											   80, 0, 100, 1, &ok);
+//	if( !ok || !(trainPercentage > 0 && trainPercentage < 100) ){ return; }
 
-////    int trainAmount = fileNames.count() * trainPercentage / 100;
-//    int cnt = 0;
-//    int max = fileNames.count();
+//	QFile outfileTrain(lastDir + "/train.txt");
+//	outfileTrain.open(QFile::WriteOnly);
+//	QTextStream outTrain(&outfileTrain);
+//	QFile outfileVal(lastDir + "/val.txt");
+//	outfileVal.open(QFile::WriteOnly);
+//	QTextStream outVal(&outfileVal);
 
-//    QProgressDialog progress("Making training and validation label files", "cancel", 0, max);
-//    progress.setValue(0);
-//    progress.setMinimumWidth(450);
-//    progress.setMinimumDuration(100);
-//    progress.setWindowModality(Qt::WindowModal);
+//	int cnt = 0;
+//	int max = fileNames.count();
 
-//    foreach(QString fileName, fileNames)
-//    {
-//        QFile infile(fileName);
-//        infile.open(QFile::ReadOnly);
-//        QTextStream in(&infile);
+//	QProgressDialog progress("Making training and validation label text files", "cancel", 0, max);
+//	progress.setValue(0);
+//	progress.setMinimumWidth(450);
+//	progress.setMinimumDuration(100);
+//	progress.setWindowModality(Qt::WindowModal);
 
-//        //add  a line to either training or validation labels depending on random number and probability
-//        while(!in.atEnd())
-//        {
-//            if( (rand() % 100) < trainPercentage) //add to training text file
-//            {
-//                outTrain << in.readLine() << "\n";
-//            }
-//            else //add to validation text file
-//            {
-//                outVal << in.readLine() << "\n";
-//            }
-//        }
-//        infile.close();
+//	//count pure filenames without NIR, Depth
+//	int filesTotal = 0;
+//	foreach(QString fileName, fileNames)
+//	{
+//		if(!(fileName.contains("_depth") || fileName.contains("_nir") || fileName.contains("_labels")) )
+//		{ filesTotal++; }
+//	}
 
-//        progress.setValue(cnt++);
-//        if(progress.wasCanceled()){ return; }
-//    }
+//	int trainCnt = 0;
+//	int trainMax = (filesTotal * (float)trainPercentage / 100.0) + 0.5;
+//	int testCnt = 0;
+//	int testMax = filesTotal - trainMax;
 
-//    while(fileNames.count() != 0)
-//    {
-//        int randomIndex = rand() % fileNames.count();
-//        QFile infile(fileNames.at(randomIndex));
-//        infile.open(QFile::ReadOnly);
-//        QTextStream in(&infile);
+//	while(fileNames.size() != 0)
+//	{
+//		int index = rand() % fileNames.size();
+//		QString fileName = fileNames[index].remove("_rgb").remove(".jpg").remove(".png");
+//		if(!(fileName.contains("_depth") || fileName.contains("_nir") || fileName.contains("_labels")) )
+//		{
+//			if( (rand() % 100) < trainPercentage) //add to training text file
+//			{
+//				if(trainCnt++ < trainMax){ outTrain << fileName << "\n"; }
+//				else{ outVal << fileName << "\n"; }
+//			}
+//			else //add to validation text file
+//			{
+//				if(testCnt++ < testMax){ outVal << fileName << "\n"; }
+//				else{ outTrain << fileName << "\n"; }
+//			}
+//		}
 
-//        if(cnt < trainAmount) //add to training text file
-//        {
-//            while(!in.atEnd()){ outTrain << in.readLine() << "\n"; }
-//        }
-//        else //add to validation text file
-//        {
-//            while(!in.atEnd()){ outVal << in.readLine() << "\n"; }
-//        }
+//		fileNames.removeAt(index);
 
-//        fileNames.removeAt(randomIndex);
-//        progress.setValue(cnt++);
-//        if(progress.wasCanceled()){ return; }
-//    }
+//		progress.setValue(cnt++);
+//		if(progress.wasCanceled()){ return; }
+//	}
 
-	outfileTrain.close();
-	outfileVal.close();
-	progress.setValue(max);
+//	outfileTrain.close();
+//	outfileVal.close();
+//	progress.setValue(max);
 }
 
 

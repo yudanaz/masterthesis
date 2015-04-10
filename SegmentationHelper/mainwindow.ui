@@ -1148,8 +1148,8 @@ color: rgb(255, 255, 127);</string>
    <widget class="QPushButton" name="pushButton_test">
     <property name="geometry">
      <rect>
-      <x>680</x>
-      <y>400</y>
+      <x>630</x>
+      <y>390</y>
       <width>99</width>
       <height>27</height>
      </rect>
