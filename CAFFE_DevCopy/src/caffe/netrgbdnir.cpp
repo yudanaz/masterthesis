@@ -242,11 +242,11 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
         if(hasDepth)
         {
 //            LOG(INFO) << "has Depth \n";
-            mats_depth0.push_back(getImgPatch(img_depth0, x, y));
+            mats_depth0.push_back(getImgPatch(img_depth0, x, y, true));
             if(multiscale)
             {
-                mats_depth1.push_back(getImgPatch(img_depth1, x/2, y/2));
-                mats_depth2.push_back(getImgPatch(img_depth2, x/4, y/4));
+                mats_depth1.push_back(getImgPatch(img_depth1, x/2, y/2, true));
+                mats_depth2.push_back(getImgPatch(img_depth2, x/4, y/4, true));
             }
         }
 
@@ -324,7 +324,7 @@ void NetRGBDNIR<Dtype>::readNextImage()
 //    std::string rgbNm = imageURL + std::string(".") + imgType; //for stanford
     std::string rgbNm = imageURL + std::string("_rgb.") + imgType;
     std::string nirNm = imageURL + std::string("_nir.") + imgType;
-    std::string depthNm = imageURL + std::string("_depth.jpg"); //depth lossless, always png
+    std::string depthNm = imageURL + std::string("_depth.png"); //depth lossless, always png
 
     //LOG(INFO) << "Reading image " << imageURL;
     img_labels = cv::imread(labelsNm, cv::IMREAD_GRAYSCALE); //label img isn't downsampled nor padded
@@ -345,7 +345,7 @@ void NetRGBDNIR<Dtype>::readNextImage()
     cv::Mat temp1;//, temp2, temp3;
 
     //Make the downsized images for the image pyramid and add the padding according to patch size
-    //LOG(INFO) << "Making scales for RGB";
+//    LOG(INFO) << "Making scales for RGB";
     if(hasRGB)
     {
         //read image and convert ot YUV color space
@@ -376,7 +376,7 @@ void NetRGBDNIR<Dtype>::readNextImage()
         }
     }
 
-    //LOG(INFO) << "Making scales for NIR";
+//    LOG(INFO) << "Making scales for NIR";
     if(hasNIR)
     {
         temp1 = cv::imread(nirNm, cv::IMREAD_COLOR);
@@ -418,14 +418,7 @@ void NetRGBDNIR<Dtype>::readNextImage()
         }
         else //make Laplacian pyramid
         {
-            std::vector<Mat> pyramid = makePyramid(temp1, 3);
-
-            //compute zero mean and unit variance for each channel
-            for(int i = 0; i < 3; ++i)
-            {
-                Mat pyrLevel = pyramid[i];
-                normalizeLocally(pyrLevel, 15);
-            }
+            std::vector<Mat> pyramid = makePyramid(temp1, 3, INTER_NEAREST); //for depth, no interpolation when resizing
 
             //make border padding around image for each pyramid level, border is whole patchsize to allow
             //for artificial jitter (rotation & scale), then the patches are cutout after applying jitter
@@ -434,6 +427,7 @@ void NetRGBDNIR<Dtype>::readNextImage()
             cv::copyMakeBorder(pyramid[2], img_depth2, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 2 (1/4 the size)
         }
     }
+//    LOG(INFO) << "done";
 }
 
 template<typename Dtype>
@@ -533,7 +527,7 @@ void NetRGBDNIR<Dtype>::normalizeLocally2(Mat &img, int kernel)
 }
 
 template<typename Dtype>
-vector<Mat> NetRGBDNIR<Dtype>::makePyramid(Mat img, int leveln)
+vector<Mat> NetRGBDNIR<Dtype>::makePyramid(Mat img, int leveln, int interpolMethod)
 {
     vector<Mat> levels;
     Mat procImg;
@@ -541,7 +535,7 @@ vector<Mat> NetRGBDNIR<Dtype>::makePyramid(Mat img, int leveln)
     levels.push_back(img);
     for(int i = 1; i < leveln; ++i)
     {
-        resize(img, procImg, Size((img.cols+1)/2, (img.rows+1)/2), 0, 0, INTER_AREA);
+        resize(img, procImg, Size((img.cols+1)/2, (img.rows+1)/2), 0, 0, interpolMethod);
         levels.push_back(procImg.clone());
         img = procImg.clone();
     }
@@ -584,7 +578,7 @@ vector<Mat> NetRGBDNIR<Dtype>::makeLaplacianPyramid(Mat img, int leveln)
 
 
 template<typename Dtype>
-cv::Mat NetRGBDNIR<Dtype>::getImgPatch(cv::Mat img, int x, int y)
+cv::Mat NetRGBDNIR<Dtype>::getImgPatch(cv::Mat img, int x, int y, bool isDepth)
 {
     //cut out patch twice the size
     cv::Mat patch2x, patchJitter, patch;
@@ -596,7 +590,8 @@ cv::Mat NetRGBDNIR<Dtype>::getImgPatch(cv::Mat img, int x, int y)
 //    imwrite("/home/maurice/"+s+"patch.png", patch2x);
 
     //apply jitter and crop to actual patch size
-    patchJitter = makeJitter(patch2x);
+    if(isDepth){ patchJitter = makeJitter(patch2x, true); }
+    else{ patchJitter = makeJitter(patch2x); }
 //    imshow("patch with jitter", patchJitter); cvWaitKey();
 //    imwrite("/home/maurice/"+s+"patch_jitter.png", patchJitter);
 
@@ -609,7 +604,7 @@ cv::Mat NetRGBDNIR<Dtype>::getImgPatch(cv::Mat img, int x, int y)
 }
 
 template<typename Dtype>
-Mat NetRGBDNIR<Dtype>::makeJitter(Mat img)
+Mat NetRGBDNIR<Dtype>::makeJitter(Mat img, bool noInterpolation)
 {
     int sz = std::max(img.cols, img.rows);
     Mat imgFlipped, imgRotated, imgScaled;
