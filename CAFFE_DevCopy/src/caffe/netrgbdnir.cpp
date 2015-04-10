@@ -11,7 +11,7 @@ namespace caffe {
 
 template<typename Dtype>
 void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchSize, int batchesPerImage,
-                              bool RGB, bool NIR, bool depth, bool isMultiscale, std::string imageType)
+                              bool RGB, bool NIR, bool depth, bool isMultiscale, std::string imageType, std::string labelImageSuffix)
 {
     //LOG(INFO) << "Doing Setup of NetRGBDNIR";
 
@@ -49,6 +49,7 @@ void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchS
     hasDepth = depth;
     multiscale = isMultiscale;
     imgType = imageType;
+    labelImgSuffix = labelImageSuffix;
     batchesPerImg = batchesPerImage;
 
     //read first image
@@ -319,7 +320,7 @@ void NetRGBDNIR<Dtype>::readNextImage()
 //    LOG(INFO) << "Read next image: " << imageURL;
 
     //load all image types (RGB, NIR and Depth) if available, create scales (image pyramid) pad images (make borders)
-    std::string labelsNm = imageURL + std::string("_labels_BckgrndObjPerson.png"); //labels lossless, always png
+    std::string labelsNm = imageURL + labelImgSuffix + std::string(".png"); //labels lossless, always png
 //    std::string rgbNm = imageURL + std::string(".") + imgType; //for stanford
     std::string rgbNm = imageURL + std::string("_rgb.") + imgType;
     std::string nirNm = imageURL + std::string("_nir.") + imgType;

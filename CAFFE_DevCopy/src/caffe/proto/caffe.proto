@@ -1000,4 +1000,5 @@ message RGBDNIRSegmImgSourceParameter {
   required bool hasDepth = 8;
   required bool multiscale = 9;
   optional string imageType = 10 [ default = "png" ];
+  optional string labelImageSuffix = 12 [ default = "_labels" ];
 }

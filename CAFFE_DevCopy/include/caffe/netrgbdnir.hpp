@@ -17,7 +17,7 @@ public:
     explicit NetRGBDNIR(const NetParameter& param) : Net<Dtype>(param){}
     explicit NetRGBDNIR(const string& param_file, Phase phase) : Net<Dtype>(param_file, phase){}
 
-    void setup(std::string imgsListURL, int patchsize, int batchSize, int batchesPerImage, bool RGB, bool NIR, bool depth, bool isMultiscale, std::string imgType);
+    void setup(std::string imgsListURL, int patchsize, int batchSize, int batchesPerImage, bool RGB, bool NIR, bool depth, bool isMultiscale, std::string imgType, std::string labelImageSuffix);
     void feedNextPatchesToInputLayers();
 
 protected:
@@ -62,7 +62,8 @@ protected:
     bool hasNIR;
     bool hasDepth;
     bool multiscale;
-    string imgType;
+    std::string imgType;
+    std::string labelImgSuffix;
 
     cv::Mat img_labels;
 
