@@ -71,6 +71,13 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 	//get suffix for label images
 	QString fileNmSuffix = QInputDialog::getText(this, "File name suffix", "If you wish enter a name suffix", QLineEdit::Normal, "");
 
+	//as if this is a binary classification (like classA / other), if it is, then the "unkown" class is not used
+	bool isBinaryClassification;
+	QMessageBox::StandardButton reply = QMessageBox::question(this, "Binary Classification?", "is this for a binary classificator?",
+															  QMessageBox::Yes|QMessageBox::No);
+	if (reply == QMessageBox::Yes){ isBinaryClassification = true; }
+	else{ isBinaryClassification = false; }
+
 	//read xml files
 	QDir path = QFileInfo(fileNames.first()).path();
 
@@ -150,9 +157,10 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 					colorImg.create(rows, cols, CV_8UC3); //color label image
 					grayImg.create(rows, cols, CV_8UC1); //greyscale label image
 
-					//paint "unknown" background color (black for color image, white for grayscale image)
+					//paint "unknown" background color (black for color image, white for grayscale image, unless its a binary classifier)
 					colorImg = Scalar(0, 0, 0);
-					grayImg = Scalar(255);
+					if(isBinaryClassification){ grayImg = Scalar(0); }
+					else { grayImg = Scalar(255); }
 				}
 
 				if (tagName == "object")
@@ -288,15 +296,23 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 			int colorIndex = polygon.color;
 			if(colorIndex != 999) //if matching label has been found
 			{
+				//color
 				Scalar color(colorMap[colorIndex][0], colorMap[colorIndex][1], colorMap[colorIndex][2]);
-
-				//only for gray: set unknown to 255 (white) and shift all classes down by one, so that "person" is zero
-//				qDebug() << colorIndex;
-				colorIndex = colorIndex == 0 ? 255 : colorIndex;
-				Scalar gray(colorIndex-1);
-
 				fillPoly( colorImg, ppt, npt, 1, color, 8 );
-				fillPoly( grayImg, ppt, npt, 1, gray, 8 );
+
+				//gray
+				if(isBinaryClassification)
+				{
+					Scalar gray(colorIndex);
+					fillPoly( grayImg, ppt, npt, 1, gray, 8 );
+				}
+				else
+				{
+					//set unknown to 255 (white) and shift all classes down by one, so that "person" is zero
+					colorIndex = colorIndex == 0 ? 255 : colorIndex;
+					Scalar gray(colorIndex-1);
+					fillPoly( grayImg, ppt, npt, 1, gray, 8 );
+				}
 			}
 		}
 
