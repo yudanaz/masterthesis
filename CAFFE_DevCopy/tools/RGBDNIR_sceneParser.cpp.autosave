@@ -1,0 +1,24 @@
+#include <cstring>
+#include <cstdlib>
+#include <vector>
+ 
+#include <string>
+#include <iostream>
+#include <stdio.h>
+#include "../../include/caffe/caffe.hpp"
+#include "../../include/caffe/util/io.hpp"
+#include "../../include/caffe/blob.hpp"
+ 
+using namespace caffe;
+using namespace std;
+ 
+int main(int argc, char** argv) 
+{
+ 
+  if (argc < 4 || argc > 6) {
+    LOG(ERROR) << "test_net net_proto pretrained_net_proto iterations "
+        << "[CPU/GPU] [Device ID]";
+    return 1;
+  }
+}
+  

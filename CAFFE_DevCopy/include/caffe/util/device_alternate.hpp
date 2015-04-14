@@ -12,26 +12,26 @@
 #define STUB_GPU(classname) \
 template <typename Dtype> \
 void classname<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom, \
-    const vector<Blob<Dtype>*>& top) { NO_GPU; } \
+	const vector<Blob<Dtype>*>& top) { NO_GPU; } \
 template <typename Dtype> \
 void classname<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top, \
-    const vector<bool>& propagate_down, \
-    const vector<Blob<Dtype>*>& bottom) { NO_GPU; } \
+	const vector<bool>& propagate_down, \
+	const vector<Blob<Dtype>*>& bottom) { NO_GPU; } \
 
 #define STUB_GPU_FORWARD(classname, funcname) \
 template <typename Dtype> \
 void classname<Dtype>::funcname##_##gpu(const vector<Blob<Dtype>*>& bottom, \
-    const vector<Blob<Dtype>*>& top) { NO_GPU; } \
+	const vector<Blob<Dtype>*>& top) { NO_GPU; } \
 
 #define STUB_GPU_BACKWARD(classname, funcname) \
 template <typename Dtype> \
 void classname<Dtype>::funcname##_##gpu(const vector<Blob<Dtype>*>& top, \
-    const vector<bool>& propagate_down, \
-    const vector<Blob<Dtype>*>& bottom) { NO_GPU; } \
+	const vector<bool>& propagate_down, \
+	const vector<Blob<Dtype>*>& bottom) { NO_GPU; } \
 
 #else  // Normal GPU + CPU Caffe.
 
-#include <cublas_v2.h>
+//#include <cublas_v2.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <curand.h>
@@ -48,29 +48,29 @@ void classname<Dtype>::funcname##_##gpu(const vector<Blob<Dtype>*>& top, \
 #define CUDA_CHECK(condition) \
   /* Code block avoids redefinition of cudaError_t error */ \
   do { \
-    cudaError_t error = condition; \
-    CHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error); \
+	cudaError_t error = condition; \
+	CHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error); \
   } while (0)
 
 #define CUBLAS_CHECK(condition) \
   do { \
-    cublasStatus_t status = condition; \
-    CHECK_EQ(status, CUBLAS_STATUS_SUCCESS) << " " \
-      << caffe::cublasGetErrorString(status); \
+	cublasStatus_t status = condition; \
+	CHECK_EQ(status, CUBLAS_STATUS_SUCCESS) << " " \
+	  << caffe::cublasGetErrorString(status); \
   } while (0)
 
 #define CURAND_CHECK(condition) \
   do { \
-    curandStatus_t status = condition; \
-    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << " " \
-      << caffe::curandGetErrorString(status); \
+	curandStatus_t status = condition; \
+	CHECK_EQ(status, CURAND_STATUS_SUCCESS) << " " \
+	  << caffe::curandGetErrorString(status); \
   } while (0)
 
 // CUDA: grid stride looping
 #define CUDA_KERNEL_LOOP(i, n) \
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; \
-       i < (n); \
-       i += blockDim.x * gridDim.x)
+	   i < (n); \
+	   i += blockDim.x * gridDim.x)
 
 // CUDA: check for error after kernel execution and exit loudly if there is one.
 #define CUDA_POST_KERNEL_CHECK CUDA_CHECK(cudaPeekAtLastError())
@@ -85,9 +85,9 @@ const char* curandGetErrorString(curandStatus_t error);
 // Use 1024 threads per block, which requires cuda sm_2x or above,
 // or fall back to attempt compatibility (best of luck to you).
 #if __CUDA_ARCH__ >= 200
-    const int CAFFE_CUDA_NUM_THREADS = 1024;
+	const int CAFFE_CUDA_NUM_THREADS = 1024;
 #else
-    const int CAFFE_CUDA_NUM_THREADS = 512;
+	const int CAFFE_CUDA_NUM_THREADS = 512;
 #endif
 
 // CUDA: number of blocks for threads.

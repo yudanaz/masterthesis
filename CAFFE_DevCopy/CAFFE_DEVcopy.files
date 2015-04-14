@@ -165,3 +165,4 @@ tools/train_net.cpp
 tools/upgrade_net_proto_binary.cpp
 tools/upgrade_net_proto_text.cpp
 src/caffe/proto/caffe.proto
+tools/RGBDNIR_sceneParser.cpp

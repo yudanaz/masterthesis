@@ -38,7 +38,8 @@ SOURCES += main.cpp\
     locnorm_crossspectralstereomatcher.cpp \
     stereomatching_params.cpp \
     CThinPlateSpline.cpp \
-    seeds/seeds2.cpp
+    seeds/seeds2.cpp \
+    skindetector.cpp
 
 HEADERS  += mainwindow.h \
     io.h \
@@ -59,7 +60,8 @@ HEADERS  += mainwindow.h \
     stereomatching_params.h \
     CThinPlateSpline.h \
     seeds/seeds2.h \
-    seeds/seedsHelper.h
+    seeds/seedsHelper.h \
+    skindetector.h
 
 
 FORMS    += mainwindow.ui \

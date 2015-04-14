@@ -27,6 +27,8 @@
 #include "crossbilateralfilterwrapper.h"
 #include "crossspectralstereomatcher.h"
 
+#include "skindetector.h"
+
 using namespace cv;
 using namespace std;
 
@@ -40,7 +42,7 @@ public:
 	void calibCams(QStringList calibImgs_RGB, QStringList calibImgs_NIR, QStringList calibImgs_IR, Size chessboardSize);
 	void calibRig(QStringList calibImgs_RGB, QStringList calibImgs_NIR_rgb, QStringList calibImgs_IR, QStringList calibImgsNIR_ir, Size chessboardSize);
 
-	void preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat &RGB_out, Mat &NIR_out, Mat &depth_stereo_out, Mat &depth_remapped_out);
+	void preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat &RGB_out, Mat &NIR_out, Mat &depth_stereo_out, Mat &depth_remapped_out, Mat &skin_out);
 
 	void saveAll(QString saveURL);
 	void loadAll(QString loadURL);
@@ -93,6 +95,8 @@ private:
 	Mat cropImage(Mat img, Rect cropROI);
 
 	void makeCrossSpectralStereo(Mat imgNIR_L, Mat imgRGB_R, Mat &out_disp);
+
+	Mat whiteBalance(Mat img);
 
 
 	/**************************************************************************
@@ -182,6 +186,9 @@ private:
 	//optimal xoffset between NIR and RGB images approx. as average shift from HOG descriptors
 	int xoffsetSUM;
 	int xoffsetCnt;
+
+	//detect skin
+	SkinDetector skinDetector;
 };
 
 #endif // IMAGEPREPROCESSOR_H

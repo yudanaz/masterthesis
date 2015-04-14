@@ -174,7 +174,7 @@ void ImagePreprocessor::calibRig(QStringList calibImgs_RGB, QStringList calibImg
 	makeMsg("Success!", "Camera rig has been calibrated.");
 }
 
-void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out, Mat& NIR_out, Mat& depth_stereo_out, Mat& depth_remapped_out)
+void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out, Mat& NIR_out, Mat& depth_stereo_out, Mat& depth_remapped_out, Mat& skin_out)
 {
 	if(!rig_is_calibrated_){ return; }
 
@@ -184,16 +184,20 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 	Mat RGB_resized = resizeAndCropRGBImg(RGB_undist);
 //	Helper::debugImage(RGB_resized);
 
-	//undistort NIR image channel-wise
+	//undistort NIR image channel-wise AND swap channels (so that the order is 1550, 1300, 970 in the BGR image)
 	Mat NIR_undist = undistortNIRimgChannelWise(NIR);
+
+	//detect skin
+	Mat skin = skinDetector.detect(NIR_undist)*255;
 
 	//remap depth to NIR-camera space
 	Mat depth_remapped = mapKinectDepth2NIR(depth_kinect, NIR_undist);
 
 	//rectify
-	Mat RGB_rect, NIR_rect;
+	Mat RGB_rect, NIR_rect, skin_rect;
 	remap(RGB_resized, RGB_rect, rectifyMapX_RGB, rectifyMapY_RGB, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
 	remap(NIR_undist, NIR_rect, rectifyMapX_NIR, rectifyMapY_NIR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
+	remap(skin, skin_rect, rectifyMapX_NIR, rectifyMapY_NIR, INTER_LINEAR, BORDER_CONSTANT, Scalar(0));
 //	imwrite("RGB_rect.png", RGB_rect);
 //	imwrite("NIR_rect.png", NIR_rect);
 
@@ -211,6 +215,7 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 	Mat RGB_cropped = cropImage(RGB_registered, finalCropRect);
 	Mat depth_cropped = cropImage(depth_remapped, finalCropRect);
 	Mat disp_cropped = cropImage(disp, finalCropRect);
+	Mat skin_cropped = cropImage(skin_rect, finalCropRect);
 
 	//fill eventually remaining black spots close to borders in depth map
 	depth_cropped = fixHolesInDepthMap(depth_cropped, 0);
@@ -220,13 +225,14 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 
 	//if set, resize the images to a new output (smaller) size (might be better/faster for CNN learning
 	// and improves performance of cross-spectral stereo matching)
-	Mat RGB_reg_small, NIR_small, depth_remapped_small, disp_small;
+	Mat RGB_reg_small, NIR_small, depth_remapped_small, disp_small, skin_small;
 	if(output_image_size_set_)
 	{
 		resize(NIR_cropped, NIR_small, outputImgSz, 0, 0, INTER_AREA);
 		resize(RGB_cropped, RGB_reg_small, outputImgSz, 0, 0, INTER_AREA); //area averaging best for downsampling
 		resize(depth_cropped, depth_remapped_small, outputImgSz, 0, 0, INTER_NEAREST); //for depth no in-between interpolation!
 		resize(disp_cropped, disp_small, outputImgSz, 0, 0, INTER_NEAREST); //for depth no in-between interpolation!
+		resize(skin_cropped, skin_small, outputImgSz, 0, 0, INTER_NEAREST); //for skin no in-between interpolation!
 	}
 	else
 	{
@@ -235,6 +241,7 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 		RGB_reg_small = RGB_cropped;
 		depth_remapped_small = depth_cropped;
 		disp_small = disp_cropped;
+		skin_small = skin_cropped;
 	}
 
 	//set the final outputs
@@ -242,6 +249,7 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 	RGB_out = RGB_reg_small.clone();
 	depth_remapped_out = depth_remapped_small.clone();
 	depth_stereo_out = disp_small.clone();
+	skin_out = skin_small.clone();
 }
 
 
@@ -1029,6 +1037,25 @@ void ImagePreprocessor::makeCrossSpectralStereo(Mat imgNIR_L, Mat imgRGB_R, Mat&
 	//LR-CONSISTENCY CHECKING IS ALREADY DONE IN SGM, SO I DONT NEED TO DO THIS HERE...
 }
 
+Mat ImagePreprocessor::whiteBalance(Mat img)
+{
+	vector<Mat> ch(img.channels());
+	split(img, ch);
+
+	vector<Mat> ch2;
+	foreach(Mat m, ch)
+	{
+		double min, max;
+		minMaxLoc(m, &min, &max);
+		Mat res = (m - min) * (255 / (max-min) );
+		ch2.push_back(res);
+	}
+
+	Mat out;
+	merge(ch2, out);
+	return out;
+}
+
 
 
 /**************************************************************************
@@ -1247,6 +1274,7 @@ void ImagePreprocessor::loadAll(QString loadURL)
 
 Mat ImagePreprocessor::makeBrightGrayscale(Mat &img)
 {
+	//doesnt really work
 	Mat img_;
 
 	//check the brightes pixel value on all channels
