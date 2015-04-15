@@ -354,18 +354,18 @@ void NetRGBDNIR<Dtype>::readNextImage()
 
         if(!multiscale)
         {
-            normalizeEachChannelLocally(temp1, 15);
+            preproc.normalizeEachChannelLocally(temp1, 15);
             cv::copyMakeBorder(temp1, img_rgb0, borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
         }
         else //make Laplacian pyramid
         {
-            std::vector<Mat> pyramid = makePyramid(temp1, 3);
+            std::vector<Mat> pyramid = preproc.makePyramid(temp1, 3);
 
             //compute zero mean and unit variance for each channel
             for(int i = 0; i < 3; ++i)
             {
                 Mat pyrLevel = pyramid[i];
-                normalizeEachChannelLocally(pyrLevel, 15);
+                preproc.normalizeEachChannelLocally(pyrLevel, 15);
             }
 
             //make border padding around image for each pyramid level, border is whole patchsize to allow
@@ -384,18 +384,18 @@ void NetRGBDNIR<Dtype>::readNextImage()
 
         if(!multiscale)
         {
-            normalizeEachChannelLocally(temp1, 15);
+            preproc.normalizeEachChannelLocally(temp1, 15);
             cv::copyMakeBorder(temp1, img_nir0, borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
         }
         else //make Laplacian pyramid
         {
-            std::vector<Mat> pyramid = makePyramid(temp1, 3);
+            std::vector<Mat> pyramid = preproc.makePyramid(temp1, 3);
 
             //compute zero mean and unit variance for each channel
             for(int i = 0; i < 3; ++i)
             {
                 Mat pyrLevel = pyramid[i];
-                normalizeEachChannelLocally(pyrLevel, 15);
+                preproc.normalizeEachChannelLocally(pyrLevel, 15);
             }
 
             //make border padding around image for each pyramid level, border is whole patchsize to allow
@@ -413,12 +413,12 @@ void NetRGBDNIR<Dtype>::readNextImage()
 
         if(!multiscale)
         {
-            normalizeEachChannelLocally(temp1, 15);
+//            preproc.normalizeEachChannelLocally(temp1, 15);
             cv::copyMakeBorder(temp1, img_depth0, borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
         }
         else //make Laplacian pyramid
         {
-            std::vector<Mat> pyramid = makePyramid(temp1, 3, INTER_NEAREST); //for depth, no interpolation when resizing
+            std::vector<Mat> pyramid = preproc.makePyramid(temp1, 3, INTER_NEAREST); //for depth, no interpolation when resizing
 
             //make border padding around image for each pyramid level, border is whole patchsize to allow
             //for artificial jitter (rotation & scale), then the patches are cutout after applying jitter
@@ -430,151 +430,151 @@ void NetRGBDNIR<Dtype>::readNextImage()
 //    LOG(INFO) << "done";
 }
 
-template<typename Dtype>
-void NetRGBDNIR<Dtype>::normalizeZeroMeanUnitVariance(Mat &img)
-{
-    //calculate mean and standard deviation
-    Scalar mean, stdDev;
-    meanStdDev(img, mean, stdDev);
+//template<typename Dtype>
+//void NetRGBDNIR<Dtype>::normalizeZeroMeanUnitVariance(Mat &img)
+//{
+//    //calculate mean and standard deviation
+//    Scalar mean, stdDev;
+//    meanStdDev(img, mean, stdDev);
 
-    //get variance
-    float variance = cv::pow(stdDev[0], 2);
+//    //get variance
+//    float variance = cv::pow(stdDev[0], 2);
 
-    //make zero mean and unit variance
-     img = ((img - mean[0]) / variance);
-}
+//    //make zero mean and unit variance
+//     img = ((img - mean[0]) / variance);
+//}
 
-template<typename Dtype>
-void NetRGBDNIR<Dtype>::normalizeLocally(Mat &img, int localNbrhd)
-{
-    Mat img32F;
-    img.convertTo(img32F, CV_32F);//, 0.003921569);
-    int w = img32F.cols;
-    int h = img32F.rows;
+//template<typename Dtype>
+//void NetRGBDNIR<Dtype>::normalizeLocally(Mat &img, int localNbrhd)
+//{
+//    Mat img32F;
+//    img.convertTo(img32F, CV_32F);//, 0.003921569);
+//    int w = img32F.cols;
+//    int h = img32F.rows;
 
-    //check from when on a smaller roi has to be used
-    int x_rest = w % localNbrhd;
-    int y_rest = h % localNbrhd;
+//    //check from when on a smaller roi has to be used
+//    int x_rest = w % localNbrhd;
+//    int y_rest = h % localNbrhd;
 
-    int x_limit = w - x_rest;
-    int y_limit = h - y_rest;
+//    int x_limit = w - x_rest;
+//    int y_limit = h - y_rest;
 
-    for (int y = 0; y < h; y += localNbrhd)
-    {
-        for (int x = 0; x < w; x += localNbrhd)
-        {
-            Rect roiRect(x, y, localNbrhd, localNbrhd);
-
-            //padding with smaller roi
-            if(x == x_limit){ roiRect.width = x_rest; }
-            if(y == y_limit){ roiRect.height = y_rest; }
-
-            Mat roi = img32F(roiRect);
-            normalizeZeroMeanUnitVariance(roi);
-        }
-    }
-
-//    for (int y = 0; y <= h - localNbrhd; y += localNbrhd)
+//    for (int y = 0; y < h; y += localNbrhd)
 //    {
-//        for (int x = 0; x <= w - localNbrhd; x += localNbrhd)
+//        for (int x = 0; x < w; x += localNbrhd)
 //        {
 //            Rect roiRect(x, y, localNbrhd, localNbrhd);
+
+//            //padding with smaller roi
+//            if(x == x_limit){ roiRect.width = x_rest; }
+//            if(y == y_limit){ roiRect.height = y_rest; }
+
 //            Mat roi = img32F(roiRect);
 //            normalizeZeroMeanUnitVariance(roi);
 //        }
 //    }
 
-    //convert back to 8 bit
-    cv::normalize(img32F, img32F, 0.0, 1.0, NORM_MINMAX, -1);
-    img32F.convertTo(img, CV_8U, 255);
-}
+////    for (int y = 0; y <= h - localNbrhd; y += localNbrhd)
+////    {
+////        for (int x = 0; x <= w - localNbrhd; x += localNbrhd)
+////        {
+////            Rect roiRect(x, y, localNbrhd, localNbrhd);
+////            Mat roi = img32F(roiRect);
+////            normalizeZeroMeanUnitVariance(roi);
+////        }
+////    }
 
-template<typename Dtype>
-void NetRGBDNIR<Dtype>::normalizeEachChannelLocally(Mat &img, int kernel)
-{
-    std::vector<Mat> chs(3);
-    split(img, chs);
-    for(int i = 0; i < 3; ++i)
-    {
-        normalizeLocally(chs[i], kernel);
-//        normalizeLocally2(chs[i], kernel);
-    }
-    Mat img_;
-    merge(chs, img_);
-    img = img_;
-}
+//    //convert back to 8 bit
+//    cv::normalize(img32F, img32F, 0.0, 1.0, NORM_MINMAX, -1);
+//    img32F.convertTo(img, CV_8U, 255);
+//}
 
-template<typename Dtype>
-void NetRGBDNIR<Dtype>::normalizeLocally2(Mat &img, int kernel)
-{
-    Mat img32F, mean, stdDev;
+//template<typename Dtype>
+//void NetRGBDNIR<Dtype>::normalizeEachChannelLocally(Mat &img, int kernel)
+//{
+//    std::vector<Mat> chs(3);
+//    split(img, chs);
+//    for(int i = 0; i < 3; ++i)
+//    {
+//        normalizeLocally(chs[i], kernel);
+////        normalizeLocally2(chs[i], kernel);
+//    }
+//    Mat img_;
+//    merge(chs, img_);
+//    img = img_;
+//}
 
-    //convert to float image
-    img.convertTo(img32F, CV_32F);//, 0.003921569); // 1/255 = 0.003921569
+//template<typename Dtype>
+//void NetRGBDNIR<Dtype>::normalizeLocally2(Mat &img, int kernel)
+//{
+//    Mat img32F, mean, stdDev;
 
-    //estimate image mean with gaussian blur
-    GaussianBlur(img32F, mean, Size(kernel, kernel), 0);
-    img32F = img32F - mean;
+//    //convert to float image
+//    img.convertTo(img32F, CV_32F);//, 0.003921569); // 1/255 = 0.003921569
 
-    //estimate standard deviation with gaussian blur by doing sqrt( gauss_blur(img²) )
-    GaussianBlur(img32F.mul(img32F), mean, Size(kernel*81, kernel*81), 0); //re-use mean matrix
-    cv::pow(mean, 0.5, stdDev);
-    img32F = img32F / stdDev;
+//    //estimate image mean with gaussian blur
+//    GaussianBlur(img32F, mean, Size(kernel, kernel), 0);
+//    img32F = img32F - mean;
 
-    //convert back to 8 bit
-    cv::normalize(img32F, img32F, 0, 1, NORM_MINMAX, -1);
-    img32F.convertTo(img, CV_8U, 255);
-}
+//    //estimate standard deviation with gaussian blur by doing sqrt( gauss_blur(img²) )
+//    GaussianBlur(img32F.mul(img32F), mean, Size(kernel*81, kernel*81), 0); //re-use mean matrix
+//    cv::pow(mean, 0.5, stdDev);
+//    img32F = img32F / stdDev;
 
-template<typename Dtype>
-vector<Mat> NetRGBDNIR<Dtype>::makePyramid(Mat img, int leveln, int interpolMethod)
-{
-    vector<Mat> levels;
-    Mat procImg;
+//    //convert back to 8 bit
+//    cv::normalize(img32F, img32F, 0, 1, NORM_MINMAX, -1);
+//    img32F.convertTo(img, CV_8U, 255);
+//}
 
-    levels.push_back(img);
-    for(int i = 1; i < leveln; ++i)
-    {
-        resize(img, procImg, Size((img.cols+1)/2, (img.rows+1)/2), 0, 0, interpolMethod);
-        levels.push_back(procImg.clone());
-        img = procImg.clone();
-    }
-    return levels;
-}
+//template<typename Dtype>
+//vector<Mat> NetRGBDNIR<Dtype>::makePyramid(Mat img, int leveln, int interpolMethod)
+//{
+//    vector<Mat> levels;
+//    Mat procImg;
 
-template<typename Dtype>
-vector<Mat> NetRGBDNIR<Dtype>::makeGaussianPyramid(Mat img, int leveln)
-{
-    vector<Mat> levels;
-    Mat procImg;
+//    levels.push_back(img);
+//    for(int i = 1; i < leveln; ++i)
+//    {
+//        resize(img, procImg, Size((img.cols+1)/2, (img.rows+1)/2), 0, 0, interpolMethod);
+//        levels.push_back(procImg.clone());
+//        img = procImg.clone();
+//    }
+//    return levels;
+//}
 
-    levels.push_back(img);
-    for(int i = 1; i < leveln; ++i)
-    {
-        pyrDown(img, procImg);
-        levels.push_back(procImg.clone());
-        img = procImg.clone();
-    }
-    return levels;
-}
+//template<typename Dtype>
+//vector<Mat> NetRGBDNIR<Dtype>::makeGaussianPyramid(Mat img, int leveln)
+//{
+//    vector<Mat> levels;
+//    Mat procImg;
+
+//    levels.push_back(img);
+//    for(int i = 1; i < leveln; ++i)
+//    {
+//        pyrDown(img, procImg);
+//        levels.push_back(procImg.clone());
+//        img = procImg.clone();
+//    }
+//    return levels;
+//}
 
 
-template<typename Dtype>
-vector<Mat> NetRGBDNIR<Dtype>::makeLaplacianPyramid(Mat img, int leveln)
-{
-    vector<Mat> levels;
-    Mat next_img, img1;
+//template<typename Dtype>
+//vector<Mat> NetRGBDNIR<Dtype>::makeLaplacianPyramid(Mat img, int leveln)
+//{
+//    vector<Mat> levels;
+//    Mat next_img, img1;
 
-    for(int i = 0; i < leveln-1; ++i)
-    {
-        pyrDown(img, next_img);
-        pyrUp(next_img, img1, img.size());
-        levels.push_back(img - img1);
-        img = next_img;
-    }
-    levels.push_back(img);
-    return levels;
-}
+//    for(int i = 0; i < leveln-1; ++i)
+//    {
+//        pyrDown(img, next_img);
+//        pyrUp(next_img, img1, img.size());
+//        levels.push_back(img - img1);
+//        img = next_img;
+//    }
+//    levels.push_back(img);
+//    return levels;
+//}
 
 
 template<typename Dtype>

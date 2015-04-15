@@ -166,3 +166,5 @@ tools/upgrade_net_proto_binary.cpp
 tools/upgrade_net_proto_text.cpp
 src/caffe/proto/caffe.proto
 tools/RGBDNIR_sceneParser.cpp
+src/caffe/rgbdnir_preproc.cpp
+include/caffe/rgbdnir_preproc.hpp

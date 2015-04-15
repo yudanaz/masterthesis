@@ -1,1 +1,3 @@
 src/gtest
+src/caffe
+include/caffe

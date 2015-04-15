@@ -4,16 +4,16 @@
 #ifndef CAFFE_CAFFE_HPP_
 #define CAFFE_CAFFE_HPP_
 
-#include "caffe/blob.hpp"
-#include "caffe/common.hpp"
-#include "caffe/filler.hpp"
-#include "caffe/layer.hpp"
-#include "caffe/layer_factory.hpp"
-#include "caffe/net.hpp"
-#include "caffe/proto/caffe.pb.h"
-#include "caffe/solver.hpp"
-#include "caffe/util/benchmark.hpp"
-#include "caffe/util/io.hpp"
-#include "caffe/vision_layers.hpp"
+#include "../../include/caffe/blob.hpp"
+#include "../../include/caffe/common.hpp"
+#include "../../include/caffe/filler.hpp"
+#include "../../include/caffe/layer.hpp"
+#include "../../include/caffe/layer_factory.hpp"
+#include "../../include/caffe/net.hpp"
+#include "../../build/src/caffe/proto/caffe.pb.h"
+#include "../../include/caffe/solver.hpp"
+#include "../../include/caffe/util/benchmark.hpp"
+#include "../../include/caffe/util/io.hpp"
+#include "../../include/caffe/vision_layers.hpp"
 
 #endif  // CAFFE_CAFFE_HPP_
