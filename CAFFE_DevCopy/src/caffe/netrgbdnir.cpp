@@ -67,8 +67,7 @@ void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchS
 	jitter_scale_fac = 0;
 
 	//load all images and set first one to active
-	readAllImages();
-	getNextImage();
+    readAllImages();
 
 	//debug
 	iteration = 0;
@@ -89,17 +88,16 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 
 	int batchCnt = 0;
 	for(batchCnt = 0; batchCnt < batchSz; )
-	{
+    {
 		//load next image if enough batches have been read from the current image
-		if(batchNr == batchesPerImg)
+        if(batchNr == 0)
 		{
 			getNextImage();
+//            LOG(INFO) << "current image: " << imgCnt;
 			batchNr = 0;
 		}
-		else{ batchNr++; }
+        batchNr = (batchNr + 1) % batchesPerImg;
 
-		//get the correct pixel indices
-		int w = img_labels.cols;
 
 		//get the next random pixel, but only once for each current patch, use same label for all scales of one patch position
 		//if the label is "unknown", go to next pixel
@@ -108,13 +106,15 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 		{
 			do
 			{
+                //get the correct pixel indices
+                int w = img_labels.cols;
 				int randomPixel = getNextRandomPixel();
 				x = randomPixel % w;
 				y = randomPixel / w;
 
 				//get label for this patch
 				currentLabel = img_labels.at<uchar>(y,x);
-	//            LOG(INFO) << "label: " << currentLabel;
+//                LOG(INFO) << "label: " << currentLabel <<" current pos: " << x << "  " << y << " random pixel: " << randomPixel;
 			}
 			while(currentLabel == 255);
 		}
@@ -340,7 +340,7 @@ void NetRGBDNIR<Dtype>::readAllImages()
 	{
 		//get next image URL, also circle through images (if iterations are > all available patches)
 		std::string imageURL = imgs[i];
-		LOG(INFO) << "Read next image: " << imageURL;
+        LOG(INFO) << "Reading image " << i << ": " << imageURL;
 
 		//load all image types (RGB, NIR and Depth) if available, create scales (image pyramid) pad images (make borders)
 		std::string labelsNm = imageURL + labelImgSuffix + std::string(".png"); //labels lossless, always png
@@ -356,11 +356,12 @@ void NetRGBDNIR<Dtype>::readAllImages()
 		//make a shuffled list of pixel indices for each image
 		if(randomPixels.at(i).size() == 0) //vector for current image not initialized yet
 		{
-			//fill vector holding all image pixels for current image, then shuffle it
+            //fill vector holding all image pixels for current image, then shuffle it
 			int totalNrOfPixels = labels.cols * labels.rows;
-			srand(time(0)); //set seed for random generator using current time
 
-			LOG(INFO) << "filling random pixels for image " << i;
+//            LOG(INFO) << "cols: " << labels.cols << " rows: " << labels.rows << "pixels: " << totalNrOfPixels;
+
+            srand(time(0)); //set seed for random generator using current time
 
 			for (int j = 0; j < totalNrOfPixels; ++j)
 			{
@@ -487,7 +488,7 @@ cv::Mat NetRGBDNIR<Dtype>::getImgPatch(cv::Mat img, int x, int y, bool isDepth)
 	//apply jitter and crop to actual patch size
 	if(isDepth){ patchJitter = makeJitter(patch2x, true); }
 	else{ patchJitter = makeJitter(patch2x); }
-//	Mat patchrgb;
+//    Mat patchrgb;
 //	cvtColor(patchJitter, patchrgb, CV_YCrCb2BGR);
 //	imshow("patch with jitter", patchrgb); cvWaitKey();
 //    imwrite("/home/maurice/"+s+"patch_jitter.png", patchJitter);
@@ -495,9 +496,8 @@ cv::Mat NetRGBDNIR<Dtype>::getImgPatch(cv::Mat img, int x, int y, bool isDepth)
 	int offset = borderSz - (patchSz2x - patchJitter.cols) / 2; //cols and rows should be equal, it's a square after all
 	cv::Rect roi2(offset, offset, patchSz, patchSz);
 	patchJitter(roi2).copyTo(patch);
-//	cvtColor(patch, patchrgb, CV_YCrCb2BGR);
-//	imshow("patch with jitter resized", patchrgb); cvWaitKey();
-//    imwrite("/home/maurice/"+s+"patch_jitter_resized.png", patch);
+//    cvtColor(patch, patchrgb, CV_YCrCb2BGR);
+//    imshow("patch with jitter resized", patchrgb); cvWaitKey();
 	return patch;
 }
 

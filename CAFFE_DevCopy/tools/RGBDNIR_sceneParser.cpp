@@ -223,7 +223,7 @@ int main(int argc, char** argv)
 	}
 
 	//Setting CPU or GPU
-	if (argc >= 6 && strcmp(argv[4], "GPU") == 0)
+    if (argc >= 6 && strcmp(argv[5], "GPU") == 0)
 	{
 		Caffe::set_mode(Caffe::GPU);
 //		int device_id = 0;
@@ -434,8 +434,7 @@ int main(int argc, char** argv)
 			fillMemoryDataLayers(&caffe_test_net, true, hasRGB, hasDepth, hasSkin,
 								 mats_rgb0_Y, mats_rgb0_UV, mats_rgb1_Y, mats_rgb1_UV, mats_rgb2_Y, mats_rgb2_UV,
 								 mats_nir0_Y, mats_nir0_UV, mats_nir1_Y, mats_nir1_UV, mats_nir2_Y, mats_nir2_UV,
-								 mats_depth0, mats_depth1, mats_depth2);
-			LOG(INFO) << "filled";
+                                 mats_depth0, mats_depth1, mats_depth2);
 
 			//get prediction
 			float loss;
