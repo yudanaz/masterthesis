@@ -22,17 +22,10 @@ public:
 	void feedNextPatchesToInputLayers();
 
 protected:
-	void readNextImage();
-//    void setRandomPatches();
-//    void setUniformPatches();
+	void readAllImages();
+	void getNextImage();
 
-//    void normalizeEachChannelLocally(cv::Mat &img, int localNbrhd);
-//    vector<cv::Mat> makePyramid(cv::Mat img, int leveln=3, int interpolMethod = cv::INTER_AREA);
-//    void normalizeZeroMeanUnitVariance(cv::Mat &img);
-//    void normalizeLocally(cv::Mat &img, int localNbrhd);
-//    void normalizeLocally2(cv::Mat &img, int kernel);
-//    vector<cv::Mat> makeGaussianPyramid(cv::Mat img, int leveln=3);
-//    vector<cv::Mat> makeLaplacianPyramid(cv::Mat img, int leveln=3);
+
 	cv::Mat getImgPatch(cv::Mat img, int x, int y, bool isDepth=false);
 	void setJitterRandomVars();
 	cv::Mat makeJitter(cv::Mat img, bool noInterpolation = false);
@@ -75,6 +68,7 @@ protected:
 	std::string labelImgSuffix;
 
 	cv::Mat img_labels;
+	std::vector<cv::Mat> imgs_labels;
 
 	cv::Mat img_rgb0;
 	cv::Mat img_rgb1;
@@ -86,15 +80,15 @@ protected:
 	cv::Mat img_depth1;
 	cv::Mat img_depth2;
 
-	cv::Mat patch_rgb0;
-	cv::Mat patch_rgb1;
-	cv::Mat patch_rgb2;
-	cv::Mat patch_nir0;
-	cv::Mat patch_nir1;
-	cv::Mat patch_nir2;
-	cv::Mat patch_depth0;
-	cv::Mat patch_depth1;
-	cv::Mat patch_depth2;
+	std::vector<cv::Mat> imgs_rgb0;
+	std::vector<cv::Mat> imgs_rgb1;
+	std::vector<cv::Mat> imgs_rgb2;
+	std::vector<cv::Mat> imgs_nir0;
+	std::vector<cv::Mat> imgs_nir1;
+	std::vector<cv::Mat> imgs_nir2;
+	std::vector<cv::Mat> imgs_depth0;
+	std::vector<cv::Mat> imgs_depth1;
+	std::vector<cv::Mat> imgs_depth2;
 
 	//image preprocessor:
 	RGBDNIR_preproc preproc;

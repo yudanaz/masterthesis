@@ -66,12 +66,9 @@ void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchS
 	jitter_rotAngle = 0;
 	jitter_scale_fac = 0;
 
-	//read first image
-	readNextImage();
-
-	//define random patches that should be read from this image
-//    setRandomPatches();
-//    setUniformPatches();
+	//load all images and set first one to active
+	readAllImages();
+	getNextImage();
 
 	//debug
 	iteration = 0;
@@ -93,21 +90,10 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 	int batchCnt = 0;
 	for(batchCnt = 0; batchCnt < batchSz; )
 	{
-		//LOG(INFO) << "Starting nr " << batchCnt << " / " << batchSz << " in current batch";
-		//if all patches in current image have been read, load next image
-//        if(patchCnt >= batchesPerImg)//patchMax)
-//        {
-////            LOG(INFO) << "Next image";
-//            readNextImage();
-////            setRandomPatches();
-//            setUniformPatches();
-//            patchCnt = 0;
-//        }
-
 		//load next image if enough batches have been read from the current image
 		if(batchNr == batchesPerImg)
 		{
-			readNextImage();
+			getNextImage();
 			batchNr = 0;
 		}
 		else{ batchNr++; }
@@ -145,7 +131,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 		//set random variables for jitter (scaling, rotation and flip)
 		setJitterRandomVars();
 
-		//LOG(INFO) << "Get Patch for Scale 0";
+//		LOG(INFO) << "Get Patch for Scale 0";
 		//read the current patch from the image (orig. scale 0)
 		if(hasRGB)
 		{
@@ -278,12 +264,9 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 
 		patchCnt++;
 		scaleCnt = (scaleCnt + 1) % scaleCntMax;
-
-
-		///DEBUG///
-		imshow("current nir patch", mats_nir_Y.at(0)); cvWaitKey();
-		///DEBUG///
 	}
+
+//	imshow("schau mal das NIR Bildchen!", mats_nir_Y.at(0));cvWaitKey();
 
 	//LOG(INFO) << "Feed Datum vectors to Memory Data Layers";
 	//feed images to corresponding memory_data_layers. We have different input layers for
@@ -321,127 +304,171 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 	iteration++;
 }
 
-
 template<typename Dtype>
-void NetRGBDNIR<Dtype>::readNextImage()
+void NetRGBDNIR<Dtype>::getNextImage()
 {
 	//increment image counter
-	imgCnt  = (imgCnt + 1) % imgMax;
+	imgCnt = (imgCnt + 1) % imgMax;
 
-	//get next image URL, also circle through images (if iterations are > all available patches)
-	std::string imageURL = imgs[imgCnt];
-//    LOG(INFO) << "Read next image: " << imageURL;
+	img_labels = imgs_labels.at(imgCnt);
 
-	//load all image types (RGB, NIR and Depth) if available, create scales (image pyramid) pad images (make borders)
-	std::string labelsNm = imageURL + labelImgSuffix + std::string(".png"); //labels lossless, always png
-//    std::string rgbNm = imageURL + std::string(".") + imgType; //for stanford
-	std::string rgbNm = imageURL + std::string("_rgb.") + imgType;
-	std::string nirNm = imageURL + std::string("_nir.") + imgType;
-	std::string depthNm = imageURL + std::string("_depth.png"); //depth lossless, always png
-
-//	LOG(INFO) << "Reading image " << imageURL;
-	img_labels = cv::imread(labelsNm, cv::IMREAD_GRAYSCALE); //label img isn't downsampled nor padded
-
-	//make a shuffled list of pixel indices for each image
-	if(randomPixels.at(imgCnt).size() == 0) //vector for current image not initialized yet
-	{
-		//fill vector holding all image pixels for current image, then shuffle it
-		int totalNrOfPixels = img_labels.cols * img_labels.rows;
-		srand(time(0)); //set seed for random generator using current time
-		for (int i = 0; i < totalNrOfPixels; ++i)
-		{
-			randomPixels.at(imgCnt).push_back(i);
-		}
-		std::random_shuffle(randomPixels.at(imgCnt).begin(), randomPixels.at(imgCnt).end());
-	}
-
-	cv::Mat temp1;//, temp2, temp3;
-
-	//Make the downsized images for the image pyramid and add the padding according to patch size
-//    LOG(INFO) << "Making scales for RGB";
-	if(hasRGB)
-	{
-		//read image and convert ot YUV color space
-		temp1 = cv::imread(rgbNm, cv::IMREAD_COLOR);
-		cvtColor(temp1, temp1, CV_BGR2YCrCb);
-
-		if(!multiscale)
-		{
-			preproc.normalizeEachChannelLocally(temp1, 15);
-			cv::copyMakeBorder(temp1, img_rgb0, borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
-		}
-		else //make Laplacian pyramid
-		{
-			std::vector<Mat> pyramid = preproc.makePyramid(temp1, 3);
-
-			//compute zero mean and unit variance for each channel
-			for(int i = 0; i < 3; ++i)
-			{
-				Mat pyrLevel = pyramid[i];
-				preproc.normalizeEachChannelLocally(pyrLevel, 15);
-			}
-
-			//make border padding around image for each pyramid level, border is whole patchsize to allow
-			//for artificial jitter (rotation & scale), then the patches are cutout after applying jitter
-			cv::copyMakeBorder(pyramid[0], img_rgb0, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
-			cv::copyMakeBorder(pyramid[1], img_rgb1, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 1 (half the size)
-			cv::copyMakeBorder(pyramid[2], img_rgb2, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 2 (1/4 the size)
-		}
-	}
-
-//    LOG(INFO) << "Making scales for NIR";
 	if(hasNIR)
 	{
-		temp1 = cv::imread(nirNm, cv::IMREAD_COLOR);
-		cvtColor(temp1, temp1, CV_BGR2YCrCb);
-
-		if(!multiscale)
-		{
-			preproc.normalizeEachChannelLocally(temp1, 15);
-			cv::copyMakeBorder(temp1, img_nir0, borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
-		}
-		else //make Laplacian pyramid
-		{
-			std::vector<Mat> pyramid = preproc.makePyramid(temp1, 3);
-
-			//compute zero mean and unit variance for each channel
-			for(int i = 0; i < 3; ++i)
-			{
-				Mat pyrLevel = pyramid[i];
-				preproc.normalizeEachChannelLocally(pyrLevel, 15);
-			}
-
-			//make border padding around image for each pyramid level, border is whole patchsize to allow
-			//for artificial jitter (rotation & scale), then the patches are cutout after applying jitter
-			cv::copyMakeBorder(pyramid[0], img_nir0, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
-			cv::copyMakeBorder(pyramid[1], img_nir1, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 1 (half the size)
-			cv::copyMakeBorder(pyramid[2], img_nir2, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 2 (1/4 the size)
-		}
+		img_nir0 = imgs_nir0.at(imgCnt);
+		img_nir1 = imgs_nir1.at(imgCnt);
+		img_nir2 = imgs_nir2.at(imgCnt);
 	}
-
-//    LOG(INFO) << "Making scales for Depth";
+	if(hasRGB)
+	{
+		img_rgb0 = imgs_rgb0.at(imgCnt);
+		img_rgb1 = imgs_rgb1.at(imgCnt);
+		img_rgb2 = imgs_rgb2.at(imgCnt);
+	}
 	if(hasDepth)
 	{
-		temp1 = cv::imread(depthNm, cv::IMREAD_GRAYSCALE);
-
-		if(!multiscale)
-		{
-//            preproc.normalizeEachChannelLocally(temp1, 15);
-			cv::copyMakeBorder(temp1, img_depth0, borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
-		}
-		else //make Laplacian pyramid
-		{
-			std::vector<Mat> pyramid = preproc.makePyramid(temp1, 3, INTER_NEAREST); //for depth, no interpolation when resizing
-
-			//make border padding around image for each pyramid level, border is whole patchsize to allow
-			//for artificial jitter (rotation & scale), then the patches are cutout after applying jitter
-			cv::copyMakeBorder(pyramid[0], img_depth0, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
-			cv::copyMakeBorder(pyramid[1], img_depth1, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 1 (half the size)
-			cv::copyMakeBorder(pyramid[2], img_depth2, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 2 (1/4 the size)
-		}
+		img_depth0 = imgs_depth0.at(imgCnt);
+		img_depth1 = imgs_depth1.at(imgCnt);
+		img_depth2 = imgs_depth2.at(imgCnt);
 	}
-//    LOG(INFO) << "done";
 }
+
+
+template<typename Dtype>
+void NetRGBDNIR<Dtype>::readAllImages()
+{
+	for (int i = 0; i < imgMax; ++i)
+	{
+		//get next image URL, also circle through images (if iterations are > all available patches)
+		std::string imageURL = imgs[i];
+		LOG(INFO) << "Read next image: " << imageURL;
+
+		//load all image types (RGB, NIR and Depth) if available, create scales (image pyramid) pad images (make borders)
+		std::string labelsNm = imageURL + labelImgSuffix + std::string(".png"); //labels lossless, always png
+	//    std::string rgbNm = imageURL + std::string(".") + imgType; //for stanford
+		std::string rgbNm = imageURL + std::string("_rgb.") + imgType;
+		std::string nirNm = imageURL + std::string("_nir.") + imgType;
+		std::string depthNm = imageURL + std::string("_depth.png"); //depth lossless, always png
+
+	//	LOG(INFO) << "Reading image " << imageURL;
+		Mat labels = cv::imread(labelsNm, cv::IMREAD_GRAYSCALE); //label img isn't downsampled nor padded
+		imgs_labels.push_back(labels);
+
+		//make a shuffled list of pixel indices for each image
+		if(randomPixels.at(i).size() == 0) //vector for current image not initialized yet
+		{
+			//fill vector holding all image pixels for current image, then shuffle it
+			int totalNrOfPixels = labels.cols * labels.rows;
+			srand(time(0)); //set seed for random generator using current time
+
+			LOG(INFO) << "filling random pixels for image " << i;
+
+			for (int j = 0; j < totalNrOfPixels; ++j)
+			{
+				randomPixels.at(i).push_back(j);
+			}
+			std::random_shuffle(randomPixels.at(i).begin(), randomPixels.at(i).end());
+		}
+
+		cv::Mat temp1;//, temp2, temp3;
+
+		//Make the downsized images for the image pyramid and add the padding according to patch size
+	//    LOG(INFO) << "Making scales for RGB";
+		if(hasRGB)
+		{
+			//read image and convert ot YUV color space
+			temp1 = cv::imread(rgbNm, cv::IMREAD_COLOR);
+			cvtColor(temp1, temp1, CV_BGR2YCrCb);
+			Mat rgb0, rgb1, rgb2;
+
+			if(!multiscale)
+			{
+				preproc.normalizeEachChannelLocally(temp1, 15);
+				cv::copyMakeBorder(temp1, rgb0, borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
+			}
+			else //make Laplacian pyramid
+			{
+				std::vector<Mat> pyramid = preproc.makePyramid(temp1, 3);
+
+				//compute zero mean and unit variance for each channel
+				for(int i = 0; i < 3; ++i)
+				{
+					Mat pyrLevel = pyramid[i];
+					preproc.normalizeEachChannelLocally(pyrLevel, 15);
+				}
+
+				//make border padding around image for each pyramid level, border is whole patchsize to allow
+				//for artificial jitter (rotation & scale), then the patches are cutout after applying jitter
+				cv::copyMakeBorder(pyramid[0], rgb0, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
+				cv::copyMakeBorder(pyramid[1], rgb1, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 1 (half the size)
+				cv::copyMakeBorder(pyramid[2], rgb2, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 2 (1/4 the size)
+			}
+			imgs_rgb0.push_back(rgb0);
+			imgs_rgb1.push_back(rgb1);
+			imgs_rgb2.push_back(rgb2);
+		}
+
+	//    LOG(INFO) << "Making scales for NIR";
+		if(hasNIR)
+		{
+			temp1 = cv::imread(nirNm, cv::IMREAD_COLOR);
+			cvtColor(temp1, temp1, CV_BGR2YCrCb);
+			Mat nir0, nir1, nir2;
+
+			if(!multiscale)
+			{
+				preproc.normalizeEachChannelLocally(temp1, 15);
+				cv::copyMakeBorder(temp1, nir0, borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
+			}
+			else //make Laplacian pyramid
+			{
+				std::vector<Mat> pyramid = preproc.makePyramid(temp1, 3);
+
+				//compute zero mean and unit variance for each channel
+				for(int i = 0; i < 3; ++i)
+				{
+					Mat pyrLevel = pyramid[i];
+					preproc.normalizeEachChannelLocally(pyrLevel, 15);
+				}
+
+				//make border padding around image for each pyramid level, border is whole patchsize to allow
+				//for artificial jitter (rotation & scale), then the patches are cutout after applying jitter
+				cv::copyMakeBorder(pyramid[0], nir0, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
+				cv::copyMakeBorder(pyramid[1], nir1, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 1 (half the size)
+				cv::copyMakeBorder(pyramid[2], nir2, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 2 (1/4 the size)
+			}
+			imgs_nir0.push_back(nir0);
+			imgs_nir1.push_back(nir1);
+			imgs_nir2.push_back(nir2);
+		}
+
+	//    LOG(INFO) << "Making scales for Depth";
+		if(hasDepth)
+		{
+			temp1 = cv::imread(depthNm, cv::IMREAD_GRAYSCALE);
+			Mat depth0, depth1, depth2;
+
+			if(!multiscale)
+			{
+	//            preproc.normalizeEachChannelLocally(temp1, 15);
+				cv::copyMakeBorder(temp1, depth0, borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
+			}
+			else //make Laplacian pyramid
+			{
+				std::vector<Mat> pyramid = preproc.makePyramid(temp1, 3, INTER_NEAREST); //for depth, no interpolation when resizing
+
+				//make border padding around image for each pyramid level, border is whole patchsize to allow
+				//for artificial jitter (rotation & scale), then the patches are cutout after applying jitter
+				cv::copyMakeBorder(pyramid[0], depth0, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
+				cv::copyMakeBorder(pyramid[1], depth1, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 1 (half the size)
+				cv::copyMakeBorder(pyramid[2], depth2, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 2 (1/4 the size)
+			}
+			imgs_depth0.push_back(depth0);
+			imgs_depth1.push_back(depth1);
+			imgs_depth2.push_back(depth2);
+		}
+	//    LOG(INFO) << "done";
+	}
+}//endof readAllImages
 
 
 
