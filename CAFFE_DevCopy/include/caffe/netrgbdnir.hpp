@@ -15,14 +15,14 @@ template <typename Dtype>
 class NetRGBDNIR : public Net<Dtype>
 {
 public:
-    explicit NetRGBDNIR(const NetParameter& param) : Net<Dtype>(param){}
-    explicit NetRGBDNIR(const string& param_file, Phase phase) : Net<Dtype>(param_file, phase){}
+	explicit NetRGBDNIR(const NetParameter& param) : Net<Dtype>(param){}
+	explicit NetRGBDNIR(const string& param_file, Phase phase) : Net<Dtype>(param_file, phase){}
 
-    void setup(std::string imgsListURL, int patchsize, int batchSize, int batchesPerImage, bool RGB, bool NIR, bool depth, bool isMultiscale, std::string imgType, std::string labelImageSuffix);
-    void feedNextPatchesToInputLayers();
+	void setup(std::string imgsListURL, int patchsize, int batchSize, int batchesPerImage, bool RGB, bool NIR, bool depth, bool isMultiscale, std::string imgType, std::string labelImageSuffix);
+	void feedNextPatchesToInputLayers();
 
 protected:
-    void readNextImage();
+	void readNextImage();
 //    void setRandomPatches();
 //    void setUniformPatches();
 
@@ -33,66 +33,74 @@ protected:
 //    void normalizeLocally2(cv::Mat &img, int kernel);
 //    vector<cv::Mat> makeGaussianPyramid(cv::Mat img, int leveln=3);
 //    vector<cv::Mat> makeLaplacianPyramid(cv::Mat img, int leveln=3);
-    cv::Mat getImgPatch(cv::Mat img, int x, int y, bool isDepth=false);
-    cv::Mat makeJitter(cv::Mat img, bool noInterpolation = false);
+	cv::Mat getImgPatch(cv::Mat img, int x, int y, bool isDepth=false);
+	void setJitterRandomVars();
+	cv::Mat makeJitter(cv::Mat img, bool noInterpolation = false);
+	int scaleCnt;
+	int scaleCntMax;
+	int currentLabel, x, y;
 
+	int patchSz;
+	int borderSz;
+	std::vector<std::string> imgs;
+	int imgCnt;
+	int imgMax;
+	int patchCnt;
+	int patchMax;
+	int batchSz;
+	int batchNr;
+	std::vector<int> imgs_uniformSubpatchSize; //stores the size of the uniform subpatches for each image
+	std::vector<int> imgs_uniformSubpatchIndex; //stores the index in the uniform subpatches for each image
+	std::vector<bool> imgs_uniformSubpatchIndex_inits; //stores whether this subpatch index has been initialized with a random index
 
-    int patchSz;
-    int borderSz;
-    std::vector<std::string> imgs;
-    int imgCnt;
-    int imgMax;
-    int patchCnt;
-    int patchMax;
-    int batchSz;
-    int batchNr;
-    std::vector<int> imgs_uniformSubpatchSize; //stores the size of the uniform subpatches for each image
-    std::vector<int> imgs_uniformSubpatchIndex; //stores the index in the uniform subpatches for each image
-    std::vector<bool> imgs_uniformSubpatchIndex_inits; //stores whether this subpatch index has been initialized with a random index
+	//vector that holds random pixel number generators for each image:
+	int getNextRandomPixel();
+	std::vector< std::vector<int> > randomPixels;
+	std::vector<int> randomPixelIndices;
 
-    //vector that holds random pixel number generators for each image:
-    int getNextRandomPixel();
-    std::vector< std::vector<int> > randomPixels;
-    std::vector<int> randomPixelIndices;
+	//random number generator and random vars for jitter
+	boost::mt19937 gen;
+	int jitter_flipping;
+	double jitter_rotAngle;
+	double jitter_scale_fac;
 
-    boost::mt19937 gen; //random number generator
-    int batchesPerImg;
-    vector<int> sparsePatches;
+	int batchesPerImg;
+	vector<int> sparsePatches;
 
-    bool hasRGB;
-    bool hasNIR;
-    bool hasDepth;
-    bool multiscale;
-    std::string imgType;
-    std::string labelImgSuffix;
+	bool hasRGB;
+	bool hasNIR;
+	bool hasDepth;
+	bool multiscale;
+	std::string imgType;
+	std::string labelImgSuffix;
 
-    cv::Mat img_labels;
+	cv::Mat img_labels;
 
-    cv::Mat img_rgb0;
-    cv::Mat img_rgb1;
-    cv::Mat img_rgb2;
-    cv::Mat img_nir0;
-    cv::Mat img_nir1;
-    cv::Mat img_nir2;
-    cv::Mat img_depth0;
-    cv::Mat img_depth1;
-    cv::Mat img_depth2;
+	cv::Mat img_rgb0;
+	cv::Mat img_rgb1;
+	cv::Mat img_rgb2;
+	cv::Mat img_nir0;
+	cv::Mat img_nir1;
+	cv::Mat img_nir2;
+	cv::Mat img_depth0;
+	cv::Mat img_depth1;
+	cv::Mat img_depth2;
 
-    cv::Mat patch_rgb0;
-    cv::Mat patch_rgb1;
-    cv::Mat patch_rgb2;
-    cv::Mat patch_nir0;
-    cv::Mat patch_nir1;
-    cv::Mat patch_nir2;
-    cv::Mat patch_depth0;
-    cv::Mat patch_depth1;
-    cv::Mat patch_depth2;
+	cv::Mat patch_rgb0;
+	cv::Mat patch_rgb1;
+	cv::Mat patch_rgb2;
+	cv::Mat patch_nir0;
+	cv::Mat patch_nir1;
+	cv::Mat patch_nir2;
+	cv::Mat patch_depth0;
+	cv::Mat patch_depth1;
+	cv::Mat patch_depth2;
 
-    //image preprocessor:
-    RGBDNIR_preproc preproc;
+	//image preprocessor:
+	RGBDNIR_preproc preproc;
 
-    //debug
-    long iteration;
+	//debug
+	long iteration;
 };
 
 } //namespace caffe
