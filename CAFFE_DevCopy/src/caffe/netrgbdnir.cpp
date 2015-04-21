@@ -129,6 +129,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 		{
 //            LOG(INFO) << "has RGB \n";
 			Mat patch_rgb0 = getImgPatch(img_rgb0, x, y);
+			preproc.normalizeEachChannelLocally(patch_rgb0, 15);
 			std::vector<Mat> patch_rgb0_vect;
 			split(patch_rgb0, patch_rgb0_vect);
 			Mat rgb0y = patch_rgb0_vect[0];
@@ -147,6 +148,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 //                LOG(INFO) << "is multiscale\n";
 				//level 1
 				Mat patch_rgb1 = getImgPatch(img_rgb1, x/2, y/2);
+				preproc.normalizeEachChannelLocally(patch_rgb1, 15);
 				std::vector<Mat> patch_rgb1_vect;
 				split(patch_rgb1, patch_rgb1_vect);
 				Mat rgb1y = patch_rgb1_vect[0];
@@ -162,6 +164,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 
 				//level 2
 				Mat patch_rgb2 = getImgPatch(img_rgb2, x/4, y/4);
+				preproc.normalizeEachChannelLocally(patch_rgb2, 15);
 				std::vector<Mat> patch_rgb2_vect;
 				split(patch_rgb2, patch_rgb2_vect);
 				Mat rgb2y = patch_rgb2_vect[0];
@@ -181,6 +184,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 		{
 //            LOG(INFO) << "has NIR \n";
 			Mat patch_nir0 = getImgPatch(img_nir0, x, y);
+			preproc.normalizeEachChannelLocally(patch_nir0, 15);
 			std::vector<Mat> patch_nir0_vect;
 			split(patch_nir0, patch_nir0_vect);
 			Mat nir0y = patch_nir0_vect[0];
@@ -199,6 +203,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 //                LOG(INFO) << "is multiscale\n";
 				//level 1
 				Mat patch_nir1 = getImgPatch(img_nir1, x/2, y/2);
+				preproc.normalizeEachChannelLocally(patch_nir1, 15);
 				std::vector<Mat> patch_nir1_vect;
 				split(patch_nir1, patch_nir1_vect);
 				Mat nir1y = patch_nir1_vect[0];
@@ -214,6 +219,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 
 				//level 2
 				Mat patch_nir2 = getImgPatch(img_nir2, x/4, y/4);
+				preproc.normalizeEachChannelLocally(patch_nir2, 15);
 				std::vector<Mat> patch_nir2_vect;
 				split(patch_nir2, patch_nir2_vect);
 				Mat nir2y = patch_nir2_vect[0];
@@ -366,19 +372,18 @@ void NetRGBDNIR<Dtype>::readAllImages()
 
 			if(!multiscale)
 			{
-				preproc.normalizeEachChannelLocally(temp1, 15);
+//				preproc.normalizeEachChannelLocally(temp1, 15);
 				cv::copyMakeBorder(temp1, rgb0, borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
 			}
 			else //make Laplacian pyramid
 			{
 				std::vector<Mat> pyramid = preproc.makePyramid(temp1, 3);
 
-				//compute zero mean and unit variance for each channel
-				for(int i = 0; i < 3; ++i)
-				{
-					Mat pyrLevel = pyramid[i];
-					preproc.normalizeEachChannelLocally(pyrLevel, 15);
-				}
+//				//compute zero mean and unit variance for each channel
+//				for(int i = 0; i < 3; ++i)
+//				{
+//					preproc.normalizeEachChannelLocally(pyramid[i], 15);
+//				}
 
 				//make border padding around image for each pyramid level, border is whole patchsize to allow
 				//for artificial jitter (rotation & scale), then the patches are cutout after applying jitter
@@ -400,7 +405,7 @@ void NetRGBDNIR<Dtype>::readAllImages()
 
 			if(!multiscale)
 			{
-				preproc.normalizeEachChannelLocally(temp1, 15);
+//				preproc.normalizeEachChannelLocally(temp1, 15);
 				cv::copyMakeBorder(temp1, nir0, borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
 			}
 			else //make Laplacian pyramid
@@ -408,11 +413,10 @@ void NetRGBDNIR<Dtype>::readAllImages()
 				std::vector<Mat> pyramid = preproc.makePyramid(temp1, 3);
 
 				//compute zero mean and unit variance for each channel
-				for(int i = 0; i < 3; ++i)
-				{
-					Mat pyrLevel = pyramid[i];
-					preproc.normalizeEachChannelLocally(pyrLevel, 15);
-				}
+//				for(int i = 0; i < 3; ++i)
+//				{
+//					preproc.normalizeEachChannelLocally(pyramid[i], 15);
+//				}
 
 				//make border padding around image for each pyramid level, border is whole patchsize to allow
 				//for artificial jitter (rotation & scale), then the patches are cutout after applying jitter
