@@ -50,24 +50,13 @@ void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchS
 	multiscale = isMultiscale;
 	imgType = imageType;
 	labelImgSuffix = labelImageSuffix;
-	scaleCnt = 0;
-	if(multiscale)
-	{
-		batchesPerImg = batchesPerImage*3; //because of 3 scales
-		scaleCntMax = 3;
-	}
-	else
-	{
-		batchesPerImg = batchesPerImage;
-		scaleCntMax = 1;
-	}
-	currentLabel = 0; x = 0; y = 0;
+	batchesPerImg = batchesPerImage;
 	jitter_flipping = false;
 	jitter_rotAngle = 0;
 	jitter_scale_fac = 0;
 
 	//load all images and set first one to active
-    readAllImages();
+	readAllImages();
 
 	//debug
 	iteration = 0;
@@ -77,52 +66,55 @@ template<typename Dtype>
 void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 {
 //    LOG(INFO) << "Feeding new patches to memory data layers";
-	std::vector<Mat> mats_rgb_Y;
-	std::vector<Mat> mats_rgb_UV;
+	std::vector<Mat> mats_rgb0_Y;
+	std::vector<Mat> mats_rgb0_UV;
+	std::vector<Mat> mats_rgb1_Y;
+	std::vector<Mat> mats_rgb1_UV;
+	std::vector<Mat> mats_rgb2_Y;
+	std::vector<Mat> mats_rgb2_UV;
 
-	std::vector<Mat> mats_nir_Y;
-	std::vector<Mat> mats_nir_UV;
+	std::vector<Mat> mats_nir0_Y;
+	std::vector<Mat> mats_nir0_UV;
+	std::vector<Mat> mats_nir1_Y;
+	std::vector<Mat> mats_nir1_UV;
+	std::vector<Mat> mats_nir2_Y;
+	std::vector<Mat> mats_nir2_UV;
 
-	std::vector<Mat> mats_depth;
+	std::vector<Mat> mats_depth0;
+	std::vector<Mat> mats_depth1;
+	std::vector<Mat> mats_depth2;
 	std::vector<int> labels;
 
 	int batchCnt = 0;
 	for(batchCnt = 0; batchCnt < batchSz; )
-    {
+	{
 		//load next image if enough batches have been read from the current image
-        if(batchNr == 0)
+		if(batchNr == 0)
 		{
 			getNextImage();
-//            LOG(INFO) << "current image: " << imgCnt;
 			batchNr = 0;
+//            LOG(INFO) << "current image: " << imgCnt;
 		}
-        batchNr = (batchNr + 1) % batchesPerImg;
+		batchNr = (batchNr + 1) % batchesPerImg;
 
 
-		//get the next random pixel, but only once for each current patch, use same label for all scales of one patch position
-		//if the label is "unknown", go to next pixel
-//		int currentLabel, x, y;
-		if(scaleCnt == 0)
+		//get the next random pixel, if the label is "unknown", go to next pixel
+		int currentLabel, x, y;
+		do
 		{
-			do
-			{
-                //get the correct pixel indices
-                int w = img_labels.cols;
-				int randomPixel = getNextRandomPixel();
-				x = randomPixel % w;
-				y = randomPixel / w;
+			//get the correct pixel indices
+			int w = img_labels.cols;
+			int randomPixel = getNextRandomPixel();
+			x = randomPixel % w;
+			y = randomPixel / w;
 
-				//get label for this patch
-				currentLabel = img_labels.at<uchar>(y,x);
+			//get label for this patch
+			currentLabel = img_labels.at<uchar>(y,x);
 //                LOG(INFO) << "label: " << currentLabel <<" current pos: " << x << "  " << y << " random pixel: " << randomPixel;
-			}
-			while(currentLabel == 255);
 		}
-
+		while(currentLabel == 255); //jump the "unknown" label, training with this label is useless
 		labels.push_back(currentLabel);
 
-		//jump the "unknown" label, training with this label is useless
-		batchCnt++;
 
 		///////////////////////////////////////////////////////////////////////
 		/// READ PATCHES
@@ -135,24 +127,22 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 		//read the current patch from the image (orig. scale 0)
 		if(hasRGB)
 		{
-			if(scaleCnt == 0) //get patch for scale 0 on this pixel position
-			{
-	//            LOG(INFO) << "has RGB \n";
-				Mat patch_rgb0 = getImgPatch(img_rgb0, x, y);
-				std::vector<Mat> patch_rgb0_vect;
-				split(patch_rgb0, patch_rgb0_vect);
-				Mat rgb0y = patch_rgb0_vect[0];
-				Mat rgb0uv;
-				std::vector<Mat> rgb0uv_vec;
-				rgb0uv_vec.push_back(patch_rgb0_vect[1]);
-				rgb0uv_vec.push_back(patch_rgb0_vect[2]);
-				merge(rgb0uv_vec, rgb0uv);
-				mats_rgb_Y.push_back(rgb0y);
-				mats_rgb_UV.push_back(rgb0uv);
-	//            imshow("rgb0y", rgb0y); cvWaitKey();
-	//            imwrite("/home/maurice/rgb0y.png", rgb0y);
-			}
-			else if(scaleCnt == 1) //get patch for scale 1 on this pixel position
+//            LOG(INFO) << "has RGB \n";
+			Mat patch_rgb0 = getImgPatch(img_rgb0, x, y);
+			std::vector<Mat> patch_rgb0_vect;
+			split(patch_rgb0, patch_rgb0_vect);
+			Mat rgb0y = patch_rgb0_vect[0];
+			Mat rgb0uv;
+			std::vector<Mat> rgb0uv_vec;
+			rgb0uv_vec.push_back(patch_rgb0_vect[1]);
+			rgb0uv_vec.push_back(patch_rgb0_vect[2]);
+			merge(rgb0uv_vec, rgb0uv);
+			mats_rgb0_Y.push_back(rgb0y);
+			mats_rgb0_UV.push_back(rgb0uv);
+			imshow("rgb0y", rgb0y); cvWaitKey();
+//            imwrite("/home/maurice/rgb0y.png", rgb0y);
+
+			if(multiscale)
 			{
 //                LOG(INFO) << "is multiscale\n";
 				//level 1
@@ -165,13 +155,11 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 				rgb1uv_vec.push_back(patch_rgb1_vect[1]);
 				rgb1uv_vec.push_back(patch_rgb1_vect[2]);
 				merge(rgb1uv_vec, rgb1uv);
-				mats_rgb_Y.push_back(rgb1y);
-				mats_rgb_UV.push_back(rgb1uv);
-//                imshow("rgb1y", rgb1y); cvWaitKey();
+				mats_rgb1_Y.push_back(rgb1y);
+				mats_rgb1_UV.push_back(rgb1uv);
+				imshow("rgb1y", rgb1y); cvWaitKey();
 //                imwrite("/home/maurice/rgb1y.png", rgb1y);
-			}
-			else //get patch for scale 2 on this pixel position
-			{
+
 				//level 2
 				Mat patch_rgb2 = getImgPatch(img_rgb2, x/4, y/4);
 				std::vector<Mat> patch_rgb2_vect;
@@ -182,33 +170,31 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 				rgb2uv_vec.push_back(patch_rgb2_vect[1]);
 				rgb2uv_vec.push_back(patch_rgb2_vect[2]);
 				merge(rgb2uv_vec, rgb2uv);
-				mats_rgb_Y.push_back(rgb2y);
-				mats_rgb_UV.push_back(rgb2uv);
-//                imshow("rgb2y", rgb2y); cvWaitKey();
+				mats_rgb2_Y.push_back(rgb2y);
+				mats_rgb2_UV.push_back(rgb2uv);
+				imshow("rgb2y", rgb2y); cvWaitKey();
 //                imwrite("/home/maurice/rgb2y.png", rgb2y);
 			}
 		}
 
 		if(hasNIR)
 		{
-			if(scaleCnt == 0) //get patch for scale 0 on this pixel position
-			{
-	//            LOG(INFO) << "has NIR \n";
-				Mat patch_nir0 = getImgPatch(img_nir0, x, y);
-				std::vector<Mat> patch_nir0_vect;
-				split(patch_nir0, patch_nir0_vect);
-				Mat nir0y = patch_nir0_vect[0];
-				Mat nir0uv;
-				std::vector<Mat> nir0uv_vec;
-				nir0uv_vec.push_back(patch_nir0_vect[1]);
-				nir0uv_vec.push_back(patch_nir0_vect[2]);
-				merge(nir0uv_vec, nir0uv);
-				mats_nir_Y.push_back(nir0y);
-				mats_nir_UV.push_back(nir0uv);
-	//            imshow("nir0y", nir0y); cvWaitKey();
-	//            imwrite("/home/maurice/nir0y.png", nir0y);
-			}
-			else if(scaleCnt == 1) //get patch for scale 1 on this pixel position
+//            LOG(INFO) << "has NIR \n";
+			Mat patch_nir0 = getImgPatch(img_nir0, x, y);
+			std::vector<Mat> patch_nir0_vect;
+			split(patch_nir0, patch_nir0_vect);
+			Mat nir0y = patch_nir0_vect[0];
+			Mat nir0uv;
+			std::vector<Mat> nir0uv_vec;
+			nir0uv_vec.push_back(patch_nir0_vect[1]);
+			nir0uv_vec.push_back(patch_nir0_vect[2]);
+			merge(nir0uv_vec, nir0uv);
+			mats_nir0_Y.push_back(nir0y);
+			mats_nir0_UV.push_back(nir0uv);
+			imshow("nir0y", nir0y); cvWaitKey();
+//            imwrite("/home/maurice/nir0y.png", nir0y);
+
+			if(multiscale)
 			{
 //                LOG(INFO) << "is multiscale\n";
 				//level 1
@@ -221,13 +207,11 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 				nir1uv_vec.push_back(patch_nir1_vect[1]);
 				nir1uv_vec.push_back(patch_nir1_vect[2]);
 				merge(nir1uv_vec, nir1uv);
-				mats_nir_Y.push_back(nir1y);
-				mats_nir_UV.push_back(nir1uv);
-//                imshow("nir1y", nir1y); cvWaitKey();
+				mats_nir1_Y.push_back(nir1y);
+				mats_nir1_UV.push_back(nir1uv);
+				imshow("nir1y", nir1y); cvWaitKey();
 //                imwrite("/home/maurice/nir1y.png", nir1y);
-			}
-			else //get patch for scale 2 on this pixel position
-			{
+
 				//level 2
 				Mat patch_nir2 = getImgPatch(img_nir2, x/4, y/4);
 				std::vector<Mat> patch_nir2_vect;
@@ -238,9 +222,9 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 				nir2uv_vec.push_back(patch_nir2_vect[1]);
 				nir2uv_vec.push_back(patch_nir2_vect[2]);
 				merge(nir2uv_vec, nir2uv);
-				mats_nir_Y.push_back(nir2y);
-				mats_nir_UV.push_back(nir2uv);
-//                imshow("nir2y", nir2y); cvWaitKey();
+				mats_nir2_Y.push_back(nir2y);
+				mats_nir2_UV.push_back(nir2uv);
+				imshow("nir2y", nir2y); cvWaitKey();
 //                imwrite("/home/maurice/nir2y.png", nir2y);
 			}
 		}
@@ -248,56 +232,55 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 		if(hasDepth)
 		{
 //            LOG(INFO) << "has Depth \n";
-			if(scaleCnt == 0) //get patch for scale 0 on this pixel position
+			mats_depth0.push_back(getImgPatch(img_depth0, x, y, true));
+			imshow("depth0", mats_depth0.at(0)); cvWaitKey();
+			if(multiscale)
 			{
-				mats_depth.push_back(getImgPatch(img_depth0, x, y, true));
-			}
-			else if(scaleCnt == 1) //get patch for scale 1 on this pixel position
-			{
-				mats_depth.push_back(getImgPatch(img_depth1, x/2, y/2, true));
-			}
-			else //get patch for scale 2 on this pixel position
-			{
-				mats_depth.push_back(getImgPatch(img_depth2, x/4, y/4, true));
+				mats_depth1.push_back(getImgPatch(img_depth1, x/2, y/2, true));
+				mats_depth2.push_back(getImgPatch(img_depth2, x/4, y/4, true));
+
+				imshow("depth1", mats_depth1.at(0)); cvWaitKey();
+				imshow("depth2", mats_depth2.at(0)); cvWaitKey();
 			}
 		}
 
+		batchCnt++;
 		patchCnt++;
-		scaleCnt = (scaleCnt + 1) % scaleCntMax;
 	}
 
-//	imshow("schau mal das NIR Bildchen!", mats_nir_Y.at(0));cvWaitKey();
 
 	//LOG(INFO) << "Feed Datum vectors to Memory Data Layers";
 	//feed images to corresponding memory_data_layers. We have different input layers for
 	//RGB, NIR and Depth, so convolution won't mix those channels, plus 3 different scales
 	//I.e. in total there are 3 * 3 = 9 input layers
-	for(int layer_id = 0; layer_id < this->layers_.size(); ++layer_id)
+	//NIR//////////////////////////////////////////////////////////////
+	if(hasNIR)
 	{
-		Layer<Dtype>* layer = this->layers_[layer_id].get(); //get stored pointer from shared pointer
+		((MemoryDataLayer<float>*)this->layer_by_name("nir0_Y").get())->AddMatVector(mats_nir0_Y, labels);
+		((MemoryDataLayer<float>*)this->layer_by_name("nir0_UV").get())->AddMatVector(mats_nir0_UV, labels);
+		((MemoryDataLayer<float>*)this->layer_by_name("nir1_Y").get())->AddMatVector(mats_nir1_Y, labels);
+		((MemoryDataLayer<float>*)this->layer_by_name("nir1_UV").get())->AddMatVector(mats_nir1_UV, labels);
+		((MemoryDataLayer<float>*)this->layer_by_name("nir2_Y").get())->AddMatVector(mats_nir2_Y, labels);
+		((MemoryDataLayer<float>*)this->layer_by_name("nir2_UV").get())->AddMatVector(mats_nir2_UV, labels);
+	}
 
-		//if memory data layer, add correct datum vector to layer
-		if( strcmp( layer->type(), "MemoryData") == 0 )
-		{
-			std::string nm = layer->layer_param().name();
+	//DEPTH////////////////////////////////////////////////////////////
+	if(hasDepth)
+	{
+		((MemoryDataLayer<float>*)this->layer_by_name("depth0").get())->AddMatVector(mats_depth0, labels);
+		((MemoryDataLayer<float>*)this->layer_by_name("depth1").get())->AddMatVector(mats_depth1, labels);
+		((MemoryDataLayer<float>*)this->layer_by_name("depth2").get())->AddMatVector(mats_depth2, labels);
+	}
 
-			//NIR//////////////////////////////////////////////////////////////
-			if(nm == "nir_Y"){ if(hasNIR)
-				{ ((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_nir_Y, labels); } }
-			else if(nm == "nir_UV"){ if(hasNIR)
-				{ ((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_nir_UV, labels); } }
-
-			//DEPTH////////////////////////////////////////////////////////////
-			else if(nm == "depth"){ if(hasDepth)
-				{((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_depth, labels); } }
-
-			//RGB//////////////////////////////////////////////////////////////
-			else if(nm == "rgb_Y"){ if(hasRGB)
-				{ ((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_rgb_Y, labels); } }
-			else if(nm == "rgb_UV"){ if(hasRGB)
-				{ ((MemoryDataLayer<Dtype>*)layer)->AddMatVector(mats_rgb_UV, labels); } }
-
-		}
+	//RGB//////////////////////////////////////////////////////////////
+	if(hasRGB)
+	{
+		((MemoryDataLayer<float>*)this->layer_by_name("rgb0_Y").get())->AddMatVector(mats_rgb0_Y, labels);
+		((MemoryDataLayer<float>*)this->layer_by_name("rgb0_UV").get())->AddMatVector(mats_rgb0_UV, labels);
+		((MemoryDataLayer<float>*)this->layer_by_name("rgb1_Y").get())->AddMatVector(mats_rgb1_Y, labels);
+		((MemoryDataLayer<float>*)this->layer_by_name("rgb1_UV").get())->AddMatVector(mats_rgb1_UV, labels);
+		((MemoryDataLayer<float>*)this->layer_by_name("rgb2_Y").get())->AddMatVector(mats_rgb2_Y, labels);
+		((MemoryDataLayer<float>*)this->layer_by_name("rgb2_UV").get())->AddMatVector(mats_rgb2_UV, labels);
 	}
 
 	//debug
@@ -340,7 +323,7 @@ void NetRGBDNIR<Dtype>::readAllImages()
 	{
 		//get next image URL, also circle through images (if iterations are > all available patches)
 		std::string imageURL = imgs[i];
-        LOG(INFO) << "Reading image " << i << ": " << imageURL;
+		LOG(INFO) << "Reading image " << i << ": " << imageURL;
 
 		//load all image types (RGB, NIR and Depth) if available, create scales (image pyramid) pad images (make borders)
 		std::string labelsNm = imageURL + labelImgSuffix + std::string(".png"); //labels lossless, always png
@@ -356,12 +339,12 @@ void NetRGBDNIR<Dtype>::readAllImages()
 		//make a shuffled list of pixel indices for each image
 		if(randomPixels.at(i).size() == 0) //vector for current image not initialized yet
 		{
-            //fill vector holding all image pixels for current image, then shuffle it
+			//fill vector holding all image pixels for current image, then shuffle it
 			int totalNrOfPixels = labels.cols * labels.rows;
 
 //            LOG(INFO) << "cols: " << labels.cols << " rows: " << labels.rows << "pixels: " << totalNrOfPixels;
 
-            srand(time(0)); //set seed for random generator using current time
+			srand(time(0)); //set seed for random generator using current time
 
 			for (int j = 0; j < totalNrOfPixels; ++j)
 			{

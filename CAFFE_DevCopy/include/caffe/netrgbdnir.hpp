@@ -29,9 +29,6 @@ protected:
 	cv::Mat getImgPatch(cv::Mat img, int x, int y, bool isDepth=false);
 	void setJitterRandomVars();
 	cv::Mat makeJitter(cv::Mat img, bool noInterpolation = false);
-	int scaleCnt;
-	int scaleCntMax;
-	int currentLabel, x, y;
 
 	int patchSz;
 	int borderSz;
