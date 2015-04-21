@@ -61,7 +61,7 @@ void RGBDNIR_preproc::normalizeEachChannelLocally(Mat &img, int kernel)
 	split(img, chs);
 	for(int i = 0; i < 3; ++i)
 	{
-		normalizeLocally1(chs[i]);
+		normalize(chs[i]);
 //		normalizeLocallyWithPatches(chs[i], kernel);
 //		normalizeLocally2(chs[i], kernel);
 	}
@@ -70,7 +70,7 @@ void RGBDNIR_preproc::normalizeEachChannelLocally(Mat &img, int kernel)
 	img = img_;
 }
 
-void RGBDNIR_preproc::normalizeLocally1(Mat &img)
+void RGBDNIR_preproc::normalize(Mat &img)
 {
 	//convert to 32 bit and normalize
 	Mat img32F;

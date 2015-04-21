@@ -18,7 +18,7 @@ public:
 	explicit NetRGBDNIR(const NetParameter& param) : Net<Dtype>(param){}
 	explicit NetRGBDNIR(const string& param_file, Phase phase) : Net<Dtype>(param_file, phase){}
 
-	void setup(std::string imgsListURL, int patchsize, int batchSize, int batchesPerImage, bool RGB, bool NIR, bool depth, bool isMultiscale, std::string imgType, std::string labelImageSuffix);
+	void setup(std::string imgsListURL, int patchsize, int batchSize, int batchesPerImage, bool RGB, bool NIR, bool depth, bool skin, bool isMultiscale, std::string imgType, std::string labelImageSuffix);
 	void feedNextPatchesToInputLayers();
 
 protected:
@@ -60,6 +60,7 @@ protected:
 	bool hasRGB;
 	bool hasNIR;
 	bool hasDepth;
+	bool hasSkin;
 	bool multiscale;
 	std::string imgType;
 	std::string labelImgSuffix;
@@ -76,6 +77,9 @@ protected:
 	cv::Mat img_depth0;
 	cv::Mat img_depth1;
 	cv::Mat img_depth2;
+	cv::Mat img_skin0;
+	cv::Mat img_skin1;
+	cv::Mat img_skin2;
 
 	std::vector<cv::Mat> imgs_rgb0;
 	std::vector<cv::Mat> imgs_rgb1;
@@ -86,6 +90,9 @@ protected:
 	std::vector<cv::Mat> imgs_depth0;
 	std::vector<cv::Mat> imgs_depth1;
 	std::vector<cv::Mat> imgs_depth2;
+	std::vector<cv::Mat> imgs_skin0;
+	std::vector<cv::Mat> imgs_skin1;
+	std::vector<cv::Mat> imgs_skin2;
 
 	//image preprocessor:
 	RGBDNIR_preproc preproc;

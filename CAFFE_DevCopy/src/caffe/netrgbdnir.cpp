@@ -5,13 +5,15 @@
 #include "../../include/caffe/data_layers.hpp"
 #include "../../include/caffe/util/io.hpp"
 
+//#define DEBUG_IMG
+
 using namespace cv;
 
 namespace caffe {
 
 template<typename Dtype>
 void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchSize, int batchesPerImage,
-							  bool RGB, bool NIR, bool depth, bool isMultiscale, std::string imageType, std::string labelImageSuffix)
+							  bool RGB, bool NIR, bool depth, bool skin, bool isMultiscale, std::string imageType, std::string labelImageSuffix)
 {
 	//LOG(INFO) << "Doing Setup of NetRGBDNIR";
 
@@ -47,6 +49,7 @@ void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchS
 	hasRGB = RGB;
 	hasNIR = NIR;
 	hasDepth = depth;
+	hasSkin = skin;
 	multiscale = isMultiscale;
 	imgType = imageType;
 	labelImgSuffix = labelImageSuffix;
@@ -83,6 +86,11 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 	std::vector<Mat> mats_depth0;
 	std::vector<Mat> mats_depth1;
 	std::vector<Mat> mats_depth2;
+
+	std::vector<Mat> mats_skin0;
+	std::vector<Mat> mats_skin1;
+	std::vector<Mat> mats_skin2;
+
 	std::vector<int> labels;
 
 	int batchCnt = 0;
@@ -127,7 +135,6 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 		//read the current patch from the image (orig. scale 0)
 		if(hasRGB)
 		{
-//            LOG(INFO) << "has RGB \n";
 			Mat patch_rgb0 = getImgPatch(img_rgb0, x, y);
 			preproc.normalizeEachChannelLocally(patch_rgb0, 15);
 			std::vector<Mat> patch_rgb0_vect;
@@ -140,12 +147,13 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 			merge(rgb0uv_vec, rgb0uv);
 			mats_rgb0_Y.push_back(rgb0y);
 			mats_rgb0_UV.push_back(rgb0uv);
-			imshow("rgb0y", rgb0y); cvWaitKey();
-//            imwrite("/home/maurice/rgb0y.png", rgb0y);
+#ifdef DEBUG_IMG
+			imshow("rgb0y", rgb0y);
+			imwrite("/home/maurice/rgb0y.png", rgb0y); cvWaitKey();
+#endif
 
 			if(multiscale)
 			{
-//                LOG(INFO) << "is multiscale\n";
 				//level 1
 				Mat patch_rgb1 = getImgPatch(img_rgb1, x/2, y/2);
 				preproc.normalizeEachChannelLocally(patch_rgb1, 15);
@@ -159,8 +167,10 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 				merge(rgb1uv_vec, rgb1uv);
 				mats_rgb1_Y.push_back(rgb1y);
 				mats_rgb1_UV.push_back(rgb1uv);
-				imshow("rgb1y", rgb1y); cvWaitKey();
-//                imwrite("/home/maurice/rgb1y.png", rgb1y);
+#ifdef DEBUG_IMG
+				imshow("rgb1y", rgb1y);
+				imwrite("/home/maurice/rgb1y.png", rgb1y); cvWaitKey();
+#endif
 
 				//level 2
 				Mat patch_rgb2 = getImgPatch(img_rgb2, x/4, y/4);
@@ -175,14 +185,15 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 				merge(rgb2uv_vec, rgb2uv);
 				mats_rgb2_Y.push_back(rgb2y);
 				mats_rgb2_UV.push_back(rgb2uv);
-				imshow("rgb2y", rgb2y); cvWaitKey();
-//                imwrite("/home/maurice/rgb2y.png", rgb2y);
+#ifdef DEBUG_IMG
+				imshow("rgb2y", rgb2y);
+				imwrite("/home/maurice/rgb2y.png", rgb2y); cvWaitKey();
+#endif
 			}
 		}
 
 		if(hasNIR)
 		{
-//            LOG(INFO) << "has NIR \n";
 			Mat patch_nir0 = getImgPatch(img_nir0, x, y);
 			preproc.normalizeEachChannelLocally(patch_nir0, 15);
 			std::vector<Mat> patch_nir0_vect;
@@ -195,12 +206,13 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 			merge(nir0uv_vec, nir0uv);
 			mats_nir0_Y.push_back(nir0y);
 			mats_nir0_UV.push_back(nir0uv);
-			imshow("nir0y", nir0y); cvWaitKey();
-//            imwrite("/home/maurice/nir0y.png", nir0y);
+#ifdef DEBUG_IMG
+			imshow("nir0y", nir0y);
+			imwrite("/home/maurice/nir0y.png", nir0y); cvWaitKey();
+#endif
 
 			if(multiscale)
 			{
-//                LOG(INFO) << "is multiscale\n";
 				//level 1
 				Mat patch_nir1 = getImgPatch(img_nir1, x/2, y/2);
 				preproc.normalizeEachChannelLocally(patch_nir1, 15);
@@ -214,8 +226,10 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 				merge(nir1uv_vec, nir1uv);
 				mats_nir1_Y.push_back(nir1y);
 				mats_nir1_UV.push_back(nir1uv);
-				imshow("nir1y", nir1y); cvWaitKey();
-//                imwrite("/home/maurice/nir1y.png", nir1y);
+#ifdef DEBUG_IMG
+				imshow("nir1y", nir1y);
+				imwrite("/home/maurice/nir1y.png", nir1y); cvWaitKey();
+#endif
 
 				//level 2
 				Mat patch_nir2 = getImgPatch(img_nir2, x/4, y/4);
@@ -230,23 +244,50 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 				merge(nir2uv_vec, nir2uv);
 				mats_nir2_Y.push_back(nir2y);
 				mats_nir2_UV.push_back(nir2uv);
-				imshow("nir2y", nir2y); cvWaitKey();
-//                imwrite("/home/maurice/nir2y.png", nir2y);
+#ifdef DEBUG_IMG
+				imshow("nir2y", nir2y);
+				imwrite("/home/maurice/nir2y.png", nir2y); cvWaitKey();
+#endif
 			}
 		}
 
 		if(hasDepth)
 		{
-//            LOG(INFO) << "has Depth \n";
 			mats_depth0.push_back(getImgPatch(img_depth0, x, y, true));
-			imshow("depth0", mats_depth0.at(0)); cvWaitKey();
+#ifdef DEBUG_IMG
+			imshow("depth0", mats_depth0.at(0));
+			imwrite("/home/maurice/depth0.png", mats_depth0.at(0)); cvWaitKey();
+#endif
 			if(multiscale)
 			{
 				mats_depth1.push_back(getImgPatch(img_depth1, x/2, y/2, true));
 				mats_depth2.push_back(getImgPatch(img_depth2, x/4, y/4, true));
+#ifdef DEBUG_IMG
+				imshow("depth1", mats_depth1.at(0));
+				imwrite("/home/maurice/depth1.png", mats_depth1.at(0)); cvWaitKey();
+				imshow("depth2", mats_depth2.at(0));
+				imwrite("/home/maurice/depth2.png", mats_depth2.at(0)); cvWaitKey();
+#endif
+			}
+		}
 
-				imshow("depth1", mats_depth1.at(0)); cvWaitKey();
-				imshow("depth2", mats_depth2.at(0)); cvWaitKey();
+		if(hasSkin)
+		{
+			mats_skin0.push_back(getImgPatch(img_skin0, x, y, true));
+#ifdef DEBUG_IMG
+			imshow("skin0", mats_skin0.at(0));
+			imshow("/home/maurice/skin0.png", mats_skin0.at(0)); cvWaitKey();
+#endif
+			if(multiscale)
+			{
+				mats_skin1.push_back(getImgPatch(img_skin1, x/2, y/2, true));
+				mats_skin2.push_back(getImgPatch(img_skin2, x/4, y/4, true));
+#ifdef DEBUG_IMG
+				imshow("skin1", mats_skin1.at(0));
+				imwrite("/home/maurice/skin1.png", mats_skin1.at(0)); cvWaitKey();
+				imshow("skin2", mats_skin2.at(0));
+				imwrite("/home/maurice/skin2.png", mats_skin2.at(0)); cvWaitKey();
+#endif
 			}
 		}
 
@@ -289,6 +330,14 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 		((MemoryDataLayer<float>*)this->layer_by_name("rgb2_UV").get())->AddMatVector(mats_rgb2_UV, labels);
 	}
 
+	//SKIN/////////////////////////////////////////////////////////////
+	if(hasSkin)
+	{
+		((MemoryDataLayer<float>*)this->layer_by_name("skin0").get())->AddMatVector(mats_skin0, labels);
+		((MemoryDataLayer<float>*)this->layer_by_name("skin1").get())->AddMatVector(mats_skin1, labels);
+		((MemoryDataLayer<float>*)this->layer_by_name("skin2").get())->AddMatVector(mats_skin2, labels);
+	}
+
 	//debug
 	iteration++;
 }
@@ -319,6 +368,12 @@ void NetRGBDNIR<Dtype>::getNextImage()
 		img_depth1 = imgs_depth1.at(imgCnt);
 		img_depth2 = imgs_depth2.at(imgCnt);
 	}
+	if(hasSkin)
+	{
+		img_skin0 = imgs_skin0.at(imgCnt);
+		img_skin1 = imgs_skin1.at(imgCnt);
+		img_skin2 = imgs_skin2.at(imgCnt);
+	}
 }
 
 
@@ -337,6 +392,7 @@ void NetRGBDNIR<Dtype>::readAllImages()
 		std::string rgbNm = imageURL + std::string("_rgb.") + imgType;
 		std::string nirNm = imageURL + std::string("_nir.") + imgType;
 		std::string depthNm = imageURL + std::string("_depth.png"); //depth lossless, always png
+		std::string skinNm = imageURL + std::string("_skin.png"); //skin binary image also lossless, always png
 
 	//	LOG(INFO) << "Reading image " << imageURL;
 		Mat labels = cv::imread(labelsNm, cv::IMREAD_GRAYSCALE); //label img isn't downsampled nor padded
@@ -375,7 +431,7 @@ void NetRGBDNIR<Dtype>::readAllImages()
 //				preproc.normalizeEachChannelLocally(temp1, 15);
 				cv::copyMakeBorder(temp1, rgb0, borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
 			}
-			else //make Laplacian pyramid
+			else //make image pyramid
 			{
 				std::vector<Mat> pyramid = preproc.makePyramid(temp1, 3);
 
@@ -408,7 +464,7 @@ void NetRGBDNIR<Dtype>::readAllImages()
 //				preproc.normalizeEachChannelLocally(temp1, 15);
 				cv::copyMakeBorder(temp1, nir0, borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
 			}
-			else //make Laplacian pyramid
+			else //make image pyramid
 			{
 				std::vector<Mat> pyramid = preproc.makePyramid(temp1, 3);
 
@@ -440,7 +496,7 @@ void NetRGBDNIR<Dtype>::readAllImages()
 	//            preproc.normalizeEachChannelLocally(temp1, 15);
 				cv::copyMakeBorder(temp1, depth0, borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
 			}
-			else //make Laplacian pyramid
+			else //make image pyramid
 			{
 				std::vector<Mat> pyramid = preproc.makePyramid(temp1, 3, INTER_NEAREST); //for depth, no interpolation when resizing
 
@@ -453,6 +509,27 @@ void NetRGBDNIR<Dtype>::readAllImages()
 			imgs_depth0.push_back(depth0);
 			imgs_depth1.push_back(depth1);
 			imgs_depth2.push_back(depth2);
+		}
+
+		if(hasSkin)
+		{
+			temp1 = cv::imread(skinNm, cv::IMREAD_GRAYSCALE);
+			Mat skin0, skin1, skin2;
+
+			if(!multiscale)
+			{
+				cv::copyMakeBorder(temp1, skin0, borderSz, borderSz-1, borderSz, borderSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
+			}
+			else //make image pyramid
+			{
+				std::vector<Mat> pyramid = preproc.makePyramid(temp1, 3, INTER_NEAREST); //for skin, no interpolation when resizing
+				cv::copyMakeBorder(pyramid[0], skin0, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 0
+				cv::copyMakeBorder(pyramid[1], skin1, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 1 (half the size)
+				cv::copyMakeBorder(pyramid[2], skin2, patchSz, patchSz-1, patchSz, patchSz-1, cv::BORDER_CONSTANT, cv::Scalar(0)); //scale 2 (1/4 the size)
+			}
+			imgs_skin0.push_back(skin0);
+			imgs_skin1.push_back(skin1);
+			imgs_skin2.push_back(skin2);
 		}
 	//    LOG(INFO) << "done";
 	}

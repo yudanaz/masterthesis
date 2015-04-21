@@ -175,8 +175,8 @@ message SolverParameter {
   optional bool snapshot_diff = 16 [default = false];
   // the mode solver will use: 0 for CPU and 1 for GPU. Use GPU in default.
   enum SolverMode {
-    CPU = 0;
-    GPU = 1;
+	CPU = 0;
+	GPU = 1;
   }
   optional SolverMode solver_mode = 17 [default = GPU];
   // the device_id will that be used in GPU mode. Use device_id = 0 in default.
@@ -188,13 +188,13 @@ message SolverParameter {
 
   // Solver type
   enum SolverType {
-    SGD = 0;
-    NESTEROV = 1;
-    ADAGRAD = 2;
+	SGD = 0;
+	NESTEROV = 1;
+	ADAGRAD = 2;
 ////////////////////////////////////////////////////////////////////////////////
 /// RGBDNIR extension of original caffe.proto: /////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-    RGBDNIR_SGD = 3;
+	RGBDNIR_SGD = 3;
 ////////////////////////////////////////////////////////////////////////////////
 /// endof RGBDNIR extension ////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -260,10 +260,10 @@ message ParamSpec {
   // count -- defaults to STRICT if unspecified.
   optional DimCheckMode share_mode = 2;
   enum DimCheckMode {
-    // STRICT (default) requires that num, channels, height, width each match.
-    STRICT = 0;
-    // PERMISSIVE requires only the count (num*channels*height*width) to match.
-    PERMISSIVE = 1;
+	// STRICT (default) requires that num, channels, height, width each match.
+	STRICT = 0;
+	// PERMISSIVE requires only the count (num*channels*height*width) to match.
+	PERMISSIVE = 1;
   }
 
   // The multiplier on the global learning rate for this parameter.
@@ -441,9 +441,9 @@ message ConvolutionParameter {
   optional FillerParameter weight_filler = 7; // The filler for the weight
   optional FillerParameter bias_filler = 8; // The filler for the bias
   enum Engine {
-    DEFAULT = 0;
-    CAFFE = 1;
-    CUDNN = 2;
+	DEFAULT = 0;
+	CAFFE = 1;
+	CUDNN = 2;
   }
   optional Engine engine = 15 [default = DEFAULT];
 }
@@ -451,8 +451,8 @@ message ConvolutionParameter {
 // Message that stores parameters used by DataLayer
 message DataParameter {
   enum DB {
-    LEVELDB = 0;
-    LMDB = 1;
+	LEVELDB = 0;
+	LMDB = 1;
   }
   // Specify the data source.
   optional string source = 1;
@@ -507,9 +507,9 @@ message DummyDataParameter {
 // Message that stores parameters used by EltwiseLayer
 message EltwiseParameter {
   enum EltwiseOp {
-    PROD = 0;
-    SUM = 1;
-    MAX = 2;
+	PROD = 0;
+	SUM = 1;
+	MAX = 2;
   }
   optional EltwiseOp operation = 1 [default = SUM]; // element-wise operation
   repeated float coeff = 2; // blob-wise coefficient for SUM operation
@@ -551,8 +551,8 @@ message HDF5OutputParameter {
 
 message HingeLossParameter {
   enum Norm {
-    L1 = 1;
-    L2 = 2;
+	L1 = 1;
+	L2 = 2;
   }
   // Specify the Norm to use L1 or L2
   optional Norm norm = 1 [default = L1];
@@ -615,8 +615,8 @@ message LRNParameter {
   optional float alpha = 2 [default = 1.];
   optional float beta = 3 [default = 0.75];
   enum NormRegion {
-    ACROSS_CHANNELS = 0;
-    WITHIN_CHANNEL = 1;
+	ACROSS_CHANNELS = 0;
+	WITHIN_CHANNEL = 1;
   }
   optional NormRegion norm_region = 4 [default = ACROSS_CHANNELS];
   optional float k = 5 [default = 1.];
@@ -642,9 +642,9 @@ message MVNParameter {
 // Message that stores parameters used by PoolingLayer
 message PoolingParameter {
   enum PoolMethod {
-    MAX = 0;
-    AVE = 1;
-    STOCHASTIC = 2;
+	MAX = 0;
+	AVE = 1;
+	STOCHASTIC = 2;
   }
   optional PoolMethod pool = 1 [default = MAX]; // The pooling method
   // Pad, kernel size, and stride are all given as a single value for equal
@@ -659,9 +659,9 @@ message PoolingParameter {
   optional uint32 stride_h = 7; // The stride height
   optional uint32 stride_w = 8; // The stride width
   enum Engine {
-    DEFAULT = 0;
-    CAFFE = 1;
-    CUDNN = 2;
+	DEFAULT = 0;
+	CAFFE = 1;
+	CUDNN = 2;
   }
   optional Engine engine = 11 [default = DEFAULT];
   // If global_pooling then it will pool over the size of the bottom by doing
@@ -692,9 +692,9 @@ message ReLUParameter {
   // for Audio, Speech, and Language Processing.
   optional float negative_slope = 1 [default = 0];
   enum Engine {
-    DEFAULT = 0;
-    CAFFE = 1;
-    CUDNN = 2;
+	DEFAULT = 0;
+	CAFFE = 1;
+	CUDNN = 2;
   }
   optional Engine engine = 2 [default = DEFAULT];
 }
@@ -702,9 +702,9 @@ message ReLUParameter {
 // Message that stores parameters used by SigmoidLayer
 message SigmoidParameter {
   enum Engine {
-    DEFAULT = 0;
-    CAFFE = 1;
-    CUDNN = 2;
+	DEFAULT = 0;
+	CAFFE = 1;
+	CUDNN = 2;
   }
   optional Engine engine = 1 [default = DEFAULT];
 }
@@ -724,9 +724,9 @@ message SliceParameter {
 // Message that stores parameters used by SoftmaxLayer, SoftmaxWithLossLayer
 message SoftmaxParameter {
   enum Engine {
-    DEFAULT = 0;
-    CAFFE = 1;
-    CUDNN = 2;
+	DEFAULT = 0;
+	CAFFE = 1;
+	CUDNN = 2;
   }
   optional Engine engine = 1 [default = DEFAULT];
 
@@ -739,9 +739,9 @@ message SoftmaxParameter {
 // Message that stores parameters used by TanHLayer
 message TanHParameter {
   enum Engine {
-    DEFAULT = 0;
-    CAFFE = 1;
-    CUDNN = 2;
+	DEFAULT = 0;
+	CAFFE = 1;
+	CUDNN = 2;
   }
   optional Engine engine = 1 [default = DEFAULT];
 }
@@ -793,54 +793,54 @@ message V1LayerParameter {
   repeated NetStateRule include = 32;
   repeated NetStateRule exclude = 33;
   enum LayerType {
-    NONE = 0;
-    ABSVAL = 35;
-    ACCURACY = 1;
-    ARGMAX = 30;
-    BNLL = 2;
-    CONCAT = 3;
-    CONTRASTIVE_LOSS = 37;
-    CONVOLUTION = 4;
-    DATA = 5;
-    DECONVOLUTION = 39;
-    DROPOUT = 6;
-    DUMMY_DATA = 32;
-    EUCLIDEAN_LOSS = 7;
-    ELTWISE = 25;
-    EXP = 38;
-    FLATTEN = 8;
-    HDF5_DATA = 9;
-    HDF5_OUTPUT = 10;
-    HINGE_LOSS = 28;
-    IM2COL = 11;
-    IMAGE_DATA = 12;
-    INFOGAIN_LOSS = 13;
-    INNER_PRODUCT = 14;
-    LRN = 15;
-    MEMORY_DATA = 29;
-    MULTINOMIAL_LOGISTIC_LOSS = 16;
-    MVN = 34;
-    POOLING = 17;
-    POWER = 26;
-    RELU = 18;
-    SIGMOID = 19;
-    SIGMOID_CROSS_ENTROPY_LOSS = 27;
-    SILENCE = 36;
-    SOFTMAX = 20;
-    SOFTMAX_LOSS = 21;
-    SPLIT = 22;
-    SLICE = 33;
-    TANH = 23;
-    WINDOW_DATA = 24;
-    THRESHOLD = 31;
+	NONE = 0;
+	ABSVAL = 35;
+	ACCURACY = 1;
+	ARGMAX = 30;
+	BNLL = 2;
+	CONCAT = 3;
+	CONTRASTIVE_LOSS = 37;
+	CONVOLUTION = 4;
+	DATA = 5;
+	DECONVOLUTION = 39;
+	DROPOUT = 6;
+	DUMMY_DATA = 32;
+	EUCLIDEAN_LOSS = 7;
+	ELTWISE = 25;
+	EXP = 38;
+	FLATTEN = 8;
+	HDF5_DATA = 9;
+	HDF5_OUTPUT = 10;
+	HINGE_LOSS = 28;
+	IM2COL = 11;
+	IMAGE_DATA = 12;
+	INFOGAIN_LOSS = 13;
+	INNER_PRODUCT = 14;
+	LRN = 15;
+	MEMORY_DATA = 29;
+	MULTINOMIAL_LOGISTIC_LOSS = 16;
+	MVN = 34;
+	POOLING = 17;
+	POWER = 26;
+	RELU = 18;
+	SIGMOID = 19;
+	SIGMOID_CROSS_ENTROPY_LOSS = 27;
+	SILENCE = 36;
+	SOFTMAX = 20;
+	SOFTMAX_LOSS = 21;
+	SPLIT = 22;
+	SLICE = 33;
+	TANH = 23;
+	WINDOW_DATA = 24;
+	THRESHOLD = 31;
   }
   optional LayerType type = 5;
   repeated BlobProto blobs = 6;
   repeated string param = 1001;
   repeated DimCheckMode blob_share_mode = 1002;
   enum DimCheckMode {
-    STRICT = 0;
-    PERMISSIVE = 1;
+	STRICT = 0;
+	PERMISSIVE = 1;
   }
   repeated float blobs_lr = 7;
   repeated float weight_decay = 8;
@@ -895,9 +895,9 @@ message V0LayerParameter {
   optional uint32 group = 9 [default = 1]; // The group size for group conv
   optional uint32 stride = 10 [default = 1]; // The stride
   enum PoolMethod {
-    MAX = 0;
-    AVE = 1;
-    STOCHASTIC = 2;
+	MAX = 0;
+	AVE = 1;
+	STOCHASTIC = 2;
   }
   optional PoolMethod pool = 11 [default = MAX]; // The pooling method
   optional float dropout_ratio = 12 [default = 0.5]; // dropout ratio
@@ -987,10 +987,10 @@ message PReLUParameter {
 // RGBDNIR extension to original caffe.proto ///////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 message RGBDNIRSegmImgSourceParameter {
-  required string trainImgsURL = 1; 
+  required string trainImgsURL = 1;
   required string testImgsURL = 2;
-                            //text files containing all base image urls, other 
-                            //files are found by concat e.g. url + "_nir.jpg"
+							//text files containing all base image urls, other
+							//files are found by concat e.g. url + "_nir.jpg"
   optional uint32 trainBatchSize = 3 [default = 128];
   optional uint32 testBatchSize = 4 [default = 64];
   optional uint32 batchesPerImage = 11 [default = 8];
@@ -998,6 +998,7 @@ message RGBDNIRSegmImgSourceParameter {
   required bool hasRGB = 6;
   required bool hasNIR = 7;
   required bool hasDepth = 8;
+  optional bool hasSkin = 13 [ default = false ];
   required bool multiscale = 9;
   optional string imageType = 10 [ default = "png" ];
   optional string labelImageSuffix = 12 [ default = "_labels" ];
