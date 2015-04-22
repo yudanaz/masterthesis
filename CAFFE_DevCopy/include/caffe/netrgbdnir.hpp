@@ -45,8 +45,8 @@ protected:
 
 	//vector that holds random pixel number generators for each image:
 	int getNextRandomPixel();
-	std::vector< std::vector<int> > randomPixels;
-	std::vector<int> randomPixelIndices;
+    std::vector< std::vector<long> > randomPixels;
+    std::vector<long> randomPixelIndices;
 
 	//random number generator and random vars for jitter
 	boost::mt19937 gen;
