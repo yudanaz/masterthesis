@@ -78,6 +78,24 @@
       </layout>
      </item>
      <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_25">
+       <item>
+        <widget class="QPushButton" name="pushButton">
+         <property name="text">
+          <string>resize</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pushButton_accuracy">
+         <property name="text">
+          <string>Measure Accuracy</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
       <layout class="QHBoxLayout" name="horizontalLayout_3">
        <item>
         <widget class="QPushButton" name="btn_seed">
@@ -1148,27 +1166,14 @@ color: rgb(255, 255, 127);</string>
    <widget class="QPushButton" name="pushButton_test">
     <property name="geometry">
      <rect>
-      <x>630</x>
-      <y>390</y>
+      <x>950</x>
+      <y>400</y>
       <width>99</width>
       <height>27</height>
      </rect>
     </property>
     <property name="text">
      <string>Test</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="pushButton">
-    <property name="geometry">
-     <rect>
-      <x>840</x>
-      <y>400</y>
-      <width>80</width>
-      <height>23</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>resize</string>
     </property>
    </widget>
   </widget>

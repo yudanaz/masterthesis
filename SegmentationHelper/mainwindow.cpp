@@ -1826,3 +1826,111 @@ void MainWindow::on_pushButton_released()
 		imwrite(outNm.toStdString(), img_);
 	}
 }
+
+void MainWindow::on_pushButton_accuracy_released()
+{
+	QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select label ground truth and predicted label image", lastDir, "*.png");
+	if(fileNames.size() == 0){ return; }
+	lastDir = QFileInfo(fileNames.first()).path();
+
+	int nrOfClasses = QInputDialog::getInt(this, "Amount of classes", "How many classes?", 3, 2, 10);
+
+	//get ground truths and predicted labels
+	QList<Mat> groundTruths;
+	QList<Mat> predictions;
+	foreach (QString fnm, fileNames)
+	{
+			if(fnm.contains("_labels"))
+			{
+				groundTruths.push_back(imread(fnm.toStdString(), IMREAD_GRAYSCALE));
+			}
+			else if(fnm.contains("_predicted"))
+			{
+				predictions.push_back(imread(fnm.toStdString(), IMREAD_GRAYSCALE));
+			}
+	}
+	if(groundTruths.size() != predictions.size())
+	{
+		QMessageBox::information(this, "Error!", "Not same amount of ground truth and predicted label images!", QMessageBox::Ok);
+		return;
+	}
+
+	int imgsTotal = groundTruths.size();
+	double PixelAcc = 0;
+	vector<double> classAcc(nrOfClasses);
+
+
+	//compute accuracy for each pair
+	for (int i = 0; i < imgsTotal; ++i)
+	{
+		Mat tru = groundTruths.at(i);
+		Mat pre = predictions.at(i);
+
+		int pixelsTotal = groundTruths.at(i).cols * groundTruths.at(i).rows;
+		int correctPixels = 0;
+		vector<double> classesTotal(nrOfClasses);
+		vector<double> correctClasses(nrOfClasses);
+
+		for (int y = 0; y < tru.rows; ++y)
+		{
+			for (int x = 0; x < tru.cols; ++x)
+			{
+				uchar truPx = tru.at<uchar>(y,x);
+				uchar prePx = pre.at<uchar>(y,x);
+
+				//unlabeled pixels must be ignored!
+				if(truPx == 255){ continue; }
+
+				bool correct = (truPx == prePx);
+				if(correct)
+				{
+					correctPixels++; //count for per-pixel accuracy
+					correctClasses.at(truPx)++;//count for per-class accuracy
+				}
+
+				//count how many pixels exits for this class in current image
+				classesTotal.at(truPx) += 1.0;
+			}
+		}
+
+		//compute per-pixel accuracys for this image
+		PixelAcc += (double)correctPixels / pixelsTotal;;
+
+		//compute per-class accuracy for this image and store it for computing overall class accuracy later
+		for (int cl = 0; cl < nrOfClasses; ++cl)
+		{
+			double acc = (double)correctClasses.at(cl) / classesTotal.at(cl);
+			classAcc.at(cl) += acc;
+		}
+
+	}
+
+
+	//compute overall accuracy for all images
+	PixelAcc /= (double)imgsTotal;
+
+	double avgClassAcc = 0;
+	for (int cl = 0; cl < nrOfClasses; ++cl)
+	{
+		classAcc.at(cl) /= (double)imgsTotal;
+		avgClassAcc += classAcc.at(cl);
+	}
+	avgClassAcc /= (double)nrOfClasses;
+
+	//save to file
+	QFile f(lastDir + "/accuracy.txt");
+	f.open(QFile::WriteOnly);
+	QTextStream ts(&f);
+
+	qDebug() << "Pixel accuracy: " << PixelAcc;
+	ts << "pixel accuracy:      \t" << PixelAcc << "\n";
+	qDebug() << "Class accuracy (average): " << avgClassAcc;
+	ts << "class accuracy (avg):\t" << avgClassAcc << "\n";
+	for (int cl = 0; cl < nrOfClasses; ++cl)
+	{
+		qDebug() << "Class " << cl << " accuracy: " << classAcc.at(cl);
+		ts << "class " << cl <<" accuracy:   \t" << classAcc.at(cl) << "\n";
+	}
+
+	f.close();
+}
