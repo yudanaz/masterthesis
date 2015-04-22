@@ -124,7 +124,7 @@ void CameraCalibration::doStereoCalibration(QList<Mat> calibImgsLeft, QList<Mat>
 	stereoCalibrate(objectPoints_L, imagePoints_L, imagePoints_R,
 					CM_L, D_L, CM_R, D_R, imgSize, rotMat, translVec, E, F,
 					cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 100, 1e-5),
-                    CV_CALIB_SAME_FOCAL_LENGTH | CV_CALIB_ZERO_TANGENT_DIST);
+					CV_CALIB_SAME_FOCAL_LENGTH | CV_CALIB_ZERO_TANGENT_DIST);
 
 	//start stereo rectification and trigger making the rectify maps (in undist and remap method)
 	Mat R1, R2, P1, P2, Q;
@@ -448,11 +448,11 @@ Mat CameraCalibration::makeDisparityMap(Mat leftGrayImg, Mat rightGrayImg, bool 
 	return disp;
 }
 
-Mat CameraCalibration::improveDisparityMap(int nrOfSuperPixel, Mat superpixelMap, Mat disparityMap)
+Mat CameraCalibration::averageOverSuperpixels(int nrOfSuperPixel, Mat superpixelMap, Mat shortImg)
 {
 	nrOfSuperPixel += 30; //there seem to be always some numbers that are jumbed, resulting in unused indices
 
-	Mat res (disparityMap.rows, disparityMap.cols, disparityMap.type(), Scalar(0));
+	Mat res (shortImg.rows, shortImg.cols, shortImg.type(), Scalar(0));
 
 	//make 2D-vector to hold sum of disparities and pixel amount for each superpixel
 	//(vector type is long in order to hold summed value, although disparity map type is short)
@@ -460,7 +460,7 @@ Mat CameraCalibration::improveDisparityMap(int nrOfSuperPixel, Mat superpixelMap
 
 	//if superpixel or disparity map not in ushort format, return emtpy
 	int type1 = superpixelMap.type();
-	int type2 = disparityMap.type();
+	int type2 = shortImg.type();
 	if( type1 != CV_16UC1 || type2 != CV_16SC1)
 	{
 		return res;
@@ -476,7 +476,7 @@ Mat CameraCalibration::improveDisparityMap(int nrOfSuperPixel, Mat superpixelMap
 	//sum and count all disparity values for each superpixel
 	MatIterator_<ushort> it_superpx, end;
 	MatIterator_<short> it_disp;
-	for( it_superpx = superpixelMap.begin<ushort>(), it_disp = disparityMap.begin<short>(),
+	for( it_superpx = superpixelMap.begin<ushort>(), it_disp = shortImg.begin<short>(),
 		 end = superpixelMap.end<ushort>(); it_superpx != end; ++it_superpx, ++it_disp )
 	{
 		short dispVal = *it_disp;

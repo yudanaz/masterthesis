@@ -87,6 +87,13 @@
         </widget>
        </item>
        <item>
+        <widget class="QPushButton" name="pushButton_superpxAvg">
+         <property name="text">
+          <string>superpixel avg</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="pushButton_accuracy">
          <property name="text">
           <string>Measure Accuracy</string>

@@ -151,6 +151,8 @@ private slots:
 
 	void on_pushButton_accuracy_released();
 
+	void on_pushButton_superpxAvg_released();
+
 private:
 	void makeLabelImages(QStringList fileNames);
 	void makeSeedsSuperpixels(QString fileName);
@@ -159,6 +161,7 @@ private:
 	void makeDisparityImage(Mat leftImgCol, Mat rightImgCol);
 	void makeSurfFeatures(QString fileName);
 	void undistortStereo(bool isRGB_NIR_Stereo);
+	Mat improveLabePredictionlWithSuperpixels(Mat &nir, Mat &prediction);
 
 
 

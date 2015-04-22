@@ -378,7 +378,9 @@ void MainWindow::makeSeedsSuperpixels(QString fileName)
 	int channels = img.channels();
 	SEEDS seeds(width, height, channels, NR_BINS);
 	seeds.initialize(seedW, seedH, seedLevels);
-	seeds.update_image_ycbcr(img);
+	Mat img2;
+	cvtColor(img, img2, CV_BGR2YCrCb);
+	seeds.update_image_ycbcr(img2);
 //	seeds.update_image_ycbcr(imgUINT);
 	seeds.iterate();
 
@@ -549,7 +551,7 @@ void MainWindow::makeDisparityImage(Mat leftImgCol, Mat rightImgCol)
 	//    imshow("seeds superpixels", cvLabels8bit);
 
 		//improve disparity image with superpixels
-		dispImprov = camCalib.improveDisparityMap(seeds.count_superpixels(), seeds.getLabelsAsMat(), disp);
+		dispImprov = camCalib.averageOverSuperpixels(seeds.count_superpixels(), seeds.getLabelsAsMat(), disp);
 	}
 
 	//normalize (from 16 to 8 bit) and show
@@ -1934,3 +1936,77 @@ void MainWindow::on_pushButton_accuracy_released()
 
 	f.close();
 }
+
+void MainWindow::on_pushButton_superpxAvg_released()
+{
+	QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select predicted label and nir images", lastDir, "*.png");
+	if(fileNames.size() == 0){ return; }
+	lastDir = QFileInfo(fileNames.first()).path();
+
+	QStringList nirs;
+	QStringList preds;
+	foreach (QString fnm, fileNames)
+	{
+		if(fnm.contains("nir")){ nirs.push_back(fnm); }
+		else if(fnm.contains("prediction")){ preds.push_back(fnm); }
+	}
+
+	for (int i = 0; i < nirs.size(); ++i)
+	{
+		Mat nir = imread(nirs.at(i).toStdString(), IMREAD_COLOR);
+		Mat pred = imread(preds.at(i).toStdString(), IMREAD_GRAYSCALE);
+		Mat pred_ = improveLabePredictionlWithSuperpixels(nir, pred);
+
+		QString outNm = preds.at(i);
+		outNm.remove(".png").append("_improved.png");
+		imwrite(outNm.toStdString(), pred_);
+	}
+
+
+}
+
+Mat MainWindow::improveLabePredictionlWithSuperpixels(Mat &nir, Mat &prediction)
+{
+	//get info for seed alg
+	int seedW, seedH, seedLevels;
+	QStringList seedInfo = ui->lineEdit_seedInfo->text().split(",");
+	if(seedInfo.length() == 3)
+	{
+		seedW = seedInfo.at(0).toInt();
+		seedH = seedInfo.at(1).toInt();
+		seedLevels = seedInfo.at(2).toInt();
+	}
+	else
+	{
+		seedW = 2;
+		seedH = 2;
+		seedLevels = 4;
+	}
+
+	//run SEEDS algorithm
+	int NR_BINS = 5;
+	int width = nir.cols;
+	int height = nir.rows;
+	int channels = nir.channels();
+	SEEDS seeds(width, height, channels, NR_BINS);
+	seeds.initialize(seedW, seedH, seedLevels); //hard-coded for now, see makeSeedsSuperpixels() method
+	Mat nir2;
+	cvtColor(nir, nir2, CV_BGR2YCrCb);
+	seeds.update_image_ycbcr(nir2);
+	seeds.iterate();
+	Mat superpx = seeds.getLabelsAsMat();
+
+	//average over superpixels
+	Mat prediction2;
+	prediction.convertTo(prediction2, CV_16S); //the method takes 16bit signed images
+	Mat res = camCalib.averageOverSuperpixels(seeds.count_superpixels(), superpx, prediction2);
+	Mat res2;
+	res.convertTo(res2, CV_8U);
+	imshow("before", prediction * 80); cvWaitKey();
+	imshow("res", res2 * 80); cvWaitKey();
+	return res2;
+}
+
+
+
+

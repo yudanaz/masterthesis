@@ -120,7 +120,7 @@ public:
 	 * \param disp: The disparity map.
 	 * \return: The improved disparity map.
 	 */
-	Mat improveDisparityMap(int nrOfSuperPixel, Mat superpixelMap, Mat disparityMap);
+	Mat averageOverSuperpixels(int nrOfSuperPixel, Mat superpixelMap, Mat shortImg);
 
 	/*!
 	 * \brief Aligns an image to a reference image of the same scene, usign SURF features and
