@@ -1283,7 +1283,7 @@ void MainWindow::on_btn_makeTrainVal_released()
 	int filesTotal = 0;
 	foreach(QString fileName, fileNames)
 	{
-		if(!(fileName.contains("_depth") || fileName.contains("_nir") || fileName.contains("_labels")) )
+		if(!(fileName.contains("_depth") || fileName.contains("_nir") || fileName.contains("_skin") || fileName.contains("_labels")) )
 		{
 			QString pureNM = fileName.remove("_rgb").remove(".jpg").remove(".png");
 			pureFileNames.append(pureNM);
