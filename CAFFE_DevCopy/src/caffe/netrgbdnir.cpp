@@ -27,7 +27,7 @@ void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchS
 	{
 		imgs.push_back(line);
 
-		vector<int> randomImgPixels;
+        vector<long> randomImgPixels;
 		randomPixels.push_back(randomImgPixels);
 		randomPixelIndices.push_back(0);
 //        imgs_uniformSubpatchSize.push_back(0); //just init here, set correct value in readNextImage()
@@ -45,7 +45,7 @@ void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchS
 	patchCnt = 0;
 	patchMax = 0; //is set correctly in readNextImage() each time an image is read, in case image sizes differ
 	batchSz = batchSize;
-	batchNr = 0;
+    batchNr = 0;
 	hasRGB = RGB;
 	hasNIR = NIR;
 	hasDepth = depth;
@@ -380,6 +380,8 @@ void NetRGBDNIR<Dtype>::getNextImage()
 template<typename Dtype>
 void NetRGBDNIR<Dtype>::readAllImages()
 {
+    srand(time(0)); //set seed for random generator using current time
+
 	for (int i = 0; i < imgMax; ++i)
 	{
 		//get next image URL, also circle through images (if iterations are > all available patches)
@@ -406,7 +408,6 @@ void NetRGBDNIR<Dtype>::readAllImages()
 
 //            LOG(INFO) << "cols: " << labels.cols << " rows: " << labels.rows << "pixels: " << totalNrOfPixels;
 
-			srand(time(0)); //set seed for random generator using current time
 
 			for (int j = 0; j < totalNrOfPixels; ++j)
 			{
@@ -627,7 +628,7 @@ int NetRGBDNIR<Dtype>::getNextRandomPixel()
 {
 	int rpx = randomPixels.at(imgCnt).at( randomPixelIndices.at(imgCnt) );
 	randomPixelIndices.at(imgCnt) = (randomPixelIndices.at(imgCnt) + 1) % randomPixels.at(imgCnt).size();
-//    LOG(INFO) << imgCnt << " : " <<  randomPixelIndices.at(imgCnt);
+//    LOG(INFO) << imgCnt << " : index: " <<  randomPixelIndices.at(imgCnt) << " of total: " << randomPixels.at(imgCnt).size() << " random px: " << rpx;
 	return rpx;
 }
 
