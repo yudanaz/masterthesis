@@ -38,7 +38,6 @@ protected:
 	int patchCnt;
 	int patchMax;
 	int batchSz;
-	int batchNr;
 	std::vector<int> imgs_uniformSubpatchSize; //stores the size of the uniform subpatches for each image
 	std::vector<int> imgs_uniformSubpatchIndex; //stores the index in the uniform subpatches for each image
 	std::vector<bool> imgs_uniformSubpatchIndex_inits; //stores whether this subpatch index has been initialized with a random index
@@ -54,6 +53,7 @@ protected:
 	double jitter_rotAngle;
 	double jitter_scale_fac;
 
+    int batchNr;
 	int batchesPerImg;
 	vector<int> sparsePatches;
 

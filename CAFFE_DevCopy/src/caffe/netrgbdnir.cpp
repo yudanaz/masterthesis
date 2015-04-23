@@ -95,7 +95,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 
 	int batchCnt = 0;
 	for(batchCnt = 0; batchCnt < batchSz; )
-	{
+    {
 		//load next image if enough batches have been read from the current image
 		if(batchNr == 0)
 		{

@@ -420,7 +420,7 @@ void Solver<Dtype>::Test(std::ofstream &logFile, const int test_net_id)
 	{
 		boost::dynamic_pointer_cast<NetRGBDNIR<Dtype> >(test_net)->feedNextPatchesToInputLayers();
 	}
-	const vector<Blob<Dtype>*>& result = test_net->Forward(bottom_vec, &iter_loss);
+    const vector<Blob<Dtype>*>& result = test_net->Forward(bottom_vec, &iter_loss);
 	////////////////////////////////////////////////////////////////////////////////
 	/// endof RGBDNIR extension of original Solver class: //////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
