@@ -27,7 +27,7 @@ void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchS
 	{
 		imgs.push_back(line);
 
-        vector<long> randomImgPixels;
+		vector<long> randomImgPixels;
 		randomPixels.push_back(randomImgPixels);
 		randomPixelIndices.push_back(0);
 //        imgs_uniformSubpatchSize.push_back(0); //just init here, set correct value in readNextImage()
@@ -45,7 +45,7 @@ void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchS
 	patchCnt = 0;
 	patchMax = 0; //is set correctly in readNextImage() each time an image is read, in case image sizes differ
 	batchSz = batchSize;
-    batchNr = 0;
+	batchNr = 0;
 	hasRGB = RGB;
 	hasNIR = NIR;
 	hasDepth = depth;
@@ -120,7 +120,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 			currentLabel = img_labels.at<uchar>(y,x);
 //                LOG(INFO) << "label: " << currentLabel <<" current pos: " << x << "  " << y << " random pixel: " << randomPixel;
 		}
-		while(currentLabel == 255); //jump the "unknown" label, training with this label is useless
+		while(currentLabel > 20); //jump the "unknown" and other buggy label (that goddamm 254!!!), training with these labels is useless
 		labels.push_back(currentLabel);
 
 
@@ -380,7 +380,7 @@ void NetRGBDNIR<Dtype>::getNextImage()
 template<typename Dtype>
 void NetRGBDNIR<Dtype>::readAllImages()
 {
-    srand(time(0)); //set seed for random generator using current time
+	srand(time(0)); //set seed for random generator using current time
 
 	for (int i = 0; i < imgMax; ++i)
 	{
