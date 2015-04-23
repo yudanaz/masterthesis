@@ -309,7 +309,9 @@ void MainWindow::makeLabelImages(QStringList fileNames)
 				else
 				{
 					//set unknown to 255 (white) and shift all classes down by one, so that "person" is zero
-					colorIndex = colorIndex == 0 ? 255 : colorIndex;
+					colorIndex = colorIndex == 0 ? 256 : colorIndex; //EX-BUG HERE!! was setting colorIndex to 255
+																	 //and after decreasing by one it was 245, which
+																	 //totally screwed up the training process!!!
 					Scalar gray(colorIndex-1);
 					fillPoly( grayImg, ppt, npt, 1, gray, 8 );
 				}
@@ -1450,6 +1452,45 @@ void MainWindow::on_pushButton_test_released()
 //	if(fileName == ""){ return; }
 //	lastDir = QFileInfo(fileName).path();
 
+
+	//////////////////////////////////////////////////////////////
+	/// check which labels are in each label image
+	//////////////////////////////////////////////////////////////
+	QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select File", lastDir, "*labels*.png");
+	if(fileNames.size() == 0){ return; }
+	lastDir = QFileInfo(fileNames.at(0)).path();
+
+	foreach(QString fileName, fileNames)
+	{
+		if(fileName.contains("color")){ continue; }
+		Mat img = imread(fileName.toStdString(), IMREAD_GRAYSCALE);
+		vector<bool> labels(256, false);
+
+		for (int y = 0; y < img.rows; ++y)
+		{
+			for (int x = 0; x < img.cols; ++x)
+			{
+				int index = (int)img.at<uchar>(y,x);
+				labels.at(index) = true;
+			}
+		}
+		QString s = "fucking strange labels in image " + fileName.split("/").last() + ": ";
+		bool foundTheBugger = false;
+		for (int i = 20; i < 255; ++i)
+		{
+			if(labels.at(i) == true)
+			{
+				foundTheBugger = true;
+				s.append(QString::number(i) + ", ");
+			}
+		}
+		if(foundTheBugger){ qDebug() << s; }
+	}
+	//////////////////////////////////////////////////////////////
+	/// endof check which labels are in each label image
+	//////////////////////////////////////////////////////////////
+
+
 	//////////////////////////////////////////////////////////////
 	// Separate multi-channel image
 	//////////////////////////////////////////////////////////////
@@ -1469,27 +1510,27 @@ void MainWindow::on_pushButton_test_released()
 //	}
 	//////////////////////////////////////////////////////////////
 
-	//////////////////////////////////////////////////////////////
-	//make links for LabelMe images on ISF website
-	//////////////////////////////////////////////////////////////
-	QList<QString>fileNames = QFileDialog::getOpenFileNames(this, "Select Files", lastDir, IMGTYPES);
-	if(fileNames.size() == 0){ return; }
-	lastDir = QFileInfo(fileNames.first()).path();
+//	//////////////////////////////////////////////////////////////
+//	//make links for LabelMe images on ISF website
+//	//////////////////////////////////////////////////////////////
+//	QList<QString>fileNames = QFileDialog::getOpenFileNames(this, "Select Files", lastDir, IMGTYPES);
+//	if(fileNames.size() == 0){ return; }
+//	lastDir = QFileInfo(fileNames.first()).path();
 
-	QString out = "";
-	int i = 1;
-	foreach(QString nm, fileNames)
-	{
-		QString nr = QString::number(i++);
-		QString s = nm.split("/").last().remove(".jpg");
-		QString ss = "=HYPERLINK(\"https://isf.inf.h-brs.de/labelme/tool.html?mode=f&scribble=false&actions=a&folder="
-					 + s + "&image=" + s
-					 + ".jpg&objects=person,wall,floor,ceiling,door,window,chair,table,monitor,computer,cupboard,schelf,furniture(misc.),tool,equipment(misc.),object(misc.),unknown&username=user_"
-					 + nr + "\",\"image_" + nr + "\")";
-		out += ss + "\n";
-	}
-	qDebug() << out;
-	//////////////////////////////////////////////////////////////
+//	QString out = "";
+//	int i = 1;
+//	foreach(QString nm, fileNames)
+//	{
+//		QString nr = QString::number(i++);
+//		QString s = nm.split("/").last().remove(".jpg");
+//		QString ss = "=HYPERLINK(\"https://isf.inf.h-brs.de/labelme/tool.html?mode=f&scribble=false&actions=a&folder="
+//					 + s + "&image=" + s
+//					 + ".jpg&objects=person,wall,floor,ceiling,door,window,chair,table,monitor,computer,cupboard,schelf,furniture(misc.),tool,equipment(misc.),object(misc.),unknown&username=user_"
+//					 + nr + "\",\"image_" + nr + "\")";
+//		out += ss + "\n";
+//	}
+//	qDebug() << out;
+//	//////////////////////////////////////////////////////////////
 
 //	//////////////////////////////////////////////////////////////
 //	//print out labels for each stanford
