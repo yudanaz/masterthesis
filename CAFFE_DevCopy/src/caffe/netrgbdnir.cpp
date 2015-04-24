@@ -58,6 +58,15 @@ void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchS
 	jitter_rotAngle = 0;
 	jitter_scale_fac = 0;
 
+    //init random generator with seed from actual time
+    rndmGen.seed(static_cast<unsigned int>(std::time(0)));
+
+    //init uniform distributions
+    distrib_flip = boost::uniform_int<>(0, 1);
+    distrib_rotate = boost::uniform_int<>(-8, 8);
+    distrib_scale = boost::uniform_int<>(90, 110);
+    distrib_imageList = boost::uniform_int<>(0, imgMax-1);
+
 	//load all images and set first one to active
 	readAllImages();
 
@@ -122,6 +131,7 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 		}
 		while(currentLabel > 20); //jump the "unknown" and other buggy label (that goddamm 254!!!), training with these labels is useless
 		labels.push_back(currentLabel);
+//        if(iteration > 3000) LOG(INFO) << "label: " << currentLabel;
 
 
 		///////////////////////////////////////////////////////////////////////
@@ -343,44 +353,9 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 }
 
 template<typename Dtype>
-void NetRGBDNIR<Dtype>::getNextImage()
-{
-	//increment image counter
-	imgCnt = (imgCnt + 1) % imgMax;
-
-	img_labels = imgs_labels.at(imgCnt);
-
-	if(hasNIR)
-	{
-		img_nir0 = imgs_nir0.at(imgCnt);
-		img_nir1 = imgs_nir1.at(imgCnt);
-		img_nir2 = imgs_nir2.at(imgCnt);
-	}
-	if(hasRGB)
-	{
-		img_rgb0 = imgs_rgb0.at(imgCnt);
-		img_rgb1 = imgs_rgb1.at(imgCnt);
-		img_rgb2 = imgs_rgb2.at(imgCnt);
-	}
-	if(hasDepth)
-	{
-		img_depth0 = imgs_depth0.at(imgCnt);
-		img_depth1 = imgs_depth1.at(imgCnt);
-		img_depth2 = imgs_depth2.at(imgCnt);
-	}
-	if(hasSkin)
-	{
-		img_skin0 = imgs_skin0.at(imgCnt);
-		img_skin1 = imgs_skin1.at(imgCnt);
-		img_skin2 = imgs_skin2.at(imgCnt);
-	}
-}
-
-
-template<typename Dtype>
 void NetRGBDNIR<Dtype>::readAllImages()
 {
-	srand(time(0)); //set seed for random generator using current time
+//	srand(time(0)); //set seed for random generator using current time
 
 	for (int i = 0; i < imgMax; ++i)
 	{
@@ -412,8 +387,9 @@ void NetRGBDNIR<Dtype>::readAllImages()
 			for (int j = 0; j < totalNrOfPixels; ++j)
 			{
 				randomPixels.at(i).push_back(j);
-			}
-			std::random_shuffle(randomPixels.at(i).begin(), randomPixels.at(i).end());
+            }
+            bar rand(rndmGen);
+            std::random_shuffle(randomPixels.at(i).begin(), randomPixels.at(i).end(), rand);
 		}
 
 		cv::Mat temp1;//, temp2, temp3;
@@ -539,6 +515,46 @@ void NetRGBDNIR<Dtype>::readAllImages()
 
 
 template<typename Dtype>
+void NetRGBDNIR<Dtype>::getNextImage()
+{
+    //increment image counter
+//    imgCnt = (imgCnt + 1) % imgMax;
+
+    //get random index for next image
+    boost::variate_generator<boost::mt19937&, boost::uniform_int<> > die_imgList(rndmGen, distrib_imageList);
+    imgCnt = die_imgList();
+//    LOG(INFO) << "image: " << imgCnt;
+
+    img_labels = imgs_labels.at(imgCnt);
+
+    if(hasNIR)
+    {
+        img_nir0 = imgs_nir0.at(imgCnt);
+        img_nir1 = imgs_nir1.at(imgCnt);
+        img_nir2 = imgs_nir2.at(imgCnt);
+    }
+    if(hasRGB)
+    {
+        img_rgb0 = imgs_rgb0.at(imgCnt);
+        img_rgb1 = imgs_rgb1.at(imgCnt);
+        img_rgb2 = imgs_rgb2.at(imgCnt);
+    }
+    if(hasDepth)
+    {
+        img_depth0 = imgs_depth0.at(imgCnt);
+        img_depth1 = imgs_depth1.at(imgCnt);
+        img_depth2 = imgs_depth2.at(imgCnt);
+    }
+    if(hasSkin)
+    {
+        img_skin0 = imgs_skin0.at(imgCnt);
+        img_skin1 = imgs_skin1.at(imgCnt);
+        img_skin2 = imgs_skin2.at(imgCnt);
+    }
+}
+
+
+template<typename Dtype>
 cv::Mat NetRGBDNIR<Dtype>::getImgPatch(cv::Mat img, int x, int y, bool isDepth)
 {
 	//cut out patch twice the size
@@ -569,17 +585,16 @@ cv::Mat NetRGBDNIR<Dtype>::getImgPatch(cv::Mat img, int x, int y, bool isDepth)
 template<typename Dtype>
 void NetRGBDNIR<Dtype>::setJitterRandomVars()
 {
-	//make random numbers for flip, rescale and rotation
-	boost::uniform_int<> dist_flip(0, 1);
-	boost::uniform_int<> dist_rotate(-8, 8);
-	boost::uniform_int<> dist_scale(90, 110);
-	boost::variate_generator<boost::mt19937&, boost::uniform_int<> > die_flip(gen, dist_flip);
-	boost::variate_generator<boost::mt19937&, boost::uniform_int<> > die_rotate(gen, dist_rotate);
-	boost::variate_generator<boost::mt19937&, boost::uniform_int<> > die_scale(gen, dist_scale);
+    //make random numbers for flip, rescale and rotation
+    boost::variate_generator<boost::mt19937&, boost::uniform_int<> > die_flip(rndmGen, distrib_flip);
+    boost::variate_generator<boost::mt19937&, boost::uniform_int<> > die_rotate(rndmGen, distrib_rotate);
+    boost::variate_generator<boost::mt19937&, boost::uniform_int<> > die_scale(rndmGen, distrib_scale);
 
-	jitter_flipping = die_flip();
+    jitter_flipping = die_flip();
 	jitter_rotAngle = die_rotate();
-	jitter_scale_fac = (float)die_scale() / 100.0;
+    jitter_scale_fac = (float)die_scale() / 100.0;
+
+//    LOG(INFO) << jitter_flipping << "   " <<  jitter_rotAngle << "   " << jitter_scale_fac;
 }
 
 template<typename Dtype>
@@ -627,7 +642,15 @@ template<typename Dtype>
 int NetRGBDNIR<Dtype>::getNextRandomPixel()
 {
 	int rpx = randomPixels.at(imgCnt).at( randomPixelIndices.at(imgCnt) );
-	randomPixelIndices.at(imgCnt) = (randomPixelIndices.at(imgCnt) + 1) % randomPixels.at(imgCnt).size();
+
+    //increase index, if end of list is reached, shuffle list again
+    randomPixelIndices.at(imgCnt) = (randomPixelIndices.at(imgCnt) + 1) % randomPixels.at(imgCnt).size();
+    if(randomPixelIndices.at(imgCnt) == 0)
+    {
+        bar rand(rndmGen);
+        std::random_shuffle(randomPixels.at(imgCnt).begin(), randomPixels.at(imgCnt).end(), rand);;
+    }
+
 //    LOG(INFO) << imgCnt << " : index: " <<  randomPixelIndices.at(imgCnt) << " of total: " << randomPixels.at(imgCnt).size() << " random px: " << rpx;
 	return rpx;
 }

@@ -263,12 +263,16 @@ bool Solver<Dtype>::Step(int iters, std::ofstream &lossLogFile, std::ofstream &t
 	lossLogFile << loss << "\n";
 	lossLogFile.flush();
 
-//    if(loss > 5.0)
+//    if(iter_ > 3000)
 //    {
-//        LOG(INFO) << "loss: " << loss;
-//        LOG(INFO) << "ERROR, loss too high\n===\n===\n===\n===\n===\n===";
-//        return false;
+////        if(loss >= 1.0)
+////            LOG(INFO) << "CASE A - loss: " << loss << "\n===\n===\n";
+////        if(loss < 1.0 && loss > 0.8)
+////            LOG(INFO) << "CASE B - loss: " << loss << "\n===\n===\n";
+//            if(loss < 2.0)
+//                LOG(INFO) << "Who is this? - loss: " << loss << "\n===\n===\n";
 //    }
+
 
 	////////////////////////////////////////////////////////////////////////////////
 	/// endof RGBDNIR extension of original Solver class: //////////////////////////
