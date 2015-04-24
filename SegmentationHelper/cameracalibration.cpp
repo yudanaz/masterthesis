@@ -482,6 +482,7 @@ Mat CameraCalibration::averageOverSuperpixels(int nrOfSuperPixel, Mat superpixel
 		short dispVal = *it_disp;
 		if(dispVal > 0)
 		{
+			ushort temp = *it_superpx;
 			superpxs[*it_superpx][0] += dispVal; //add disparity value
 			superpxs[*it_superpx][1]++; //count number of pixels in superpixel
 		}

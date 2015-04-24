@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #include "misc.h"
 #include "filter.h"
 #include "segment-graph.h"
+#include "opencv2/opencv.hpp"
 
 // random color
 rgb random_rgb(){
@@ -57,7 +58,8 @@ static inline float diff(image<float> *r, image<float> *g, image<float> *b,
  * num_ccs: number of connected components in the segmentation.
  */
 image<rgb> *segment_image(image<rgb> *im, float sigma, float c, int min_size,
-			  int *num_ccs) {
+			  int *num_ccs, bool do_outputGray16Bit, cv::Mat& outputGray16Bit)
+{
   int width = im->width();
   int height = im->height();
 
@@ -135,13 +137,22 @@ image<rgb> *segment_image(image<rgb> *im, float sigma, float c, int min_size,
 
   // pick random colors for each component
   rgb *colors = new rgb[width*height];
+  int *grays = new int[width*height];
   for (int i = 0; i < width*height; i++)
+  {
 	colors[i] = random_rgb();
+	grays[i] = i;
+  }
 
-  for (int y = 0; y < height; y++) {
-	for (int x = 0; x < width; x++) {
+  if(do_outputGray16Bit){ outputGray16Bit = cv::Mat(height, width, CV_16UC1); }
+
+  for (int y = 0; y < height; y++)
+  {
+	for (int x = 0; x < width; x++)
+	{
 	  int comp = u->find(y * width + x);
 	  imRef(output, x, y) = colors[comp];
+	  if(do_outputGray16Bit){ outputGray16Bit.at<ushort>(y,x) = grays[comp]; }
 	}
   }
 

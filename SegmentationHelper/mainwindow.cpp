@@ -480,7 +480,7 @@ void MainWindow::makeFelsenzwalbSuperpixels(QString fileName)
 		sigma = 0.5; k = 500; min = 20;
 	}
 	int num_ccs;
-	imshow("Superpixels", segm.makeSuperPixelSegmenation(img, sigma, k, min, &num_ccs));
+	imshow("Superpixels", segm.makeSuperPixelSegmenation(img, sigma, k, min, &num_ccs, false));
 	ui->label_nrOfSuperpixelsFelsenzwalb->setText("= " + QString::number(num_ccs) + " superpixels");
 }
 
@@ -1996,55 +1996,98 @@ void MainWindow::on_pushButton_superpxAvg_released()
 	{
 		Mat nir = imread(nirs.at(i).toStdString(), IMREAD_COLOR);
 		Mat pred = imread(preds.at(i).toStdString(), IMREAD_GRAYSCALE);
-		Mat pred_ = improveLabePredictionlWithSuperpixels(nir, pred);
 
-		QString outNm = preds.at(i);
-		outNm.remove(".png").append("_improved.png");
-		imwrite(outNm.toStdString(), pred_);
+		//make improvements with all agorithms
+		//SEED:
+		Mat pred_0 = improveLabePredictionlWithSuperpixels(nir, pred, 0);
+		QString outNm0 = preds.at(i);
+		outNm0.remove(".png").append("_improved_seed.png");
+		imwrite(outNm0.toStdString(), pred_0);
+		//Felsenzwalb:
+		Mat pred_1 = improveLabePredictionlWithSuperpixels(nir, pred, 1);
+		QString outNm1 = preds.at(i);
+		outNm1.remove(".png").append("_improved_felsenzw.png");
+		imwrite(outNm1.toStdString(), pred_1);
+		//SLIC:
+//		Mat pred_2 = improveLabePredictionlWithSuperpixels(nir, pred, 2);
+//		QString outNm2 = preds.at(i);
+//		outNm2.remove(".png").append("_improved_slic.png");
+//		imwrite(outNm2.toStdString(), pred_2);
 	}
-
-
 }
 
-Mat MainWindow::improveLabePredictionlWithSuperpixels(Mat &nir, Mat &prediction)
+Mat MainWindow::improveLabePredictionlWithSuperpixels(Mat &nir, Mat &prediction, int whichAlg)
 {
-	//get info for seed alg
-	int seedW, seedH, seedLevels;
-	QStringList seedInfo = ui->lineEdit_seedInfo->text().split(",");
-	if(seedInfo.length() == 3)
+	Mat superpx;
+	int superpx_amount;
+
+	//get superpixels from one of the methods
+	if(whichAlg == 0) //SEED
 	{
-		seedW = seedInfo.at(0).toInt();
-		seedH = seedInfo.at(1).toInt();
-		seedLevels = seedInfo.at(2).toInt();
+		//get info for seed alg
+		int seedW, seedH, seedLevels;
+		QStringList seedInfo = ui->lineEdit_seedInfo->text().split(",");
+		if(seedInfo.length() == 3)
+		{
+			seedW = seedInfo.at(0).toInt();
+			seedH = seedInfo.at(1).toInt();
+			seedLevels = seedInfo.at(2).toInt();
+		}
+		else
+		{
+			seedW = 2;
+			seedH = 2;
+			seedLevels = 4;
+		}
+
+		//run SEEDS algorithm
+		int NR_BINS = 5;
+		int width = nir.cols;
+		int height = nir.rows;
+		int channels = nir.channels();
+		SEEDS seeds(width, height, channels, NR_BINS);
+		seeds.initialize(seedW, seedH, seedLevels); //hard-coded for now, see makeSeedsSuperpixels() method
+		Mat nir2;
+		cvtColor(nir, nir2, CV_BGR2YCrCb);
+		seeds.update_image_ycbcr(nir2);
+		seeds.iterate();
+		superpx = seeds.getLabelsAsMat();
+		superpx_amount = seeds.count_superpixels();
 	}
-	else
+	else if(whichAlg == 1) //FELSENZWALB
 	{
-		seedW = 2;
-		seedH = 2;
-		seedLevels = 4;
+		Segmentation segm;
+
+		QStringList segInfo = ui->lineEdit_felsenzwalbInfo->text().split(",");
+		float sigma, k;
+		int min;
+		if(segInfo.length() == 3)
+		{
+			sigma = segInfo[0].toDouble();
+			k = segInfo[1].toDouble();
+			min = segInfo[2].toInt();
+		}
+		else
+		{
+			sigma = 0.5; k = 500; min = 20;
+		}
+		superpx = segm.makeSuperPixelSegmenation(nir, sigma, k, min, &superpx_amount, true);
+		superpx_amount = nir.cols * nir.rows;
+	}
+	else //SLIC
+	{
+		return Mat(prediction.size(), prediction.type());
 	}
 
-	//run SEEDS algorithm
-	int NR_BINS = 5;
-	int width = nir.cols;
-	int height = nir.rows;
-	int channels = nir.channels();
-	SEEDS seeds(width, height, channels, NR_BINS);
-	seeds.initialize(seedW, seedH, seedLevels); //hard-coded for now, see makeSeedsSuperpixels() method
-	Mat nir2;
-	cvtColor(nir, nir2, CV_BGR2YCrCb);
-	seeds.update_image_ycbcr(nir2);
-	seeds.iterate();
-	Mat superpx = seeds.getLabelsAsMat();
 
 	//average over superpixels
 	Mat prediction2;
 	prediction.convertTo(prediction2, CV_16S); //the method takes 16bit signed images
-	Mat res = camCalib.averageOverSuperpixels(seeds.count_superpixels(), superpx, prediction2);
+	Mat res = camCalib.averageOverSuperpixels(superpx_amount, superpx, prediction2);
 	Mat res2;
 	res.convertTo(res2, CV_8U);
-	imshow("before", prediction * 80); cvWaitKey();
-	imshow("res", res2 * 80); cvWaitKey();
+//	imshow("before", prediction * 80); cvWaitKey();
+//	imshow("res", res2 * 80); cvWaitKey();
 	return res2;
 }
 

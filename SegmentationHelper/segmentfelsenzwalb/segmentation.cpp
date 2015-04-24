@@ -7,18 +7,31 @@ Segmentation::Segmentation()
 {
 }
 
-Mat Segmentation::makeSuperPixelSegmenation(Mat img, float sigma, float k, int min_size, int *num_ccs)
+Mat Segmentation::makeSuperPixelSegmenation(Mat img, float sigma, float k, int min_size, int *num_ccs, bool get16BitGrayscaleInsteadOfColorImg)
 {
 	image<rgb> *input = getRGBimg(img);
 
 	QTime myTimer;
 	myTimer.start();
 
-	image<rgb> *seg = segment_image(input, sigma, k, min_size, num_ccs);
+	Mat gray;
+	image<rgb> *seg = segment_image(input, sigma, k, min_size, num_ccs, get16BitGrayscaleInsteadOfColorImg, gray);
 
-	qDebug() << "elapsed time: " << myTimer.elapsed();
+//	qDebug() << "elapsed time: " << myTimer.elapsed();
 
-	return getMat(seg);
+	if(get16BitGrayscaleInsteadOfColorImg)
+	{
+//		//debug//
+//		Mat gray2;
+//		double min, max;
+//		minMaxLoc(gray, &min, &max);
+//		gray.convertTo(gray2, CV_8UC1, 255/max );
+//		imshow("superpixels", gray2);cvWaitKey();
+//		//debug//
+		return gray;
+	}
+	else
+		{ return getMat(seg); }
 
 //	return getMat(getRGBimg(img));
 }

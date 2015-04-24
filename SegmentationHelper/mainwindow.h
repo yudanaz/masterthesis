@@ -161,7 +161,7 @@ private:
 	void makeDisparityImage(Mat leftImgCol, Mat rightImgCol);
 	void makeSurfFeatures(QString fileName);
 	void undistortStereo(bool isRGB_NIR_Stereo);
-	Mat improveLabePredictionlWithSuperpixels(Mat &nir, Mat &prediction);
+	Mat improveLabePredictionlWithSuperpixels(Mat &nir, Mat &prediction, int whichAlg);
 
 
 

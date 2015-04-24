@@ -247,7 +247,7 @@
        <item>
         <widget class="QLineEdit" name="lineEdit_felsenzwalbInfo">
          <property name="text">
-          <string>0.5,500,20</string>
+          <string>0.1,200,20</string>
          </property>
         </widget>
        </item>

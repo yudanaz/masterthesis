@@ -14,7 +14,7 @@ class Segmentation
 {
 public:
 	Segmentation();
-	Mat makeSuperPixelSegmenation(Mat img, float sigma, float k, int min_size, int *num_ccs);
+	Mat makeSuperPixelSegmenation(Mat img, float sigma, float k, int min_size, int *num_ccs, bool get16BitGrayscaleInsteadOfColorImg);
 
 private:
 	Mat getMat(image<rgb> *rgbimg);
