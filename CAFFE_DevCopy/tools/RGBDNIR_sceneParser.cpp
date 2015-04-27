@@ -469,15 +469,15 @@ int main(int argc, char** argv)
 			const boost::shared_ptr<Blob<float> >& argmaxLayer = caffe_test_net.blob_by_name("argmax");
 
 			// Display results
-			LOG(INFO) << "---------------------------------------------------------------";
+//			LOG(INFO) << "---------------------------------------------------------------";
 			const float* argmaxs = argmaxLayer->cpu_data();
 			float predictedClass = 0.0;
 			for (int i = 0; i < argmaxLayer->num(); i++)
 			{
 				predictedClass = argmaxs[i*argmaxLayer->height() + 0];
 //                LOG(INFO) << "Pattern:"<< i << " class:" << argmaxs[i*argmaxLayer->height() + 0] << " Prob=" << probs_out[i*probLayer->height() + 0];
-				LOG(INFO) << "Pixel: ("<< x << "," << y << ") class:" << predictedClass
-						  << " Prob=" << probs_out[i*probLayer->height() + 0];
+//				LOG(INFO) << "Pixel: ("<< x << "," << y << ") class:" << predictedClass
+//						  << " Prob=" << probs_out[i*probLayer->height() + 0];
 			}
 //            LOG(INFO)<< "-------------";
 
@@ -518,6 +518,7 @@ int main(int argc, char** argv)
 //            labelImg_predicted.at<uchar>(y,x) = (uchar)(argmaxs[0]);
 
 		}//endof for(x...)
+		LOG(INFO) << "image line: " << y;
 	}//endof for(y...)
 
 	imshow("NIR image", nirImg);

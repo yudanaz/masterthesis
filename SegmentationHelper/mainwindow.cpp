@@ -1287,9 +1287,9 @@ void MainWindow::on_btn_makeTrainVal_released()
 	int filesTotal = 0;
 	foreach(QString fileName, fileNames)
 	{
-		if(!(fileName.contains("_depth") || fileName.contains("_nir") || fileName.contains("_skin") || fileName.contains("_labels")) )
+		if(!(fileName.contains("_depth") || fileName.contains("_rgb") || fileName.contains("_skin") || fileName.contains("_labels")) )
 		{
-			QString pureNM = fileName.remove("_rgb").remove(".jpg").remove(".png");
+			QString pureNM = fileName.remove("_nir").remove(".jpg").remove(".png");
 			pureFileNames.append(pureNM);
 			filesTotal++;
 		}
@@ -1476,15 +1476,17 @@ void MainWindow::on_pushButton_test_released()
 		}
 		QString s = "fucking strange labels in image " + fileName.split("/").last() + ": ";
 		bool foundTheBugger = false;
-		for (int i = 20; i < 255; ++i)
+//		for (int i = 20; i < 255; ++i)
+		for (int i = 0; i < 255; ++i)
 		{
 			if(labels.at(i) == true)
 			{
-				foundTheBugger = true;
+//				foundTheBugger = true;
 				s.append(QString::number(i) + ", ");
 			}
 		}
-		if(foundTheBugger){ qDebug() << s; }
+//		if(foundTheBugger){ qDebug() << s; }
+		qDebug() << s;
 	}
 	//////////////////////////////////////////////////////////////
 	/// endof check which labels are in each label image
@@ -1883,7 +1885,7 @@ void MainWindow::on_pushButton_accuracy_released()
 	QList<Mat> predictions;
 	foreach (QString fnm, fileNames)
 	{
-			if(fnm.contains("_labels"))
+			if(fnm.contains("_labels") && !fnm.contains("_predicted"))
 			{
 				groundTruths.push_back(imread(fnm.toStdString(), IMREAD_GRAYSCALE));
 			}
@@ -1942,8 +1944,16 @@ void MainWindow::on_pushButton_accuracy_released()
 		//compute per-class accuracy for this image and store it for computing overall class accuracy later
 		for (int cl = 0; cl < nrOfClasses; ++cl)
 		{
-			double acc = (double)correctClasses.at(cl) / classesTotal.at(cl);
-			classAcc.at(cl) += acc;
+			double amountOfPixelsWithThisClass = classesTotal.at(cl);
+			if(amountOfPixelsWithThisClass != 0) //avoid div by zero
+			{
+				double acc = (double)correctClasses.at(cl) / amountOfPixelsWithThisClass;
+				classAcc.at(cl) += acc;
+			}
+			else
+			{
+				classAcc.at(cl) += 0;
+			}
 		}
 
 	}
