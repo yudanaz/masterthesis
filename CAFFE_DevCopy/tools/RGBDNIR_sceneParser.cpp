@@ -98,7 +98,7 @@ void separate_Y_UV_channels(Mat &yuv, Mat &yOut, Mat &uvOut)
 	merge(uv_vec, uvOut);
 }
 
-void parseImage(Net<float>& caffe_test_net, string imgName, string labelSuffix, const char* modeName)
+void parseImage(Net<float>& caffe_test_net, string imgName, string labelSuffix, const char* modeName, const char* outputNameSuffix)
 {
     RGBDNIR_preproc preproc;
     int borderSz = PATCHSIZE / 2;
@@ -351,8 +351,8 @@ void parseImage(Net<float>& caffe_test_net, string imgName, string labelSuffix, 
 //	imshow("Predicted Labels", labelImg_predicted*85);
 //    cvWaitKey();
 
-    std::string outNm = imgName + "_predicted_" + string(modeName) + ".png";
-    std::string outNm2 = imgName + "_predicted_" + string(modeName) + "_eq.png";
+    std::string outNm = imgName + "_predicted_" + string(modeName) + string(outputNameSuffix) + ".png";
+    std::string outNm2 = imgName + "_predicted_" + string(modeName) + string(outputNameSuffix) + "_eq.png";
     imwrite(outNm, labelImg_predicted);
     double min, max;
     cv::minMaxLoc(labelImg_predicted, &min, &max);
@@ -362,10 +362,10 @@ void parseImage(Net<float>& caffe_test_net, string imgName, string labelSuffix, 
 
 int main(int argc, char** argv)
 {
-    if (argc != 7)
+    if (argc != 8)
 	{
         LOG(ERROR) << "PLEASE ENTER 6 ARGUMENTS: (1)net_proto (2)pretrained_net_proto (3)txt-file with test images"
-                   << "(4)label suffix (5)[NIR/DNIR/RGBNIR/RGBDNIR/RGBDNIRSkin] (6)[GPU/CPU]";
+                   << "(4)label suffix (5)[NIR/DNIR/RGBNIR/RGBDNIR/RGBDNIRSkin] (6)[GPU/CPU] (7)extra naming suffix";
 		return 1;
 	}
 
@@ -395,12 +395,14 @@ int main(int argc, char** argv)
     const char* modeName = argv[5];
     LOG(INFO) << "Model type: " << modeName;
 
+    const char* outputNameSuffix = argv[7];
+
     //read file names
     ifstream file(argv[3]);
     string imgName;
     while(getline(file, imgName))
     {
-        parseImage(caffe_test_net, imgName, labelSuffix, modeName);
+        parseImage(caffe_test_net, imgName, labelSuffix, modeName, outputNameSuffix);
     }
 
 
