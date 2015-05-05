@@ -39,7 +39,11 @@ void fillMemoryDataLayers(Net<float> *net, bool hasNIR, bool hasRGB, bool hasDep
 
 						  std::vector<Mat> mats_depth0,
 						  std::vector<Mat> mats_depth1,
-						  std::vector<Mat> mats_depth2
+                          std::vector<Mat> mats_depth2,
+
+                          std::vector<Mat> mats_skin0,
+                          std::vector<Mat> mats_skin1,
+                          std::vector<Mat> mats_skin2
 						  )
 {
 	//make dummy label
@@ -73,6 +77,14 @@ void fillMemoryDataLayers(Net<float> *net, bool hasNIR, bool hasRGB, bool hasDep
         ((MemoryDataLayer<float>*)net->layer_by_name("rgb1_UV").get())->AddMatVector(mats_rgb1_UV, labels);
         ((MemoryDataLayer<float>*)net->layer_by_name("rgb2_Y").get())->AddMatVector(mats_rgb2_Y, labels);
         ((MemoryDataLayer<float>*)net->layer_by_name("rgb2_UV").get())->AddMatVector(mats_rgb2_UV, labels);
+    }
+
+    //DEPTH////////////////////////////////////////////////////////////
+    if(hasSkin)
+    {
+        ((MemoryDataLayer<float>*)net->layer_by_name("skin0").get())->AddMatVector(mats_skin0, labels);
+        ((MemoryDataLayer<float>*)net->layer_by_name("skin1").get())->AddMatVector(mats_skin1, labels);
+        ((MemoryDataLayer<float>*)net->layer_by_name("skin2").get())->AddMatVector(mats_skin2, labels);
     }
 }
 
@@ -109,7 +121,7 @@ void parseImage(Net<float>& caffe_test_net, string imgName, string labelSuffix, 
     else if(strcmp(modeName, "DNIR") == 0){ hasDepth = true; }
     else if(strcmp(modeName, "RGBNIR") == 0){ hasRGB = true; }
     else if(strcmp(modeName, "RGBDNIR") == 0){ hasDepth = true; hasRGB = true; }
-    else if(strcmp(modeName, "RGBDNIRSkin") == 0){ hasDepth = true; hasRGB = true; hasSkin = true; }
+    else if(strcmp(modeName, "RGBDNIRS") == 0){ hasDepth = true; hasRGB = true; hasSkin = true; }
 
     // load image files
     Mat nirImg, rgbImg, depthImg, skinImg, labelImg;
@@ -299,14 +311,17 @@ void parseImage(Net<float>& caffe_test_net, string imgName, string labelSuffix, 
             std::vector<Mat> mats_skin0, mats_skin1, mats_skin2;
             if(hasSkin)
             {
-                //TODO put skin images in vecs
+                mats_skin0.push_back(skinPatchPyr.at(0));
+                mats_skin1.push_back(skinPatchPyr.at(1));
+                mats_skin2.push_back(skinPatchPyr.at(2));
             }
 
             //feed network
             fillMemoryDataLayers(&caffe_test_net, true, hasRGB, hasDepth, hasSkin,
                                  mats_rgb0_Y, mats_rgb0_UV, mats_rgb1_Y, mats_rgb1_UV, mats_rgb2_Y, mats_rgb2_UV,
                                  mats_nir0_Y, mats_nir0_UV, mats_nir1_Y, mats_nir1_UV, mats_nir2_Y, mats_nir2_UV,
-                                 mats_depth0, mats_depth1, mats_depth2);
+                                 mats_depth0, mats_depth1, mats_depth2,
+                                 mats_skin0, mats_skin1, mats_skin2);
 //            LOG(INFO) << "filled";
 
             //get prediction
@@ -365,7 +380,7 @@ int main(int argc, char** argv)
     if (argc != 8)
 	{
         LOG(ERROR) << "PLEASE ENTER 6 ARGUMENTS: (1)net_proto (2)pretrained_net_proto (3)txt-file with test images"
-                   << "(4)label suffix (5)[NIR/DNIR/RGBNIR/RGBDNIR/RGBDNIRSkin] (6)[GPU/CPU] (7)extra naming suffix";
+                   << "(4)label suffix (5)[NIR/DNIR/RGBNIR/RGBDNIR/RGBDNIRS] (6)[GPU/CPU] (7)extra naming suffix";
 		return 1;
 	}
 
