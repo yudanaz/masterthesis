@@ -6,6 +6,7 @@
 #include "segmentfelsenzwalb/segmentation.h"
 #include "helper.h"
 #include "imagepreprocessor.h"
+#include <QDir>
 
 #define WHITE Scalar(255, 255, 255)
 #define PINK Scalar(255, 51, 153)
@@ -1874,26 +1875,33 @@ void MainWindow::on_pushButton_released()
 
 void MainWindow::on_pushButton_accuracy_released()
 {
-	QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select label ground truth and predicted label image", lastDir, "*.png");
+    QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select label ground truths", lastDir, "*.png");
 	if(fileNames.size() == 0){ return; }
-	lastDir = QFileInfo(fileNames.first()).path();
+    lastDir = QFileInfo(fileNames.first()).path();
+
+    QStringList fileNames2 = QFileDialog::getOpenFileNames(this, "Select predicted label images", lastDir, "*.png");
+    if(fileNames2.size() == 0){ return; }
+    QString predictDir = QFileInfo(fileNames2.first()).path();
 
 	int nrOfClasses = QInputDialog::getInt(this, "Amount of classes", "How many classes?", 3, 2, 10);
 
 	//get ground truths and predicted labels
 	QList<Mat> groundTruths;
 	QList<Mat> predictions;
-	foreach (QString fnm, fileNames)
+    foreach (QString fnm, fileNames)
 	{
-			if(fnm.contains("_labels") && !fnm.contains("_predicted"))
-			{
-				groundTruths.push_back(imread(fnm.toStdString(), IMREAD_GRAYSCALE));
-			}
-			else if(fnm.contains("_predicted"))
-			{
-				predictions.push_back(imread(fnm.toStdString(), IMREAD_GRAYSCALE));
-			}
+        if(fnm.contains("_labels") && !fnm.contains("_predicted"))
+        {
+            groundTruths.push_back(imread(fnm.toStdString(), IMREAD_GRAYSCALE));
+        }
 	}
+    foreach (QString fnm, fileNames2)
+    {
+        if(fnm.contains("_predicted") && !fnm.contains("_eq"))
+        {
+            predictions.push_back(imread(fnm.toStdString(), IMREAD_GRAYSCALE));
+        }
+    }
 	if(groundTruths.size() != predictions.size())
 	{
 		QMessageBox::information(this, "Error!", "Not same amount of ground truth and predicted label images!", QMessageBox::Ok);
@@ -1920,17 +1928,19 @@ void MainWindow::on_pushButton_accuracy_released()
 		{
 			for (int x = 0; x < tru.cols; ++x)
 			{
-				uchar truPx = tru.at<uchar>(y,x);
-				uchar prePx = pre.at<uchar>(y,x);
+//				uchar truPx = tru.at<uchar>(y,x);
+//				uchar prePx = pre.at<uchar>(y,x);
+                int truPx = (int)tru.at<uchar>(y,x);
+                int prePx = (int)pre.at<uchar>(y,x);
 
 				//unlabeled pixels must be ignored!
-				if(truPx == 255){ continue; }
+                if(truPx == 255 || truPx == 254){ continue; } //254 because of that stupid bug when parsing from xml to label images...
 
 				bool correct = (truPx == prePx);
 				if(correct)
-				{
+                {
 					correctPixels++; //count for per-pixel accuracy
-					correctClasses.at(truPx)++;//count for per-class accuracy
+                    correctClasses.at(truPx)++;//count for per-class accuracy
 				}
 
 				//count how many pixels exits for this class in current image
@@ -1971,7 +1981,7 @@ void MainWindow::on_pushButton_accuracy_released()
 	avgClassAcc /= (double)nrOfClasses;
 
 	//save to file
-	QFile f(lastDir + "/accuracy.txt");
+    QFile f(predictDir + "/accuracy.txt");
 	f.open(QFile::WriteOnly);
 	QTextStream ts(&f);
 
@@ -1990,34 +2000,63 @@ void MainWindow::on_pushButton_accuracy_released()
 
 void MainWindow::on_pushButton_superpxAvg_released()
 {
-	QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select predicted label and nir images", lastDir, "*.png");
+    QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select NIR images", lastDir, "*.png");
 	if(fileNames.size() == 0){ return; }
-	lastDir = QFileInfo(fileNames.first()).path();
+    lastDir = QFileInfo(fileNames.first()).path();
+
+    QStringList fileNames2 = QFileDialog::getOpenFileNames(this, "Select predicted label images", lastDir, "*.png");
+    if(fileNames2.size() == 0){ return; }
+    QString predictDir = QFileInfo(fileNames2.first()).path();
 
 	QStringList nirs;
-	QStringList preds;
+    QStringList preds;
 	foreach (QString fnm, fileNames)
 	{
-		if(fnm.contains("nir")){ nirs.push_back(fnm); }
-		else if(fnm.contains("prediction")){ preds.push_back(fnm); }
+        if(fnm.contains("nir")){ nirs.push_back(fnm); }
 	}
+    foreach (QString fnm, fileNames2)
+    {
+        if(fnm.contains("predicted") &&!fnm.contains("_eq") ){ preds.push_back(fnm); }
+    }
+
+    if(nirs.size() != preds.size())
+    {
+        QMessageBox::information(this, "Error!", "Not same amount of NIR and predicted label images!", QMessageBox::Ok);
+        return;
+    }
+
+    //make output dirs if they dont exist
+    if(!QDir(predictDir + "/seed").exists()){ QDir().mkdir(predictDir + "/seed"); }
+    if(!QDir(predictDir + "/felsenzwalb").exists()){ QDir().mkdir(predictDir + "/felsenzwalb"); }
 
 	for (int i = 0; i < nirs.size(); ++i)
 	{
 		Mat nir = imread(nirs.at(i).toStdString(), IMREAD_COLOR);
 		Mat pred = imread(preds.at(i).toStdString(), IMREAD_GRAYSCALE);
 
-		//make improvements with all agorithms
+        //make improvements with all agorithms
 		//SEED:
 		Mat pred_0 = improveLabePredictionlWithSuperpixels(nir, pred, 0);
-		QString outNm0 = preds.at(i);
+        QString outNm0 = predictDir + "/seed/" + preds.at(i).split("/").last();
 		outNm0.remove(".png").append("_improved_seed.png");
-		imwrite(outNm0.toStdString(), pred_0);
+        qDebug() << "Writing " << outNm0;
+        imwrite(outNm0.toStdString(), pred_0);
+
+        outNm0.remove(".png").append("_eq.png");
+        double min, max;
+        cv::minMaxLoc(pred_0, &min, &max);
+        imwrite(outNm0.toStdString(), pred_0 * (255/max));
+
 		//Felsenzwalb:
 		Mat pred_1 = improveLabePredictionlWithSuperpixels(nir, pred, 1);
-		QString outNm1 = preds.at(i);
+        QString outNm1 = predictDir + "/felsenzwalb/" + preds.at(i).split("/").last();
 		outNm1.remove(".png").append("_improved_felsenzw.png");
+        qDebug() << "Writing " << outNm1;
 		imwrite(outNm1.toStdString(), pred_1);
+
+        outNm1.remove(".png").append("_eq.png");
+        cv::minMaxLoc(pred_1, &min, &max);
+        imwrite(outNm1.toStdString(), pred_1 * (255/max));
 		//SLIC:
 //		Mat pred_2 = improveLabePredictionlWithSuperpixels(nir, pred, 2);
 //		QString outNm2 = preds.at(i);
