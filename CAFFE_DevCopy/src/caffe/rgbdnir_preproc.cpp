@@ -13,10 +13,11 @@ void RGBDNIR_preproc::normalizeZeroMeanUnitVariance(Mat &img)
 	meanStdDev(img, mean, stdDev);
 
 	//get variance
-	float variance = cv::pow(stdDev[0], 2);
+//	float variance = cv::pow(stdDev[0], 2);
 
 	//make zero mean and unit variance
-	 img = ((img - mean[0]) / variance);
+//    img = ((img - mean[0]) / variance);
+    img = ((img - mean[0]) / stdDev[0]);
 }
 
 
