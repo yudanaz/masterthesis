@@ -554,7 +554,8 @@ void MainWindow::makeDisparityImage(Mat leftImgCol, Mat rightImgCol)
 	//    imshow("seeds superpixels", cvLabels8bit);
 
 		//improve disparity image with superpixels
-		dispImprov = camCalib.averageOverSuperpixels(seeds.count_superpixels(), seeds.getLabelsAsMat(), disp);
+        int dispAmount = ui->slider_dispRange->value() - ui->slider_minDisp->value();
+        dispImprov = camCalib.voteInSuperpixels(seeds.count_superpixels(), seeds.getLabelsAsMat(), disp, dispAmount);
 	}
 
 	//normalize (from 16 to 8 bit) and show
@@ -2008,6 +2009,8 @@ void MainWindow::on_pushButton_superpxAvg_released()
     if(fileNames2.size() == 0){ return; }
     QString predictDir = QFileInfo(fileNames2.first()).path();
 
+    int classAmount = QInputDialog::getInt(this, "Amount of classes", "How many classes?", 10, 2, 10);
+
 	QStringList nirs;
     QStringList preds;
 	foreach (QString fnm, fileNames)
@@ -2029,6 +2032,14 @@ void MainWindow::on_pushButton_superpxAvg_released()
     if(!QDir(predictDir + "/seed").exists()){ QDir().mkdir(predictDir + "/seed"); }
     if(!QDir(predictDir + "/felsenzwalb").exists()){ QDir().mkdir(predictDir + "/felsenzwalb"); }
 
+    //make progress bar
+    QProgressDialog progress("Improving with superpixels", "Cancel", 0, nirs.size(), this);
+    progress.setValue(0);
+    progress.setMinimumWidth(450);
+    progress.setMinimumDuration(100);
+    progress.setWindowModality(Qt::WindowModal);
+
+
 	for (int i = 0; i < nirs.size(); ++i)
 	{
 		Mat nir = imread(nirs.at(i).toStdString(), IMREAD_COLOR);
@@ -2036,10 +2047,10 @@ void MainWindow::on_pushButton_superpxAvg_released()
 
         //make improvements with all agorithms
 		//SEED:
-		Mat pred_0 = improveLabePredictionlWithSuperpixels(nir, pred, 0);
+        Mat pred_0 = improveLabePredictionlWithSuperpixels(nir, pred, 0, classAmount);
         QString outNm0 = predictDir + "/seed/" + preds.at(i).split("/").last();
 		outNm0.remove(".png").append("_improved_seed.png");
-        qDebug() << "Writing " << outNm0;
+        qDebug() << i << " Writing " << outNm0;
         imwrite(outNm0.toStdString(), pred_0);
 
         outNm0.remove(".png").append("_eq.png");
@@ -2048,10 +2059,10 @@ void MainWindow::on_pushButton_superpxAvg_released()
         imwrite(outNm0.toStdString(), pred_0 * (255/max));
 
 		//Felsenzwalb:
-		Mat pred_1 = improveLabePredictionlWithSuperpixels(nir, pred, 1);
+        Mat pred_1 = improveLabePredictionlWithSuperpixels(nir, pred, 1, classAmount);
         QString outNm1 = predictDir + "/felsenzwalb/" + preds.at(i).split("/").last();
 		outNm1.remove(".png").append("_improved_felsenzw.png");
-        qDebug() << "Writing " << outNm1;
+        qDebug() << "  Writing " << outNm1;
 		imwrite(outNm1.toStdString(), pred_1);
 
         outNm1.remove(".png").append("_eq.png");
@@ -2062,10 +2073,16 @@ void MainWindow::on_pushButton_superpxAvg_released()
 //		QString outNm2 = preds.at(i);
 //		outNm2.remove(".png").append("_improved_slic.png");
 //		imwrite(outNm2.toStdString(), pred_2);
+
+        progress.setValue(i);
+        if(progress.wasCanceled()){ return; }
+        QCoreApplication::processEvents();
 	}
+
+    progress.setValue(nirs.size());
 }
 
-Mat MainWindow::improveLabePredictionlWithSuperpixels(Mat &nir, Mat &prediction, int whichAlg)
+Mat MainWindow::improveLabePredictionlWithSuperpixels(Mat &nir, Mat &prediction, int whichAlg, int classAmount)
 {
 	Mat superpx;
 	int superpx_amount;
@@ -2131,8 +2148,8 @@ Mat MainWindow::improveLabePredictionlWithSuperpixels(Mat &nir, Mat &prediction,
 
 	//average over superpixels
 	Mat prediction2;
-	prediction.convertTo(prediction2, CV_16S); //the method takes 16bit signed images
-	Mat res = camCalib.averageOverSuperpixels(superpx_amount, superpx, prediction2);
+    prediction.convertTo(prediction2, CV_16S); //the method takes 16bit signed images
+    Mat res = camCalib.voteInSuperpixels(superpx_amount, superpx, prediction2, classAmount);
 	Mat res2;
 	res.convertTo(res2, CV_8U);
 //	imshow("before", prediction * 80); cvWaitKey();

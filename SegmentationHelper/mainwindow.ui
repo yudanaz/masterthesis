@@ -19,8 +19,8 @@
      <rect>
       <x>20</x>
       <y>10</y>
-      <width>558</width>
-      <height>420</height>
+      <width>581</width>
+      <height>451</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout">
@@ -144,7 +144,7 @@
        <item>
         <widget class="QLineEdit" name="lineEdit_seedInfo">
          <property name="text">
-          <string>2,2,4</string>
+          <string>3,3,4</string>
          </property>
         </widget>
        </item>
@@ -247,7 +247,7 @@
        <item>
         <widget class="QLineEdit" name="lineEdit_felsenzwalbInfo">
          <property name="text">
-          <string>0.1,200,20</string>
+          <string>0.2,200,50</string>
          </property>
         </widget>
        </item>
@@ -1190,7 +1190,7 @@ color: rgb(255, 255, 127);</string>
      <x>0</x>
      <y>0</y>
      <width>1072</width>
-     <height>20</height>
+     <height>25</height>
     </rect>
    </property>
   </widget>

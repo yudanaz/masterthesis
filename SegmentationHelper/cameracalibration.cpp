@@ -448,7 +448,7 @@ Mat CameraCalibration::makeDisparityMap(Mat leftGrayImg, Mat rightGrayImg, bool 
 	return disp;
 }
 
-Mat CameraCalibration::averageOverSuperpixels(int nrOfSuperPixel, Mat superpixelMap, Mat shortImg)
+Mat CameraCalibration::voteInSuperpixels(int nrOfSuperPixel, Mat superpixelMap, Mat shortImg, int classAmount)
 {
 	nrOfSuperPixel += 30; //there seem to be always some numbers that are jumbed, resulting in unused indices
 
@@ -456,7 +456,7 @@ Mat CameraCalibration::averageOverSuperpixels(int nrOfSuperPixel, Mat superpixel
 
 	//make 2D-vector to hold sum of disparities and pixel amount for each superpixel
 	//(vector type is long in order to hold summed value, although disparity map type is short)
-	vector< vector<long> > superpxs(nrOfSuperPixel, vector<long>(2));
+    vector< vector<long> > superpxs(nrOfSuperPixel, vector<long>(classAmount));
 
 	//if superpixel or disparity map not in ushort format, return emtpy
 	int type1 = superpixelMap.type();
@@ -469,8 +469,10 @@ Mat CameraCalibration::averageOverSuperpixels(int nrOfSuperPixel, Mat superpixel
 	//init superpixel vector
 	for(int i = 0; i < nrOfSuperPixel; ++i )
 	{
-		superpxs[i][0] = 0;
-		superpxs[i][1] = 0;
+        for (int j = 0; j < classAmount; ++j)
+        {
+            superpxs[i][j] = 0;
+        }
 	}
 
 	//sum and count all disparity values for each superpixel
@@ -479,31 +481,51 @@ Mat CameraCalibration::averageOverSuperpixels(int nrOfSuperPixel, Mat superpixel
 	for( it_superpx = superpixelMap.begin<ushort>(), it_disp = shortImg.begin<short>(),
 		 end = superpixelMap.end<ushort>(); it_superpx != end; ++it_superpx, ++it_disp )
 	{
-		short dispVal = *it_disp;
-		if(dispVal > 0)
+        short val = *it_disp;
+        if(val < 254)//val > 0)
 		{
 			ushort temp = *it_superpx;
-			superpxs[*it_superpx][0] += dispVal; //add disparity value
-			superpxs[*it_superpx][1]++; //count number of pixels in superpixel
+            superpxs[*it_superpx][val] += 1; //count how many times this class is in this superpixel
+//			superpxs[*it_superpx][0] += val; //add disparity value
+//			superpxs[*it_superpx][1]++; //count number of pixels in superpixel
 		}
 	}
 
-	//average values for each superpixel
-	for(int i = 0; i < nrOfSuperPixel; ++i )
-	{
-		ushort amountInSuperPx = superpxs[i][1];
-		if(amountInSuperPx > 0)
-		{
-			superpxs[i][0] /= amountInSuperPx;
-		}
-	}
+    //check which class has most entries for each superpixel
+    vector<int> mostEntries(nrOfSuperPixel);
+    for (int i = 0; i < nrOfSuperPixel; ++i)
+    {
+        int max = 0;
+        int maxIndex = 255;
+        for (int j = 0; j < classAmount; ++j)
+        {
+            int amount = superpxs[i][j];
+            if(amount > max)
+            {
+                max = amount;
+                maxIndex = j;
+            }
+        }
+        mostEntries[i] = maxIndex;
+    }
+
+//	//average values for each superpixel
+//	for(int i = 0; i < nrOfSuperPixel; ++i )
+//	{
+//		ushort amountInSuperPx = superpxs[i][1];
+//		if(amountInSuperPx > 0)
+//		{
+//			superpxs[i][0] /= amountInSuperPx;
+//		}
+//	}
 
 	//write averaged values in output matrix
 	MatIterator_<short> it_res;
 	for( it_superpx = superpixelMap.begin<ushort>(), it_res = res.begin<short>(),
 		 end = superpixelMap.end<ushort>(); it_superpx != end; ++it_superpx, ++it_res )
 	{
-		*it_res = superpxs[*it_superpx][0];
+//		*it_res = superpxs[*it_superpx][0];
+        *it_res = mostEntries[*it_superpx];
 	}
 
 	return res;
