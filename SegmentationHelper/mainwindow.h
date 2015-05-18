@@ -153,6 +153,8 @@ private slots:
 
 	void on_pushButton_superpxAvg_released();
 
+    void on_btn_colorLabels_released();
+
 private:
 	void makeLabelImages(QStringList fileNames);
 	void makeSeedsSuperpixels(QString fileName);

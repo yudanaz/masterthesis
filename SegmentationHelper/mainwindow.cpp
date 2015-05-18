@@ -2160,3 +2160,44 @@ Mat MainWindow::improveLabePredictionlWithSuperpixels(Mat &nir, Mat &prediction,
 
 
 
+
+void MainWindow::on_btn_colorLabels_released()
+{
+    QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select grayscale label images", lastDir, "*.png");
+    if(fileNames.size() == 0){ return; }
+    lastDir = QFileInfo(fileNames.first()).path();
+
+    QStringList fileNames_clean;
+    foreach(QString nm, fileNames)
+    {
+        if(!nm.contains("_eq"))
+        {
+            fileNames_clean.append(nm);
+        }
+    }
+
+    QString outDir = lastDir + "/color_labels";
+    if(!QDir().exists(outDir)){ QDir().mkdir(outDir); }
+
+    foreach(QString fnm, fileNames_clean)
+    {
+        Mat imgGray = imread(fnm.toStdString(), IMREAD_GRAYSCALE);
+        Mat imgColor(imgGray.size(), CV_8UC3);
+
+        for (int y = 0; y < imgGray.rows; ++y)
+        {
+            for (int x = 0; x < imgGray.cols; ++x)
+            {
+                int colorIndex = imgGray.at<uchar>(y,x) + 1;
+                Vec3b color;
+                color.val[0] = (uchar)colorMap[colorIndex][0];
+                color.val[1] = (uchar)colorMap[colorIndex][1];
+                color.val[2] = (uchar)colorMap[colorIndex][2];
+                imgColor.at<Vec3b>(y,x) = color;
+            }
+        }
+        QString outnm = fnm.split("/").last().remove(".png").append("_color.png");
+        imwrite((outDir + "/" + outnm).toStdString(), imgColor);
+//        imshow("color image", imgColor); cvWaitKey();
+    }
+}
