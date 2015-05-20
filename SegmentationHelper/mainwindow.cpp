@@ -2421,7 +2421,9 @@ void MainWindow::on_btn_showFilterKernels_released()
         foreach(Mat kernel, kernels)
         {
             Mat patchConv(patch.size(), patch.type());
-            filter2D(patch, patchConv, -1, kernel);
+            Mat kernel_T;
+            flip(kernel, kernel_T, -1);
+            filter2D(patch, patchConv, -1, kernel_T); //flip for real convolution
     //        imshow("patch convolved", patchConv); cvWaitKey();
             int y = i / rowcol;
             int x = i - (y*rowcol);
