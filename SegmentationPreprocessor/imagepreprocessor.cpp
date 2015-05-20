@@ -186,6 +186,7 @@ void ImagePreprocessor::preproc(Mat RGB, Mat NIR, Mat depth_kinect, Mat& RGB_out
 
 	//undistort NIR image channel-wise AND swap channels (so that the order is 1550, 1300, 970 in the BGR image)
 	Mat NIR_undist = undistortNIRimgChannelWise(NIR);
+    imwrite("NIR_undist.png", NIR_undist);
 
 	//detect skin
 	Mat skin = skinDetector.detect(NIR_undist)*255;

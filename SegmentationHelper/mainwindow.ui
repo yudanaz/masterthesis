@@ -1196,6 +1196,19 @@ color: rgb(255, 255, 127);</string>
      <string>color labels</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="btn_showFilterKernels">
+    <property name="geometry">
+     <rect>
+      <x>650</x>
+      <y>430</y>
+      <width>151</width>
+      <height>27</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Show Filter Kernels</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">

@@ -23,16 +23,21 @@ MainWindow::MainWindow(QWidget *parent) :
 	ui->setupUi(this);
 
 	//read color map from app dir
-	QFile colorfin(QDir::currentPath() + "/VOCcolormap.txt");
+//    QFile colorfin(QDir::currentPath() + "/VOCcolormap.txt");
+    QFile colorfin(QDir::currentPath() + "/colormap_10cl.txt");
 	colorfin.open(QFile::ReadOnly | QFile::Text);
 	QTextStream colorIn(&colorfin);
 	int count = 0;
-	while (!colorIn.atEnd() && count < 256)
-	{
-		QStringList rgb = colorIn.readLine().split("\t", QString::SkipEmptyParts);
-		colorMap[count][0] = rgb.at(0).toDouble() * 255;
-		colorMap[count][1] = rgb.at(1).toDouble() * 255;
-		colorMap[count][2] = rgb.at(2).toDouble() * 255;
+    while (!colorIn.atEnd() && count < 9)//30)
+    {
+        QStringList rgb = colorIn.readLine().split("\t", QString::SkipEmptyParts);
+        if(rgb.first().contains("#")){ continue; } //jump comment
+//		colorMap[count][0] = rgb.at(0).toDouble() * 255;
+//		colorMap[count][1] = rgb.at(1).toDouble() * 255;
+//		colorMap[count][2] = rgb.at(2).toDouble() * 255;
+        colorMap[count][0] = rgb.at(0).toInt();
+        colorMap[count][1] = rgb.at(1).toInt();
+        colorMap[count][2] = rgb.at(2).toInt();
 //		qDebug() << colorMap[count][0] << " " << colorMap[count][1] << " " << colorMap[count][2];
 		count++;
 	}
@@ -481,7 +486,9 @@ void MainWindow::makeFelsenzwalbSuperpixels(QString fileName)
 		sigma = 0.5; k = 500; min = 20;
 	}
 	int num_ccs;
-	imshow("Superpixels", segm.makeSuperPixelSegmenation(img, sigma, k, min, &num_ccs, false));
+    Mat res = segm.makeSuperPixelSegmenation(img, sigma, k, min, &num_ccs, false);
+    imshow("Superpixels", res);
+    imwrite((lastDir + "/felszenzwalb.png").toStdString(), res);
 	ui->label_nrOfSuperpixelsFelsenzwalb->setText("= " + QString::number(num_ccs) + " superpixels");
 }
 
@@ -1454,45 +1461,86 @@ void MainWindow::on_pushButton_test_released()
 //	if(fileName == ""){ return; }
 //	lastDir = QFileInfo(fileName).path();
 
+    //////////////////////////////////////////////////////////////
+    /// check percentage of labels in dataset
+    //////////////////////////////////////////////////////////////
+    QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select File", lastDir, "*labels*.png");
+    if(fileNames.size() == 0){ return; }
+    lastDir = QFileInfo(fileNames.at(0)).path();
 
-	//////////////////////////////////////////////////////////////
-	/// check which labels are in each label image
-	//////////////////////////////////////////////////////////////
-	QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select File", lastDir, "*labels*.png");
-	if(fileNames.size() == 0){ return; }
-	lastDir = QFileInfo(fileNames.at(0)).path();
+    int howManyLabels = 3;
 
-	foreach(QString fileName, fileNames)
-	{
-		if(fileName.contains("color")){ continue; }
-		Mat img = imread(fileName.toStdString(), IMREAD_GRAYSCALE);
-		vector<bool> labels(256, false);
+    vector<long> labelsCount(howManyLabels, 0);
+    long pixelsTotal = 0;
 
-		for (int y = 0; y < img.rows; ++y)
-		{
-			for (int x = 0; x < img.cols; ++x)
-			{
-				int index = (int)img.at<uchar>(y,x);
-				labels.at(index) = true;
-			}
-		}
-		QString s = "fucking strange labels in image " + fileName.split("/").last() + ": ";
-		bool foundTheBugger = false;
-//		for (int i = 20; i < 255; ++i)
-		for (int i = 0; i < 255; ++i)
-		{
-			if(labels.at(i) == true)
-			{
-//				foundTheBugger = true;
-				s.append(QString::number(i) + ", ");
-			}
-		}
-//		if(foundTheBugger){ qDebug() << s; }
-		qDebug() << s;
-	}
-	//////////////////////////////////////////////////////////////
-	/// endof check which labels are in each label image
-	//////////////////////////////////////////////////////////////
+    foreach(QString fileName, fileNames)
+    {
+        if(fileName.contains("color")){ continue; }
+        Mat img = imread(fileName.toStdString(), IMREAD_GRAYSCALE);
+
+        for (int y = 0; y < img.rows; ++y)
+        {
+            for (int x = 0; x < img.cols; ++x)
+            {
+                int index = (int)img.at<uchar>(y,x);
+                index = index > 30 ? howManyLabels-1 : index; // handel the "undefined" labels
+                labelsCount.at(index) += 1;
+                pixelsTotal++;
+            }
+        }
+    }
+
+    QString s = "pixels total: " + QString::number(pixelsTotal) + "\nlabel,amount,fraction,percentage\n";
+    for (int i = 0; i < howManyLabels; ++i)
+    {
+        float percentage = (float)labelsCount[i]/pixelsTotal;
+        s += QString::number(i) + "," + QString::number(labelsCount[i]) + ","
+                + QString::number(percentage) + ","
+                + QString::number( ( (int)( (percentage+0.0005) *1000) )/10.0 ) + "\n";
+    }
+    qDebug() << s;
+    //////////////////////////////////////////////////////////////
+    /// endof check percentage of labels in dataset
+    //////////////////////////////////////////////////////////////
+
+//	//////////////////////////////////////////////////////////////
+//	/// check which labels are in each label image
+//	//////////////////////////////////////////////////////////////
+//	QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select File", lastDir, "*labels*.png");
+//	if(fileNames.size() == 0){ return; }
+//	lastDir = QFileInfo(fileNames.at(0)).path();
+
+//	foreach(QString fileName, fileNames)
+//	{
+//		if(fileName.contains("color")){ continue; }
+//		Mat img = imread(fileName.toStdString(), IMREAD_GRAYSCALE);
+
+//        vector<bool> labels(256, false);
+//		for (int y = 0; y < img.rows; ++y)
+//		{
+//			for (int x = 0; x < img.cols; ++x)
+//			{
+//				int index = (int)img.at<uchar>(y,x);
+//				labels.at(index) = true;
+//			}
+//		}
+//		QString s = "fucking strange labels in image " + fileName.split("/").last() + ": ";
+//		bool foundTheBugger = false;
+////		for (int i = 20; i < 255; ++i)
+//		for (int i = 0; i < 255; ++i)
+//		{
+//			if(labels.at(i) == true)
+//			{
+////				foundTheBugger = true;
+//				s.append(QString::number(i) + ", ");
+//			}
+//		}
+////		if(foundTheBugger){ qDebug() << s; }
+//		qDebug() << s;
+//	}
+//	//////////////////////////////////////////////////////////////
+//	/// endof check which labels are in each label image
+//	//////////////////////////////////////////////////////////////
 
 
 	//////////////////////////////////////////////////////////////
@@ -1914,16 +1962,20 @@ void MainWindow::on_pushButton_accuracy_released()
 	vector<double> classAcc(nrOfClasses);
 
 
-	//compute accuracy for each pair
-	for (int i = 0; i < imgsTotal; ++i)
-	{
-		Mat tru = groundTruths.at(i);
-		Mat pre = predictions.at(i);
+    //compute accuracy for each pair of groundtruth and predicted labels
+    long labeledPixelsTotal = 0;
+    long correctPixels = 0;
+    vector<long> totalDatapoints(nrOfClasses);
+    vector<long> truePositives(nrOfClasses);
+    vector<long> trueNegatives(nrOfClasses);
+    vector<long> falsePositives(nrOfClasses);
+    vector<long> falseNegatives(nrOfClasses);
 
-		int pixelsTotal = groundTruths.at(i).cols * groundTruths.at(i).rows;
-		int correctPixels = 0;
-		vector<double> classesTotal(nrOfClasses);
-		vector<double> correctClasses(nrOfClasses);
+	for (int i = 0; i < imgsTotal; ++i)
+    {
+        Mat tru = groundTruths.at(i);
+		Mat pre = predictions.at(i);
+        labeledPixelsTotal += tru.cols * tru.rows;
 
 		for (int y = 0; y < tru.rows; ++y)
 		{
@@ -1935,66 +1987,108 @@ void MainWindow::on_pushButton_accuracy_released()
                 int prePx = (int)pre.at<uchar>(y,x);
 
 				//unlabeled pixels must be ignored!
-                if(truPx == 255 || truPx == 254){ continue; } //254 because of that stupid bug when parsing from xml to label images...
+                if(truPx == 255 || truPx == 254)//254 because of that stupid bug when parsing from xml to label images...
+                {
+                    labeledPixelsTotal--;
+                    continue;
+                }
 
 				bool correct = (truPx == prePx);
 				if(correct)
                 {
 					correctPixels++; //count for per-pixel accuracy
-                    correctClasses.at(truPx)++;//count for per-class accuracy
+                    truePositives.at(truPx)++;//count for per-class accuracy
+
+                    //count true negatives for other classes
+                    for (int cl = 0; cl < nrOfClasses; ++cl)
+                    {
+                        if(cl != truPx){ trueNegatives.at(cl)++; }
+                    }
 				}
+                else //if incorect
+                {
+                    //count false positives and negatives for involved classes
+                    falsePositives.at(prePx)++;
+                    falseNegatives.at(truPx)++;
+
+                    //count true negatives for other classes not involved in error
+                    for (int cl = 0; cl < nrOfClasses; ++cl)
+                    {
+                        if(cl != truPx && cl != prePx){ trueNegatives.at(cl)++; }
+                    }
+                }
 
 				//count how many pixels exits for this class in current image
-				classesTotal.at(truPx) += 1.0;
+                totalDatapoints.at(truPx)++;
 			}
 		}
 
-		//compute per-pixel accuracys for this image
-		PixelAcc += (double)correctPixels / pixelsTotal;;
+//		//compute per-pixel accuracys for this image
+//		PixelAcc += (double)correctPixels / pixelsTotal;;
 
-		//compute per-class accuracy for this image and store it for computing overall class accuracy later
-		for (int cl = 0; cl < nrOfClasses; ++cl)
-		{
-			double amountOfPixelsWithThisClass = classesTotal.at(cl);
-			if(amountOfPixelsWithThisClass != 0) //avoid div by zero
-			{
-				double acc = (double)correctClasses.at(cl) / amountOfPixelsWithThisClass;
-				classAcc.at(cl) += acc;
-			}
-			else
-			{
-				classAcc.at(cl) += 0;
-			}
-		}
+//		//compute per-class accuracy for this image and store it for computing overall class accuracy later
+//		for (int cl = 0; cl < nrOfClasses; ++cl)
+//		{
+//			double amountOfPixelsWithThisClass = classesTotal.at(cl);
+//			if(amountOfPixelsWithThisClass != 0) //avoid div by zero
+//			{
+//                double acc = (double)truePositives.at(cl) / amountOfPixelsWithThisClass;
+//				classAcc.at(cl) += acc;
+//			}
+//			else
+//			{
+//				classAcc.at(cl) += 0;
+//			}
+//		}
 
 	}
 
 
-	//compute overall accuracy for all images
-	PixelAcc /= (double)imgsTotal;
+    //compute overall pixel accuracy
+    PixelAcc = (double)correctPixels / labeledPixelsTotal;
 
+    //compute and per-class accuracy and average class accuracy
 	double avgClassAcc = 0;
 	for (int cl = 0; cl < nrOfClasses; ++cl)
 	{
-		classAcc.at(cl) /= (double)imgsTotal;
+//        classAcc.at(cl) = (double)(truePositives.at(cl) + trueNegatives.at(cl)) / labeledPixelsTotal;
+        classAcc.at(cl) = (double)(truePositives.at(cl))/totalDatapoints.at(cl);
 		avgClassAcc += classAcc.at(cl);
 	}
 	avgClassAcc /= (double)nrOfClasses;
+
+    //compute overall class accuracy
+
 
 	//save to file
     QFile f(predictDir + "/accuracy.txt");
 	f.open(QFile::WriteOnly);
 	QTextStream ts(&f);
 
+    qDebug() << "Labeled pixels total: " << labeledPixelsTotal;
+    ts << "labeled pixels total:        \t" << labeledPixelsTotal << "\n";
 	qDebug() << "Pixel accuracy: " << PixelAcc;
 	ts << "pixel accuracy:      \t" << PixelAcc << "\n";
 	qDebug() << "Class accuracy (average): " << avgClassAcc;
 	ts << "class accuracy (avg):\t" << avgClassAcc << "\n";
-	for (int cl = 0; cl < nrOfClasses; ++cl)
-	{
-		qDebug() << "Class " << cl << " accuracy: " << classAcc.at(cl);
-		ts << "class " << cl <<" accuracy:   \t" << classAcc.at(cl) << "\n";
-	}
+
+    qDebug() << "Class, Accuracy";
+    ts << "class,accuracy\n";
+    for (int cl = 0; cl < nrOfClasses; ++cl)
+    {
+        qDebug() << cl << ", " << classAcc.at(cl);
+        ts << cl << "," << classAcc.at(cl) << "\n";
+    }
+
+//    qDebug() << "Class, Accuracy, TruePos, TrueNeg, FalsePos, FalseNeg";
+//    ts << "class,accuracy,truePos,trueNeg,falsePos,falseNeg\n";
+//    for (int cl = 0; cl < nrOfClasses; ++cl)
+//	{
+//        qDebug() << cl << ", " << classAcc.at(cl) << ", "
+//                 << truePositives.at(cl) << ", " << trueNegatives.at(cl) << ", " << falsePositives.at(cl) << ", " << falseNegatives.at(cl);
+//        ts << cl << "," << classAcc.at(cl) << ","
+//           << truePositives.at(cl) << "," << trueNegatives.at(cl)<< "," << falsePositives.at(cl) << "," << falseNegatives.at(cl) << "\n";
+//	}
 
 	f.close();
 }
@@ -2188,11 +2282,18 @@ void MainWindow::on_btn_colorLabels_released()
         {
             for (int x = 0; x < imgGray.cols; ++x)
             {
-                int colorIndex = imgGray.at<uchar>(y,x) + 1;
+                int colorIndex = imgGray.at<uchar>(y,x);// + 1;
                 Vec3b color;
-                color.val[0] = (uchar)colorMap[colorIndex][0];
-                color.val[1] = (uchar)colorMap[colorIndex][1];
-                color.val[2] = (uchar)colorMap[colorIndex][2];
+                if(colorIndex > 30)
+                {
+                    color.val[0] = 0; color.val[1] = 0; color.val[2] = 0;
+                }
+                else
+                {
+                    color.val[0] = (uchar)colorMap[colorIndex][0];
+                    color.val[1] = (uchar)colorMap[colorIndex][1];
+                    color.val[2] = (uchar)colorMap[colorIndex][2];
+                }
                 imgColor.at<Vec3b>(y,x) = color;
             }
         }
@@ -2201,3 +2302,109 @@ void MainWindow::on_btn_colorLabels_released()
 //        imshow("color image", imgColor); cvWaitKey();
     }
 }
+
+void MainWindow::on_btn_showFilterKernels_released()
+{
+    int kernelSz = 7;
+
+    //open file
+    QString fileName = QFileDialog::getOpenFileName(this, "Select filter kernel file", lastDir, "*.txt");
+    if(fileName == ""){ return; }
+    lastDir = QFileInfo(fileName).path();
+
+    //read kernels to arrays
+    QList< vector<float> > kernels;
+
+    QFile f(fileName);
+    bool success = f.open(QFile::ReadOnly | QFile::Text);
+    if(!success) return;
+    QTextStream ts(&f);
+
+    float min = 9999.9;
+    float max = -9999.9;
+
+    while(!ts.atEnd())
+    {
+        QString s = ts.readLine();
+        if(s.contains("kernel")){ continue; }
+        else
+        {
+            QStringList strl = s.split(",", QString::SkipEmptyParts);
+            vector<float> kernel(kernelSz * kernelSz);
+            for (int i = 0; i < strl.size(); ++i)
+            {
+                float entry = strl.at(i).toFloat();
+                kernel.at(i) = entry;
+
+                //also get min max values in all kernels for visualization
+                min = entry < min ? entry : min;
+                max = entry > max ? entry : max;
+            }
+            kernels.append(kernel);
+        }
+    }
+    float range = max - min;
+
+    QList<Mat> kernelImgs;
+    //make images with blue = negative, red = positive and interpolation in between
+    for (int i = 0; i < kernels.size(); ++i)
+    {
+        Mat img(kernelSz, kernelSz, CV_8UC3);
+        for (int y = 0; y < kernelSz; ++y)
+        {
+            for (int x = 0; x < kernelSz; ++x)
+            {
+                int k = y * kernelSz + x;
+                float entry = kernels.at(i).at(k);
+
+                //get color from float value (interpolate)
+                entry = entry - min; //map to range
+                int b = (255.0 * entry / range) + 0.5;
+                int r = 255 - b;
+                int g = abs(b-r)*0.5;
+
+                //write to image
+                Vec3b col;
+                col[0] = b; //blue
+                col[1] = g; //green
+                col[2] = r; //red
+                img.at<Vec3b>(y,x) = col;
+            }
+        }
+
+        //write to disk and save in list
+        Mat img_big;
+        cv::resize(img, img_big, Size(), 10, 10, INTER_NEAREST);
+        QString nm = lastDir + "/kernel_" + QString::number(i) + ".png";
+        imwrite(nm.toStdString(), img_big);
+
+        kernelImgs.append(img);
+    }
+
+    //put all kernels in one image
+    int rowcol = sqrt((double)kernels.size()) + 0.5;
+    int length = rowcol * kernelSz; //times kernel length
+    length += kernelSz - 1; //1 pixel space between kernels
+    Mat kernelImg(length, length, CV_8UC3, Scalar(0));
+    for (int y = 0; y < rowcol; ++y)
+    {
+        for (int x = 0; x < rowcol; ++x)
+        {
+            int index = y * rowcol + x;
+            if(index >= kernelImgs.size()){ continue; }
+            Mat kernel = kernelImgs.at(index);
+            kernel.copyTo( kernelImg( Rect(x*(kernelSz+1), y*(kernelSz+1), kernelSz, kernelSz) ) );
+            imshow("kernel", kernelImg); cvWaitKey();
+        }
+    }
+
+    //write upscaled kernel image to disk
+    Mat img_big;
+    cv::resize(kernelImg, img_big, Size(), 10, 10, INTER_NEAREST);
+    QString nm = fileName.remove(".txt").append(".png");
+    imwrite(nm.toStdString(), img_big);
+}
+
+
+
+
