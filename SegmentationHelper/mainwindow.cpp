@@ -2415,23 +2415,81 @@ void MainWindow::on_btn_showFilterKernels_released()
     {
         Mat patch = imread(fnm.toStdString(), IMREAD_COLOR);
 
+        //convert to YUV
+        Mat patchYUV;
+        cvtColor(patch, patchYUV, CV_BGR2YCrCb);
+        vector<Mat> patchYUV_v;
+        split(patchYUV, patchYUV_v);
+
         //convolve image patch with all loaded filters and write to disk
-        Mat img_patches(rowcol * patch.rows + rowcol-1, rowcol * patch.cols + rowcol-1, CV_8UC3, Scalar(127, 127, 127));
+//        Mat img_patches(rowcol * patch.rows + rowcol-1, rowcol * patch.cols + rowcol-1, CV_8UC1, 127);
+        int sz = patch.rows;
+        Mat conv_y(sz, 12*sz + 11, CV_8UC1, Scalar(255));
+        Mat conv_u(sz, 8*sz + 7, CV_8UC1, Scalar(255));
+        Mat conv_v(sz, 8*sz + 7, CV_8UC1, Scalar(255));
+        patchYUV_v.at(0).copyTo(conv_y(Rect(0,0,sz,sz)));
+        patchYUV_v.at(1).copyTo(conv_u(Rect(0,0,sz,sz)));
+        patchYUV_v.at(2).copyTo(conv_v(Rect(0,0,sz,sz)));
+
+
         int i = 0;
         foreach(Mat kernel, kernels)
         {
-            Mat patchConv(patch.size(), patch.type());
-            Mat kernel_T;
+            Mat kernel_T;//flip for real convolution
             flip(kernel, kernel_T, -1);
-            filter2D(patch, patchConv, -1, kernel_T); //flip for real convolution
-    //        imshow("patch convolved", patchConv); cvWaitKey();
-            int y = i / rowcol;
-            int x = i - (y*rowcol);
-            patchConv.copyTo( img_patches( Rect(x*(patch.cols+1), y*(patch.rows+1), patch.cols, patch.rows) ) );
+
+//            int y = i / rowcol;
+//            int x = i - (y*rowcol);
+
+            Mat patchCh;
+            if(i < 10)//Y-channel
+            {
+                patchCh = patchYUV_v.at(0);
+            }
+            else if(i<16) // U-channel
+            {
+                patchCh = patchYUV_v.at(1);
+            }
+            else //V-channel
+            {
+                patchCh = patchYUV_v.at(2);
+            }
+
+            Mat img32bit;
+            patchCh.convertTo(img32bit, CV_32FC1, 0.003921569);
+            Mat patchConv(patch.size(), img32bit.type());
+            filter2D(img32bit, patchConv, -1, kernel_T);
+
+            Mat img32bitNorm, img8bit;
+            cv::normalize(patchConv, img32bitNorm, 0, 1, NORM_MINMAX);
+            img32bitNorm.convertTo(img8bit, CV_8UC1, 255);
+
+            if(i < 10)//Y-channel
+            {
+                img8bit.copyTo(conv_y(Rect((i+2)*(sz+1), 0, sz, sz)));
+            }
+            else if(i<16) // U-channel
+            {
+                img8bit.copyTo(conv_u(Rect((i-10+2)*(sz+1), 0, sz, sz)));
+            }
+            else //V-channel
+            {
+                img8bit.copyTo(conv_v(Rect((i-16+2)*(sz+1), 0, sz, sz)));
+            }
+
+//            img8bit.copyTo( img_patches( Rect(x*(patch.cols+1), y*(patch.rows+1), patch.cols, patch.rows) ) );
+
             i++;
         }
-        nm = fnm.remove(".png").append("_convolved.png");
-        imwrite(nm.toStdString(), img_patches);
+
+        nm = fnm.remove(".png") + "_y_convolved.png";
+        imwrite(nm.toStdString(), conv_y);
+        nm = fnm + "_u_convolved.png";
+        imwrite(nm.toStdString(), conv_u);
+        nm = fnm + "_v_convolved.png";
+        imwrite(nm.toStdString(), conv_v);
+//        nm = fnm.remove(".png").append("_convolved.png");
+//        imwrite(nm.toStdString(), img_patches);
     }
 }
 
