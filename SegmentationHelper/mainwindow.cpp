@@ -2313,7 +2313,7 @@ void MainWindow::on_btn_showFilterKernels_released()
     lastDir = QFileInfo(fileName).path();
 
     //read kernels to arrays
-    QList< vector<float> > kernels;
+    QList< Mat > kernels;
 
     QFile f(fileName);
     bool success = f.open(QFile::ReadOnly | QFile::Text);
@@ -2330,11 +2330,13 @@ void MainWindow::on_btn_showFilterKernels_released()
         else
         {
             QStringList strl = s.split(",", QString::SkipEmptyParts);
-            vector<float> kernel(kernelSz * kernelSz);
+            Mat kernel(kernelSz, kernelSz, CV_32FC1);
             for (int i = 0; i < strl.size(); ++i)
             {
                 float entry = strl.at(i).toFloat();
-                kernel.at(i) = entry;
+                int y = i / kernelSz;
+                int x = i - (y*kernelSz);
+                kernel.at<float>(y,x) = entry;
 
                 //also get min max values in all kernels for visualization
                 min = entry < min ? entry : min;
@@ -2354,8 +2356,8 @@ void MainWindow::on_btn_showFilterKernels_released()
         {
             for (int x = 0; x < kernelSz; ++x)
             {
-                int k = y * kernelSz + x;
-                float entry = kernels.at(i).at(k);
+//                int k = y * kernelSz + x;
+                float entry = kernels.at(i).at<float>(y,x);
 
                 //get color from float value (interpolate)
                 entry = entry - min; //map to range
@@ -2383,9 +2385,8 @@ void MainWindow::on_btn_showFilterKernels_released()
 
     //put all kernels in one image
     int rowcol = sqrt((double)kernels.size()) + 0.5;
-    int length = rowcol * kernelSz; //times kernel length
-    length += kernelSz - 1; //1 pixel space between kernels
-    Mat kernelImg(length, length, CV_8UC3, Scalar(0));
+    int length = rowcol * kernelSz + rowcol - 1; //times kernel length, 1 pixel space between kernels
+    Mat kernelImg(length, length, CV_8UC3, Scalar(127, 127, 127));
     for (int y = 0; y < rowcol; ++y)
     {
         for (int x = 0; x < rowcol; ++x)
@@ -2394,7 +2395,7 @@ void MainWindow::on_btn_showFilterKernels_released()
             if(index >= kernelImgs.size()){ continue; }
             Mat kernel = kernelImgs.at(index);
             kernel.copyTo( kernelImg( Rect(x*(kernelSz+1), y*(kernelSz+1), kernelSz, kernelSz) ) );
-            imshow("kernel", kernelImg); cvWaitKey();
+//            imshow("kernel", kernelImg); cvWaitKey();
         }
     }
 
@@ -2403,7 +2404,38 @@ void MainWindow::on_btn_showFilterKernels_released()
     cv::resize(kernelImg, img_big, Size(), 10, 10, INTER_NEAREST);
     QString nm = fileName.remove(".txt").append(".png");
     imwrite(nm.toStdString(), img_big);
+
+
+    //open image patches to convolve
+    QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select image patches", lastDir, "*.png");
+    if(fileNames.size() == 0){ return; }
+    lastDir = QFileInfo(fileNames.first()).path();
+
+    foreach(QString fnm, fileNames)
+    {
+        Mat patch = imread(fnm.toStdString(), IMREAD_COLOR);
+
+        //convolve image patch with all loaded filters and write to disk
+        Mat img_patches(rowcol * patch.rows + rowcol-1, rowcol * patch.cols + rowcol-1, CV_8UC3, Scalar(127, 127, 127));
+        int i = 0;
+        foreach(Mat kernel, kernels)
+        {
+            Mat patchConv(patch.size(), patch.type());
+            filter2D(patch, patchConv, -1, kernel);
+    //        imshow("patch convolved", patchConv); cvWaitKey();
+            int y = i / rowcol;
+            int x = i - (y*rowcol);
+            patchConv.copyTo( img_patches( Rect(x*(patch.cols+1), y*(patch.rows+1), patch.cols, patch.rows) ) );
+            i++;
+        }
+        nm = fnm.remove(".png").append("_convolved.png");
+        imwrite(nm.toStdString(), img_patches);
+    }
 }
+
+
+
+
 
 
 
