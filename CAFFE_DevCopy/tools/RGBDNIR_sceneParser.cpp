@@ -122,6 +122,7 @@ void parseImage(Net<float>& caffe_test_net, string imgName, string labelSuffix, 
     else if(strcmp(modeName, "RGBNIR") == 0){ hasRGB = true; }
     else if(strcmp(modeName, "RGBDNIR") == 0){ hasDepth = true; hasRGB = true; }
     else if(strcmp(modeName, "RGBDNIRS") == 0){ hasDepth = true; hasRGB = true; hasSkin = true; }
+    else if(strcmp(modeName, "DNIRS") == 0){ hasDepth = true; hasSkin = true; }
 
     // load image files
     Mat nirImg, rgbImg, depthImg, skinImg, labelImg;

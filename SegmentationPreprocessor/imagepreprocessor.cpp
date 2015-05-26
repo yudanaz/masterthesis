@@ -698,6 +698,7 @@ Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
 		depth_8bit = convertKinectDepthTo8Bit(depth_kinect);
 	}
 	else{ depth_8bit = depth_kinect; }
+    imwrite("depthReprojOrig.jpg", depth_8bit);
 
 //	Helper::debugImage(depth_8bit);
 
@@ -711,6 +712,7 @@ Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
 	depth_fixed = fixHolesInDepthMap(depth_fixed, 0); //alos got left-to-right to fix some other holes caused by specular surfaces
 
 //	Helper::debugImage(depth_fixed);
+    imwrite("depthReprojfixed.jpg", depth_fixed);
 
 	//undistort using intrinsics of depth camera
 	Mat depth_kinect_undist;
@@ -727,7 +729,7 @@ Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
 											Size(NIR_img.cols, NIR_img.rows), horizontalShift, verticalShift,
 											depth_kinect_undist);
 //	Helper::debugImage(depth2D);
-
+    imwrite("depthReproj3D2D.jpg", depth2D);
 
 
 	//again fill holes in the resulting reprojected depth map, caused by reprojection
@@ -735,6 +737,7 @@ Mat ImagePreprocessor::mapKinectDepth2NIR(Mat depth_kinect, Mat &NIR_img)
 	Mat depth2D_fixed = fixHolesInDepthMap(depth2D, 3); //fix bottom-up, i.e. shadows on lower side of objects
 
 //	Helper::debugImage(depth2D_fixed);
+    imwrite("depthReproj3D2Dfixed.jpg", depth2D_fixed);
 
 	//normalize image if flag is set
 	if(normalizeDepth)
@@ -1011,6 +1014,7 @@ Mat ImagePreprocessor::registerRGB2NIR(Mat& RGB_img, Mat& NIR_img)
 		RGB_registered = shiftImageToTheRight(RGB_img, 129);
 	}
 
+    imwrite("RGB_registered.png", RGB_registered);
 	return RGB_registered;
 }
 
