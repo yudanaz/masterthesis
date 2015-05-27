@@ -117,10 +117,11 @@ void Solver<Dtype>::InitTrainNet() {
 		bool hasDepth = param_.rgbdnir_param().hasdepth();
 		bool hasSkin = param_.rgbdnir_param().hasskin();
 		bool multiscale = param_.rgbdnir_param().has_multiscale();
+        bool binaryClassification = param_.rgbdnir_param().has_isbinary();
 		std::string imgType = param_.rgbdnir_param().imagetype();
 		std::string labelImgSuffix = param_.rgbdnir_param().labelimagesuffix();
 		boost::dynamic_pointer_cast<NetRGBDNIR<Dtype> >(net_)->setup(imageListURL, patchSize, batchSize, batchesPerImage,
-																	 hasRGB, hasNIR, hasDepth, hasSkin, multiscale, imgType, labelImgSuffix);
+                                                                     hasRGB, hasNIR, hasDepth, hasSkin, multiscale, binaryClassification, imgType, labelImgSuffix);
 	}
 	////////////////////////////////////////////////////////////////////////////////
 	/// endof RGBDNIR extension of original Solver class: //////////////////////////
@@ -219,10 +220,11 @@ void Solver<Dtype>::InitTestNets() {
 		bool hasDepth = param_.rgbdnir_param().hasdepth();
 		bool hasSkin = param_.rgbdnir_param().hasskin();
 		bool multiscale = param_.rgbdnir_param().has_multiscale();
+        bool binaryClassification = param_.rgbdnir_param().has_isbinary();
 		std::string imgType = param_.rgbdnir_param().imagetype();
 		std::string labelImgSuffix = param_.rgbdnir_param().labelimagesuffix();
 		boost::dynamic_pointer_cast<NetRGBDNIR<Dtype> >(test_nets_[i])->setup(imageListURL, patchSize, batchSize, batchesPerImage,
-																			  hasRGB, hasNIR, hasDepth, hasSkin, multiscale, imgType, labelImgSuffix);
+                                                                              hasRGB, hasNIR, hasDepth, hasSkin, multiscale, binaryClassification, imgType, labelImgSuffix);
 	}
 	////////////////////////////////////////////////////////////////////////////////
 	/// endof RGBDNIR extension of original Solver class: //////////////////////////

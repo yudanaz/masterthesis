@@ -13,7 +13,7 @@ namespace caffe {
 
 template<typename Dtype>
 void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchSize, int batchesPerImage,
-							  bool RGB, bool NIR, bool depth, bool skin, bool isMultiscale, std::string imageType, std::string labelImageSuffix)
+                              bool RGB, bool NIR, bool depth, bool skin, bool isMultiscale, bool doesBinaryClassification, std::string imageType, std::string labelImageSuffix)
 {
 	//LOG(INFO) << "Doing Setup of NetRGBDNIR";
 
@@ -51,6 +51,7 @@ void NetRGBDNIR<Dtype>::setup(std::string imgsListURL, int patchsize, int batchS
 	hasDepth = depth;
 	hasSkin = skin;
 	multiscale = isMultiscale;
+    binaryClassification = doesBinaryClassification;
 	imgType = imageType;
 	labelImgSuffix = labelImageSuffix;
 	batchesPerImg = batchesPerImage;
@@ -126,7 +127,15 @@ void NetRGBDNIR<Dtype>::feedNextPatchesToInputLayers()
 			y = randomPixel / w;
 
 			//get label for this patch
-			currentLabel = img_labels.at<uchar>(y,x);
+            int lbl = img_labels.at<uchar>(y,x);
+            if(binaryClassification)
+            {
+                currentLabel = (lbl == 0)? -1 : 1;
+            }
+            else
+            {
+                currentLabel = lbl;
+            }
 //                LOG(INFO) << "label: " << currentLabel <<" current pos: " << x << "  " << y << " random pixel: " << randomPixel;
 		}
 		while(currentLabel > 20); //jump the "unknown" and other buggy label (that goddamm 254!!!), training with these labels is useless

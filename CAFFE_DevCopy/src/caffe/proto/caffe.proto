@@ -999,6 +999,7 @@ message RGBDNIRSegmImgSourceParameter {
   required bool hasNIR = 7;
   required bool hasDepth = 8;
   optional bool hasSkin = 13 [ default = false ];
+  optional bool isBinary = 14 [ default = false ];
   required bool multiscale = 9;
   optional string imageType = 10 [ default = "png" ];
   optional string labelImageSuffix = 12 [ default = "_labels" ];
