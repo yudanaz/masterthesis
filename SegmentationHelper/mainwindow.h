@@ -157,6 +157,8 @@ private slots:
 
     void on_btn_showFilterKernels_released();
 
+    void on_btn_avgLogs_released();
+
 private:
 	void makeLabelImages(QStringList fileNames);
 	void makeSeedsSuperpixels(QString fileName);

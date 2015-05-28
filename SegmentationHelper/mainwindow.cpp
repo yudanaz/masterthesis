@@ -2639,3 +2639,86 @@ void MainWindow::on_btn_showFilterKernels_released()
 
 
 
+
+void MainWindow::on_btn_avgLogs_released()
+{
+    QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select log files", lastDir, "*.txt");
+    if(fileNames.size() == 0){ return; }
+    lastDir = QFileInfo(fileNames.first()).path();
+
+    QFile f0(fileNames.at(0));
+    QFile f1(fileNames.at(1));
+    QFile f2(fileNames.at(2));
+    QFile f3(fileNames.at(3));
+    QFile f4(fileNames.at(4));
+    f0.open(QFile::ReadOnly | QFile::Text);
+    f1.open(QFile::ReadOnly | QFile::Text);
+    f2.open(QFile::ReadOnly | QFile::Text);
+    f3.open(QFile::ReadOnly | QFile::Text);
+    f4.open(QFile::ReadOnly | QFile::Text);
+    QTextStream ts0(&f0);
+    QTextStream ts1(&f1);
+    QTextStream ts2(&f2);
+    QTextStream ts3(&f3);
+    QTextStream ts4(&f4);
+
+    QString foutnm = QString(fileNames.at(0)).remove(".txt").append("_AVG.txt");
+    QFile fout( foutnm );
+    fout.open(QFile::WriteOnly | QFile::Text);
+    QTextStream tsout(&fout);
+
+    //jump first
+    ts0.readLine();
+    ts1.readLine();
+    ts2.readLine();
+    ts3.readLine();
+    ts4.readLine();
+    tsout << "loss\n";
+
+    while(!ts0.atEnd())
+    {
+        double v = ( ts0.readLine().toDouble() +
+                   ts1.readLine().toDouble() +
+                   ts2.readLine().toDouble() +
+                   ts3.readLine().toDouble() +
+                   ts4.readLine().toDouble() ) / 5.0;
+        tsout << QString::number(v) << "\n";
+    }
+
+    f0.close();
+    f1.close();
+    f2.close();
+    f3.close();
+    f4.close();
+    fout.close();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
