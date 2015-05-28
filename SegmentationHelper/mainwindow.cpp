@@ -2328,6 +2328,30 @@ void MainWindow::on_btn_showFilterKernels_released()
         biases.append(ts_l.readLine().toFloat());
     }
 
+
+    float min = 9999.9;
+    float max = -9999.9;
+
+    //make legend
+    int w = 15; int h = 300;
+    Mat legend(h, w, CV_8UC3);
+    for (int y = 0; y < h; ++y)
+    {
+        int b = (255.0 * y / h) + 0.5;
+        int r = 255 - b;
+        int g = abs(b-r)*0.5;
+
+        for (int x = 0; x < w; ++x)
+        {
+            Vec3b col;
+            col[0] = b; //blue
+            col[1] = g; //green
+            col[2] = r; //red
+            legend.at<Vec3b>(y,x) = col;
+        }
+    }
+    imwrite((lastDir + "/legend.png").toStdString(), legend);
+
     //read kernels to arrays
     QList< Mat > kernels;
 
@@ -2335,10 +2359,6 @@ void MainWindow::on_btn_showFilterKernels_released()
     success = f.open(QFile::ReadOnly | QFile::Text);
     if(!success) return;
     QTextStream ts(&f);
-
-    float min = 9999.9;
-    float max = -9999.9;
-
     while(!ts.atEnd())
     {
         QString s = ts.readLine();
@@ -2363,6 +2383,8 @@ void MainWindow::on_btn_showFilterKernels_released()
     }
     float range = max - min;
 
+
+    //make kernel images
     QList<Mat> kernelImgs;
     Mat img_backup;
     //make images with blue = negative, red = positive and interpolation in between
@@ -2443,7 +2465,7 @@ void MainWindow::on_btn_showFilterKernels_released()
     //put all kernels in one image
     int rowcol = sqrt((double)kernels.size()) + 0.5;
     int length = 4 * kernelSz + 4 - 1; //times kernel length, 1 pixel space between kernels
-    Mat kernelImg(length, length, CV_8UC3, Scalar(127, 127, 127));
+    Mat kernelImg(length, length, CV_8UC3, Scalar(255, 255, 255));
     for (int y = 0; y < 4; ++y)
     {
         for (int x = 0; x < 4; ++x)
