@@ -2307,16 +2307,32 @@ void MainWindow::on_btn_showFilterKernels_released()
 {
     int kernelSz = 7;
 
-    //open file
-    QString fileName = QFileDialog::getOpenFileName(this, "Select filter kernel file", lastDir, "*.txt");
-    if(fileName == ""){ return; }
-    lastDir = QFileInfo(fileName).path();
+    //open kernels file
+    QString kernels_fileName = QFileDialog::getOpenFileName(this, "Select filter kernels file", lastDir, "*.txt");
+    if(kernels_fileName == ""){ return; }
+    lastDir = QFileInfo(kernels_fileName).path();
+
+    //open biases file
+    QString biases_fileName = QFileDialog::getOpenFileName(this, "Select filter biases file", lastDir, "*.txt");
+    if(biases_fileName == ""){ return; }
+    lastDir = QFileInfo(biases_fileName).path();
+
+    //read biases
+    QList<float> biases;
+    QFile f_b(biases_fileName);
+    bool success = f_b.open(QFile::ReadOnly | QFile::Text);
+    if(!success) return;
+    QTextStream ts_l(&f_b);
+    while(!ts_l.atEnd())
+    {
+        biases.append(ts_l.readLine().toFloat());
+    }
 
     //read kernels to arrays
     QList< Mat > kernels;
 
-    QFile f(fileName);
-    bool success = f.open(QFile::ReadOnly | QFile::Text);
+    QFile f(kernels_fileName);
+    success = f.open(QFile::ReadOnly | QFile::Text);
     if(!success) return;
     QTextStream ts(&f);
 
@@ -2348,6 +2364,7 @@ void MainWindow::on_btn_showFilterKernels_released()
     float range = max - min;
 
     QList<Mat> kernelImgs;
+    Mat img_backup;
     //make images with blue = negative, red = positive and interpolation in between
     for (int i = 0; i < kernels.size(); ++i)
     {
@@ -2374,25 +2391,65 @@ void MainWindow::on_btn_showFilterKernels_released()
             }
         }
 
-        //write to disk and save in list
-        Mat img_big;
-        cv::resize(img, img_big, Size(), 10, 10, INTER_NEAREST);
-        QString nm = lastDir + "/kernel_" + QString::number(i) + ".png";
-        imwrite(nm.toStdString(), img_big);
+        //add U,V channels
+        if(i<10)//Y channel
+        {
+            //write to disk and save in list
+            Mat img_big;
+            cv::resize(img, img_big, Size(), 10, 10, INTER_NEAREST);
+            QString nm = lastDir + "/kernel_" + QString::number(i) + ".png";
+            imwrite(nm.toStdString(), img_big);
+            kernelImgs.append(img);
+        }
+        else if(i%2==0)//even -> U channel
+        {
+            img_backup = img.clone();
+        }
+        else //uneven -> V channel, add to U channel
+        {
+            //sum U and V
+            img = img/2 + img_backup/2;
 
-        kernelImgs.append(img);
+            //write to disk and save in list
+            Mat img_big;
+            cv::resize(img, img_big, Size(), 10, 10, INTER_NEAREST);
+            QString nm = lastDir + "/kernel_" + QString::number(i-10 + (i-10)/2-1) + ".png";
+            imwrite(nm.toStdString(), img_big);
+            kernelImgs.append(img);
+        }
     }
+
+//    //sum U,V kernels
+//    QList<Mat> kernelImgs2;
+//    int i =0;
+//    foreach(Mat kernel, kernelImgs)
+//    {
+
+//        if(i<10)//Y channel
+//        {
+//            kernelImgs2.append(kernel);
+//        }
+//        else if(i%2==0)//even -> U channel
+//        {
+//            kernelImgs2.append(kernel);
+//        }
+//        else //uneven -> V channel, add to U channel
+//        {
+//            kernelImgs2.last() = kernelImgs2.last() + kernel;
+//        }
+//        i++;
+//    }
 
     //put all kernels in one image
     int rowcol = sqrt((double)kernels.size()) + 0.5;
-    int length = rowcol * kernelSz + rowcol - 1; //times kernel length, 1 pixel space between kernels
+    int length = 4 * kernelSz + 4 - 1; //times kernel length, 1 pixel space between kernels
     Mat kernelImg(length, length, CV_8UC3, Scalar(127, 127, 127));
-    for (int y = 0; y < rowcol; ++y)
+    for (int y = 0; y < 4; ++y)
     {
-        for (int x = 0; x < rowcol; ++x)
+        for (int x = 0; x < 4; ++x)
         {
-            int index = y * rowcol + x;
-            if(index >= kernelImgs.size()){ continue; }
+            int index = y * 4 + x;
+//            if(index >= kernelImgs.size()){ continue; }
             Mat kernel = kernelImgs.at(index);
             kernel.copyTo( kernelImg( Rect(x*(kernelSz+1), y*(kernelSz+1), kernelSz, kernelSz) ) );
 //            imshow("kernel", kernelImg); cvWaitKey();
@@ -2402,9 +2459,13 @@ void MainWindow::on_btn_showFilterKernels_released()
     //write upscaled kernel image to disk
     Mat img_big;
     cv::resize(kernelImg, img_big, Size(), 10, 10, INTER_NEAREST);
-    QString nm = fileName.remove(".txt").append(".png");
+    QString nm = kernels_fileName.remove(".txt").append(".png");
     imwrite(nm.toStdString(), img_big);
 
+
+    //////////////////////////////////////
+    /// IMAGE PATCHES ////////////////////
+    //////////////////////////////////////
 
     //open image patches to convolve
     QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select image patches", lastDir, "*.png");
@@ -2422,24 +2483,13 @@ void MainWindow::on_btn_showFilterKernels_released()
         split(patchYUV, patchYUV_v);
 
         //convolve image patch with all loaded filters and write to disk
-//        Mat img_patches(rowcol * patch.rows + rowcol-1, rowcol * patch.cols + rowcol-1, CV_8UC1, 127);
-        int sz = patch.rows;
-        Mat conv_y(sz, 12*sz + 11, CV_8UC1, Scalar(255));
-        Mat conv_u(sz, 8*sz + 7, CV_8UC1, Scalar(255));
-        Mat conv_v(sz, 8*sz + 7, CV_8UC1, Scalar(255));
-        patchYUV_v.at(0).copyTo(conv_y(Rect(0,0,sz,sz)));
-        patchYUV_v.at(1).copyTo(conv_u(Rect(0,0,sz,sz)));
-        patchYUV_v.at(2).copyTo(conv_v(Rect(0,0,sz,sz)));
-
+        QList<Mat> patchesConv;
 
         int i = 0;
         foreach(Mat kernel, kernels)
         {
             Mat kernel_T;//flip for real convolution
             flip(kernel, kernel_T, -1);
-
-//            int y = i / rowcol;
-//            int x = i - (y*rowcol);
 
             Mat patchCh;
             if(i < 10)//Y-channel
@@ -2460,36 +2510,103 @@ void MainWindow::on_btn_showFilterKernels_released()
             Mat patchConv(patch.size(), img32bit.type());
             filter2D(img32bit, patchConv, -1, kernel_T);
 
-            Mat img32bitNorm, img8bit;
-            cv::normalize(patchConv, img32bitNorm, 0, 1, NORM_MINMAX);
-            img32bitNorm.convertTo(img8bit, CV_8UC1, 255);
-
-            if(i < 10)//Y-channel
-            {
-                img8bit.copyTo(conv_y(Rect((i+2)*(sz+1), 0, sz, sz)));
-            }
-            else if(i<16) // U-channel
-            {
-                img8bit.copyTo(conv_u(Rect((i-10+2)*(sz+1), 0, sz, sz)));
-            }
-            else //V-channel
-            {
-                img8bit.copyTo(conv_v(Rect((i-16+2)*(sz+1), 0, sz, sz)));
-            }
-
-//            img8bit.copyTo( img_patches( Rect(x*(patch.cols+1), y*(patch.rows+1), patch.cols, patch.rows) ) );
+            patchesConv.append(patchConv);
 
             i++;
         }
 
-        nm = fnm.remove(".png") + "_y_convolved.png";
-        imwrite(nm.toStdString(), conv_y);
-        nm = fnm + "_u_convolved.png";
-        imwrite(nm.toStdString(), conv_u);
-        nm = fnm + "_v_convolved.png";
-        imwrite(nm.toStdString(), conv_v);
-//        nm = fnm.remove(".png").append("_convolved.png");
-//        imwrite(nm.toStdString(), img_patches);
+        //sum U,V channels
+        QList<Mat> patchesConv2;
+        i=0;
+        foreach(Mat patchConv, patchesConv)
+        {
+            if(i<10)//Y channel
+            {
+                patchesConv2.append(patchConv);
+            }
+            else if(i%2==0)//even -> U channel
+            {
+                patchesConv2.append(patchConv);
+            }
+            else //uneven -> V channel, add to U channel
+            {
+                patchesConv2.last() = patchesConv2.last() + patchConv;
+            }
+            i++;
+        }
+
+        //create biased versions of the patches
+        QList<Mat> patchesConv2_rectified;
+        i=0;
+        foreach(Mat patchConv, patchesConv2)
+        {
+            float bias = biases.at(i);
+//            qDebug() << bias;
+            Mat patchConv_rectified(patchConv.rows, patchConv.cols, CV_32FC1, Scalar(0));
+
+            //apply bias
+            for (int y = 0; y < patchConv.rows; ++y)
+            {
+                for (int x = 0; x < patchConv.cols; ++x)
+                {
+                    float val = patchConv.at<float>(y,x) + bias;
+                    if(val > 0){ patchConv_rectified.at<float>(y,x) =  val; }
+                }
+            }
+
+            patchesConv2_rectified.append(patchConv_rectified);
+
+            i++;
+        }
+
+        //write convolved patches to one big image
+//        Mat img_patches(rowcol * patch.rows + rowcol-1, rowcol * patch.cols + rowcol-1, CV_8UC1, 127);
+        Mat img_patches(4 * patch.rows + 4-1, 4 * patch.cols + 4-1, CV_32FC1, Scalar(0));
+        Mat img_patches_redtified(4 * patch.rows + 4-1, 4 * patch.cols + 4-1, CV_32FC1, Scalar(0));
+        i = 0;
+        foreach (Mat patchConv, patchesConv2)
+        {
+            Mat patchConv_rectified = patchesConv2_rectified.at(i);
+
+//            Mat img32bitNorm1, img8bit1, img32bitNorm2, img8bit2;
+//            cv::normalize(patchConv, img32bitNorm1, 0, 1, NORM_MINMAX);
+//            cv::normalize(patchConv_rectified, img32bitNorm2, 0, 1, NORM_MINMAX);
+//            img32bitNorm1.convertTo(img8bit1, CV_8UC1, 255);
+//            img32bitNorm2.convertTo(img8bit2, CV_8UC1, 255);
+
+            //MOGEL MOGEL, dieses bild ist zu hell... da dreh ich wat dran! pssst!!!//
+            if(i==4)
+            {
+                patchConv *= 0.5;
+                patchConv_rectified *= 0.25;
+            }
+            //////////////////////////////////////////////////////////////////////////
+
+            int y = i / 4;
+            int x = i - (y*4);
+//            img32bitNorm1.copyTo( img_patches( Rect(x*(patch.cols+1), y*(patch.rows+1), patch.cols, patch.rows) ) );
+//            img32bitNorm2.copyTo( img_patches_redtified( Rect(x*(patch.cols+1), y*(patch.rows+1), patch.cols, patch.rows) ) );
+            patchConv.copyTo( img_patches( Rect(x*(patch.cols+1), y*(patch.rows+1), patch.cols, patch.rows) ) );
+            patchConv_rectified.copyTo( img_patches_redtified( Rect(x*(patch.cols+1), y*(patch.rows+1), patch.cols, patch.rows) ) );
+            i++;
+        }
+
+//        imshow("sfsd", img_patches); cvWaitKey();
+
+        Mat img32bitNorm1, img8bit1, img32bitNorm2, img8bit2;
+        cv::normalize(img_patches, img32bitNorm1, 0, 1, NORM_MINMAX);
+        cv::normalize(img_patches_redtified, img32bitNorm2, 0, 1, NORM_MINMAX);
+        img32bitNorm1.convertTo(img8bit1, CV_8UC1, 255);
+        img32bitNorm2.convertTo(img8bit2, CV_8UC1, 255);
+
+        Mat img_patches_Big, img_patches_rectified_Big;
+        cv::resize(img8bit1, img_patches_Big, Size(), 4, 4, INTER_AREA);
+        nm = fnm.remove(".png").append("_convolved.png");
+        imwrite(nm.toStdString(), img_patches_Big);
+
+        cv::resize(img8bit2, img_patches_rectified_Big, Size(), 4, 4, INTER_AREA);
+        QString nm2 = nm.remove(".png").append("_biased.png");
+        imwrite(nm2.toStdString(), img_patches_rectified_Big);
     }
 }
 
