@@ -2642,7 +2642,13 @@ void MainWindow::on_btn_showFilterKernels_released()
 
 void MainWindow::on_btn_avgLogs_released()
 {
-    QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select log files", lastDir, "*.txt");
+    bool isLoss = QMessageBox::question(this, "Loss?", "is this for Loss (else Accuracy)?", QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes;
+
+    QString filetype;
+    if(isLoss){ filetype = "*_lossLog.txt"; }
+    else{ filetype = "*_testAccuracyLossLog.txt"; }
+
+    QStringList fileNames = QFileDialog::getOpenFileNames(this, "Select log files", lastDir, filetype);
     if(fileNames.size() == 0){ return; }
     lastDir = QFileInfo(fileNames.first()).path();
 
@@ -2673,15 +2679,16 @@ void MainWindow::on_btn_avgLogs_released()
     ts2.readLine();
     ts3.readLine();
     ts4.readLine();
-    tsout << "loss\n";
+    if(isLoss){ tsout << "loss\n"; }
+    else{ tsout << "accuracy\n"; }
 
     while(!ts0.atEnd())
     {
-        double v = ( ts0.readLine().toDouble() +
-                   ts1.readLine().toDouble() +
-                   ts2.readLine().toDouble() +
-                   ts3.readLine().toDouble() +
-                   ts4.readLine().toDouble() ) / 5.0;
+        double v = ( ts0.readLine().split("\t").first().toDouble() +
+                   ts1.readLine().split("\t").first().toDouble() +
+                   ts2.readLine().split("\t").first().toDouble() +
+                   ts3.readLine().split("\t").first().toDouble() +
+                   ts4.readLine().split("\t").first().toDouble() ) / 5.0;
         tsout << QString::number(v) << "\n";
     }
 
