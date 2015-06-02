@@ -2080,6 +2080,20 @@ void MainWindow::on_pushButton_accuracy_released()
         ts << cl << "," << classAcc.at(cl) << "\n";
     }
 
+    qDebug() << "\nBinary classification:";
+    qDebug() << "TP:\t" << truePositives[0] << "\t" << truePositives[1];
+    qDebug() << "TN:\t" << trueNegatives[0] << "\t" << trueNegatives[1];
+    qDebug() << "FP:\t" << falsePositives[0] << "\t" << falsePositives[1];
+    qDebug() << "FN:\t" << falseNegatives[0] << "\t" << falseNegatives[1];
+    qDebug() << "Class Accuracy:\t" << (float)(truePositives[0] +  trueNegatives[0]) / labeledPixelsTotal << "\n";
+
+    ts << "\nBinary classification:\n";
+    ts << "TP:\t" << truePositives[0] << "\t" << truePositives[1] << "\n";
+    ts << "TN:\t" << trueNegatives[0] << "\t" << trueNegatives[1] << "\n";
+    ts << "FP:\t" << falsePositives[0] << "\t" << falsePositives[1] << "\n";
+    ts << "FN:\t" << falseNegatives[0] << "\t" << falseNegatives[1] << "\n";
+    ts << "Class Accuracy:\t" << (float)(truePositives[0] +  trueNegatives[0]) / labeledPixelsTotal << "\n";
+
 //    qDebug() << "Class, Accuracy, TruePos, TrueNeg, FalsePos, FalseNeg";
 //    ts << "class,accuracy,truePos,trueNeg,falsePos,falseNeg\n";
 //    for (int cl = 0; cl < nrOfClasses; ++cl)
